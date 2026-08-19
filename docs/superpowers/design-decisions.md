@@ -27,8 +27,12 @@
 - **Rationale (founder):** Not all jobs are equal; pay must adjust for need and availability — more pay for work nobody wants, via automated or voted systems. Labor time remains the accounting basis so "production at real cost" stays meaningful.
 - **Open sub-question:** How are multipliers set — purely automated, purely voted, or hybrid (auto with democratic override)?
 
+## D5 — Multiplier governance: automated with democratic override ✅ DECIDED 2026-08-19
+- **Decision:** Wage multipliers adjust automatically from scarcity data (unfilled positions → multiplier rises; oversubscribed → settles down); citizens can veto or override any adjustment by vote within a defined time window.
+- **Rationale (founder):** Fast engine reactions with sovereign democratic control; the automatic formula lives transparently on the Open Board, so nothing is a black box.
+- **Design implication:** The engine needs a published, deterministic multiplier formula plus a veto/override voting mechanism with a defined window.
+
 ## Open questions queue
-- Q5: Multiplier governance mechanism (automated / voted / hybrid).
 - Q6: Production decision-making inside co-ops (member votes vs manager roles vs algorithmic).
 - Q7: Consumption allocation when goods are scarce (price rationing vs need-based priority lists).
 - Q8: What "state" institutions exist in v1 (oversight body powers, intervention triggers).
