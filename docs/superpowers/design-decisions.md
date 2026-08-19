@@ -69,6 +69,11 @@
 - **Pattern:** Same signature as D5 and D6 — automation proposes from transparent signals, democracy stays sovereign.
 - **Design implication:** Surplus allocator is a deterministic rule module with votable parameters; every allocation event is a ledger transaction referencing the active parameter version.
 
+## D12 — Time: layered discrete clock + experimental timeline branching ✅ DECIDED 2026-08-19
+- **Decision:** Layered discrete time — atomic **tick** (action batch settles) → **day** (production runs, consumption, wages) → **season** (harvests, governance votes, rule-change windows, council elections). Simulations run ticks at CPU speed; the live game runs a day per fixed real-time period (default proposal: 30 minutes, room-configurable — tunable parameter, confirm in spec). Every transaction is tick-stamped; replaying the ledger reproduces the world exactly.
+- **Experimental mode:** timelines can be **branched** — rewind to tick N, change a rule or inputs, run a divergent branch, compare outcomes (counterfactual what-if analysis). Normal mode keeps **one canonical timeline** — no rewind — consistent with D10 immutable history. Branching lives in simulation/experimental contexts only.
+- **Rationale (founder):** "2 seems to make sense. And if possible rewind time to try something else at some point in an experimental mode. But maybe not for normal mode."
+- **Design implication:** engine state is a deterministic function of (genesis, input sequence, rule-set versions); branching = new input stream sharing a common prefix. Comparison dashboards are first-class.
+
 ## Open questions queue
-- Q11: Time model — simulation tick structure, game day/season cycle.
 - Q12: First bot archetypes for the stability simulations.
