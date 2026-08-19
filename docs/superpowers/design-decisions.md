@@ -63,7 +63,12 @@
 - **Rationale (founder):** "A core makes sense, but I want to change the core in the beginning also... immutable first or only if 2/3 or higher, so evil players can't get rid of it... changeable but not so we can never recover. Maybe a roll back function that checks how it worked and with less effort we can roll back."
 - **Design implication:** rule-set versions behave like git commits for governance — version, measure, compare, revert. Rollback is a first-class ledger transaction.
 
+## D11 — Surplus allocation: smart dynamic engine, votable parameters ✅ DECIDED 2026-08-19
+- **Decision:** Surplus split is computed dynamically by the engine from scarcity/need indicators (underfunded services → share rises), but the formula, its parameters, and category weights are votable rules (D7). Citizens can override any adjustment within a time window; the engine publishes live dashboards showing what each category received and delivered.
+- **Rationale (founder):** "I want 2 and 3 mixed. I want a smart system that can be voted on."
+- **Pattern:** Same signature as D5 and D6 — automation proposes from transparent signals, democracy stays sovereign.
+- **Design implication:** Surplus allocator is a deterministic rule module with votable parameters; every allocation event is a ledger transaction referencing the active parameter version.
+
 ## Open questions queue
-- Q10: Surplus pool split — public services vs. innovation fund vs. citizen dividends (percentages, votable?).
 - Q11: Time model — simulation tick structure, game day/season cycle.
 - Q12: First bot archetypes for the stability simulations.
