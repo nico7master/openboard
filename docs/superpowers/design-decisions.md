@@ -32,7 +32,18 @@
 - **Rationale (founder):** Fast engine reactions with sovereign democratic control; the automatic formula lives transparently on the Open Board, so nothing is a black box.
 - **Design implication:** The engine needs a published, deterministic multiplier formula plus a veto/override voting mechanism with a defined window.
 
+## D6 — Co-op governance: engine proposes, members approve ✅ DECIDED 2026-08-19
+- **Decision:** Default co-op governance: the engine computes suggested production plans from market signals (price trends, stock levels, demand); members vote to accept, adjust, or override each cycle; routine decisions can be auto-approved via policy. Per-co-op constitutions may select other styles (direct votes, elected managers) — internal decision style is *policy*, not *protocol*. All co-ops stay in the same shared ledger, market, and money system.
+- **Rationale (founder):** "I like automations so 3 sticks out." Matches the automation-with-democratic-sovereignty pattern (D5). Not locked dogmatically — see D7.
+
+## D7 — Rule mutability: every rule can be changed or voted out ✅ DECIDED 2026-08-19
+- **Decision (meta-principle):** The system will NOT attempt to be perfect. Instead, all rules are mutable: rule-sets are versioned data committed to the ledger; rule changes are special transactions requiring passed votes; every transaction records the rule-set version under which it was processed. Multiple rule variants can run side by side (parameter sweeps in bot simulations; parallel game worlds on-chain) and be compared empirically. In-game democracy becomes the experimental laboratory — "make these decisions in game and see how it actually plays out."
+- **Rationale (founder):** "We won't build the perfect system — build it such that all rules can be changed and voted out... maybe build multiple systems or plugins at the same time and then just test multiple versions."
+- **Design implications:** Engine is a rule-set interpreter, not hardcoded logic (rules are pluggable modules with defined interfaces); rule-change proposals and votes are first-class ledger transactions; parallel-world comparison mode is a core feature; determinism is preserved by replaying each transaction under its active rule-set version.
+- **Cardano parallel:** Voltaire governance does exactly this at chain level — economy-level rule voting mirrors the host chain's own philosophy.
+- **North star check:** Empirical A/B evidence of rule variants is the strongest possible argument for real-world adoption.
+
 ## Open questions queue
-- Q6: Production decision-making inside co-ops (member votes vs manager roles vs algorithmic).
 - Q7: Consumption allocation when goods are scarce (price rationing vs need-based priority lists).
 - Q8: What "state" institutions exist in v1 (oversight body powers, intervention triggers).
+- Q9: Which rules are constitutional (hard to change) vs ordinary (simple majority)? What is the immutable protocol core?
