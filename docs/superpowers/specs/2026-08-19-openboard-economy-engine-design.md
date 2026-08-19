@@ -1,6 +1,6 @@
 # OpenBoard Economy — Engine Design Spec
 
-**Status:** Approved design, spec written — awaiting user review
+**Status:** APPROVED by founder 2026-08-19
 **Date:** 2026-08-19
 **Source decisions:** D1–D13 in `docs/superpowers/design-decisions.md`
 
