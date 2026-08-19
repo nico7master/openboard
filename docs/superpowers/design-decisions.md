@@ -75,5 +75,10 @@
 - **Rationale (founder):** "2 seems to make sense. And if possible rewind time to try something else at some point in an experimental mode. But maybe not for normal mode."
 - **Design implication:** engine state is a deterministic function of (genesis, input sequence, rule-set versions); branching = new input stream sharing a common prefix. Comparison dashboards are first-class.
 
+## D13 — Simulation cast: 10 bot archetypes ✅ DECIDED 2026-08-19
+- **Decision:** v1 cast: Honest Worker, Strategic Producer, Hoarder, Price Manipulator, Free Rider, Champion Voter (self-serving rule campaigns), Crisis Turtle (panic dumps/hoards), Collusive Faction (multi-bot bloc), **Gray-Market Smuggler** (bypasses official economy — tests whether the system keeps people inside it), **Innovator** (proposes genuinely useful rule changes — tests whether good actors are rewarded). Population mixes configurable (e.g. 60% honest / 25% strategic / 15% adversarial).
+- **Rationale (founder):** "Sure for now this is fine. If you don't have any other types, I depend on your intelligence." Agent additions: Smuggler (exit threat is real for any alternative-economy system) and Innovator (adversarial-only casts can't prove the system *works*, only that it resists attacks).
+- **Design implication:** Bots are pluggable agents with the same action interface as human players — they double as the adversarial content of the "Break the System" game mode.
+
 ## Open questions queue
-- Q12: First bot archetypes for the stability simulations.
+- (empty — all brainstorm questions resolved; ready for spec assembly)
