@@ -1,0 +1,15 @@
+# Agent Zero project state
+.a0proj/
+
+# Python
+venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+**/node_modules/
+
+# Secrets & local state
+.env
+*.secret
