@@ -52,5 +52,18 @@
 - **Rationale (founder):** "2 yes!" Checks and balances; engine speed plus human judgment plus democratic legitimacy; fully transparent actions.
 - **Design implication:** Anomaly detectors are deterministic rule modules (auditable); council elections, terms, and intervention votes are first-class ledger transactions.
 
+## D10 — Constitution: two-phase lock, asymmetric recovery, immutable history ✅ DECIDED 2026-08-19
+- **Decision:**
+  1. **Minimal core invariants** (ledger integrity — append-only, hash-chained; radical transparency of transactions/bids/votes; the rule-change process itself; one person one vote; production-at-cost accounting always computed and published).
+  2. **Bootstrap phase:** core is changeable by simple majority — the system is being tuned and nothing is sacred yet.
+  3. **Hardened phase:** after stability milestone is reached, core changes require ≥2/3 supermajority plus a mandatory multi-day voting window and trial period.
+  4. **Asymmetric recovery:** reverting a change within its trial period needs only a simple majority — undoing damage is always easier than causing it. Evil actors need sustained 2/3; defenders need 50% + evidence.
+  5. **Immutable history:** the append-only ledger means even a unanimous vote can never rewrite past records — worst case is fully visible on the Open Board; the system can always see what was done and when.
+  6. **Evidence-based rollback:** the engine tracks performance metrics per rule-set version (price stability, inequality, shortage events), so every rule change is an experiment with data and rollback is one vote away.
+- **Rationale (founder):** "A core makes sense, but I want to change the core in the beginning also... immutable first or only if 2/3 or higher, so evil players can't get rid of it... changeable but not so we can never recover. Maybe a roll back function that checks how it worked and with less effort we can roll back."
+- **Design implication:** rule-set versions behave like git commits for governance — version, measure, compare, revert. Rollback is a first-class ledger transaction.
+
 ## Open questions queue
-- Q9: Which rules are constitutional (hard to change) vs ordinary (simple majority)? What is the immutable protocol core?
+- Q10: Surplus pool split — public services vs. innovation fund vs. citizen dividends (percentages, votable?).
+- Q11: Time model — simulation tick structure, game day/season cycle.
+- Q12: First bot archetypes for the stability simulations.
