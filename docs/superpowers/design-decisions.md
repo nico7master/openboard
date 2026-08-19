@@ -47,6 +47,10 @@
 - **Decision:** Every good carries a policy flag set by vote: **market good** (pure auction), **essential good** (need-priority rations to all first, surplus to auction), or **emergency good** (strict rationing when automatic scarcity thresholds trigger). Flags are votable rules under D7 — the triage itself is an experiment, not dogma.
 - **Rationale (founder):** Price discovery is a good mechanic — capitalism's auto-balancing is real and worth keeping; the hybrid keeps it while fixing rationing-by-wealth in crises. "Not perfect either, but let's go for it" — imperfection is acceptable because all rules can be changed and A/B tested (D7).
 
+## D9 — Oversight: automated audits + elected Oversight Council ✅ DECIDED 2026-08-19
+- **Decision:** Engine runs automated anomaly detection (hoarding patterns, price manipulation, suspicious transactions) with public dashboards. An elected Oversight Council (player body, rotating terms) investigates flags and proposes interventions — breaking up hoards, fining fraud, triggering emergency triage. All interventions are votable and logged on the Open Board. Auditor becomes a player role in the game.
+- **Rationale (founder):** "2 yes!" Checks and balances; engine speed plus human judgment plus democratic legitimacy; fully transparent actions.
+- **Design implication:** Anomaly detectors are deterministic rule modules (auditable); council elections, terms, and intervention votes are first-class ledger transactions.
+
 ## Open questions queue
-- Q8: What "state" institutions exist in v1 (oversight body powers, intervention triggers).
 - Q9: Which rules are constitutional (hard to change) vs ordinary (simple majority)? What is the immutable protocol core?
