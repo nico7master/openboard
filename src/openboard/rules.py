@@ -24,6 +24,8 @@ REQUIRED_PARAMS = (
     "bootstrap_endowment",
     "essential_need_quota",
     "surplus_reserve_cap",
+    "governance",
+    "constitution_phase",
 )
 
 VALID_TRIAGE = ("market", "essential", "emergency")
@@ -62,6 +64,13 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
         "healthcare": 2,
     },
     "surplus_reserve_cap": 5_000,
+    "governance": {
+        "enabled": False,  # bootstrap: RULE_CHANGE is the instant path (D10)
+        "vote_window_ticks": 3,  # votes accepted for window_ticks after propose
+        "quorum_bp": 5_000,  # 50% of citizens must cast
+        "trial_period_ticks": 10,  # rollback is easy inside this window
+    },
+    "constitution_phase": "bootstrap",  # "hardened" -> 2/3 majority required
 }
 
 
@@ -146,6 +155,22 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             return Reason.INVALID_RULESET
         if known_goods is not None and good not in known_goods:
             return Reason.INVALID_RULESET
+
+    if params["constitution_phase"] not in ("bootstrap", "hardened"):
+        return Reason.INVALID_RULESET
+
+    gov = params["governance"]
+    if not isinstance(gov, dict) or set(gov.keys()) != {"enabled", "vote_window_ticks", "quorum_bp", "trial_period_ticks"}:
+        return Reason.INVALID_RULESET
+    if not isinstance(gov["enabled"], bool):
+        return Reason.INVALID_RULESET
+    for key in ("vote_window_ticks", "trial_period_ticks"):
+        v = gov[key]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 1:
+            return Reason.INVALID_RULESET
+    q = gov["quorum_bp"]
+    if isinstance(q, bool) or not isinstance(q, int) or q < 0 or q > 10_000:
+        return Reason.INVALID_RULESET
 
     # unknown extra keys are rejected too: complete documents only
     if set(params.keys()) != set(REQUIRED_PARAMS):

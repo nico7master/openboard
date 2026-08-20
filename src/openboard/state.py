@@ -40,6 +40,9 @@ class WorldState:
     treasury_in: int = 0  # cumulative treasury inflow (revenue) — accounting only
     listings: dict[str, list[dict[str, Any]]] = field(default_factory=dict)  # good -> listing dicts (tick-scoped)
     bids: list[dict[str, Any]] = field(default_factory=list)  # active bids (tick-scoped)
+    # Phase 5 governance
+    proposals: dict[str, dict[str, Any]] = field(default_factory=dict)  # proposal_id -> proposal dict
+    next_proposal_id: int = 1  # deterministic counter (p1, p2, ...)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -61,6 +64,8 @@ class WorldState:
             "treasury_in": self.treasury_in,
             "listings": {g: list(ls) for g, ls in sorted(self.listings.items())},
             "bids": list(self.bids),
+            "proposals": {p: dict(pr) for p, pr in sorted(self.proposals.items())},
+            "next_proposal_id": self.next_proposal_id,
         }
 
     def state_hash(self) -> str:
@@ -85,6 +90,8 @@ class WorldState:
             treasury_in=self.treasury_in,
             listings={g: list(ls) for g, ls in self.listings.items()},
             bids=[dict(b) for b in self.bids],
+            proposals={p: _clone_proposal(pr) for p, pr in self.proposals.items()},
+            next_proposal_id=self.next_proposal_id,
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
@@ -97,6 +104,13 @@ class WorldState:
         """D8: rule overrides > catalog default."""
         overrides = self.active_ruleset_params().get("triage_overrides", {})
         return overrides.get(good_id, self.goods[good_id]["triage"])
+
+
+def _clone_proposal(pr: dict[str, Any]) -> dict[str, Any]:
+    cloned = dict(pr)
+    cloned["ballots"] = dict(pr.get("ballots", {}))
+    cloned["params"] = dict(pr.get("params", {}))
+    return cloned
 
 
 def _clone_recipe(r: dict[str, Any]) -> dict[str, Any]:

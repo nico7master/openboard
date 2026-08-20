@@ -43,6 +43,13 @@ def params_with(**overrides) -> dict:
             "water": 10,
         },
         "surplus_reserve_cap": 5_000,
+        "governance": {
+            "enabled": False,
+            "vote_window_ticks": 3,
+            "quorum_bp": 5_000,
+            "trial_period_ticks": 10,
+        },
+        "constitution_phase": "bootstrap",
     }
     params.update(overrides)
     return params

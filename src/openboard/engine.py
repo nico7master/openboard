@@ -19,7 +19,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK"})
 
 
 def _is_int(v: Any) -> bool:
@@ -79,6 +79,11 @@ def _validate_rule_change(state: WorldState, tx: Transaction, params: dict[str, 
 
     if tx.sender not in state.balances:
         return Reason.UNKNOWN_SENDER
+
+    # D10 bootstrap story: once governance is enabled, the instant path is
+    # locked — all rule change flows through proposals and votes.
+    if _gov_params(params)["enabled"]:
+        return Reason.GOVERNANCE_LOCKED
 
     if not isinstance(payload, dict) or set(payload.keys()) != {"params", "activation_tick"}:
         return Reason.INVALID_PAYLOAD
@@ -795,6 +800,254 @@ def _return_unsold(state: WorldState, good: str) -> int:
     return remaining
 
 
+# ------------------------------------------------------------- GOVERNANCE
+
+
+def _gov_params(params: dict[str, Any]) -> dict[str, Any]:
+    gov = params.get("governance") or {}
+    return {
+        "enabled": gov.get("enabled", False),
+        "vote_window_ticks": gov.get("vote_window_ticks", 3),
+        "quorum_bp": gov.get("quorum_bp", 5_000),
+        "trial_period_ticks": gov.get("trial_period_ticks", 10),
+    }
+
+
+def _validate_propose(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    if not isinstance(payload, dict) or set(payload.keys()) != {"params", "activation_tick"}:
+        return Reason.INVALID_PAYLOAD
+
+    gov = _gov_params(params)
+    if not gov["enabled"]:
+        return Reason.GOVERNANCE_DISABLED
+
+    activation = payload.get("activation_tick")
+    if not _is_int(activation):
+        return Reason.INVALID_PAYLOAD
+    window_close = tx.tick + gov["vote_window_ticks"]
+    if activation <= window_close:
+        return Reason.ACTIVATION_IN_PAST  # must activate after the window closes
+
+    reason = validate_params(payload.get("params"), known_goods=set(state.goods.keys()))
+    if reason is not None:
+        return reason
+
+    # Constitutional guard: proposals may not disable governance or its ratchet
+    if payload["params"].get("governance", {}).get("enabled") is False:
+        return Reason.CONSTITUTIONAL_GUARD
+
+    return None
+
+
+def _apply_propose(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
+    gov = _gov_params(params)
+    proposal_id = f"p{state.next_proposal_id}"
+    state.next_proposal_id += 1
+
+    state.proposals[proposal_id] = {
+        "proposal_id": proposal_id,
+        "proposer": tx.sender,
+        "params": dict(tx.payload["params"]),
+        "activation_tick": tx.payload["activation_tick"],
+        "opened_tick": tx.tick,
+        "closes_tick": tx.tick + gov["vote_window_ticks"],
+        "ballots": {},
+        "status": "open",
+        "is_rollback": False,
+        "target_version": None,
+        "change_tx_hash": tx.content_hash(),
+    }
+
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "PROPOSE",
+        "proposal_id": proposal_id,
+        "closes_tick": tx.tick + gov["vote_window_ticks"],
+    }
+
+
+def _validate_vote(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    if not isinstance(payload, dict) or set(payload.keys()) != {"proposal_id", "choice"}:
+        return Reason.INVALID_PAYLOAD
+
+    gov = _gov_params(params)
+    if not gov["enabled"]:
+        return Reason.GOVERNANCE_DISABLED
+
+    proposal_id = payload.get("proposal_id")
+    proposal = state.proposals.get(proposal_id)
+    if proposal is None:
+        return Reason.PROPOSAL_NOT_FOUND
+    if proposal["status"] != "open":
+        return Reason.VOTE_WINDOW_CLOSED
+    if tx.tick > proposal["closes_tick"]:
+        return Reason.VOTE_WINDOW_CLOSED
+
+    if payload.get("choice") not in ("for", "against"):
+        return Reason.INVALID_CHOICE
+
+    if tx.sender in proposal["ballots"]:
+        return Reason.ALREADY_VOTED  # one person, one vote — constitutional core #4
+
+    return None
+
+
+def _apply_vote(state: WorldState, tx: Transaction) -> dict[str, Any]:
+    proposal = state.proposals[tx.payload["proposal_id"]]
+    proposal["ballots"][tx.sender] = tx.payload["choice"]
+
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "VOTE",
+        "proposal_id": tx.payload["proposal_id"],
+        "choice": tx.payload["choice"],
+    }
+
+
+def _validate_rollback(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    if not isinstance(payload, dict) or set(payload.keys()) != {"target_version"}:
+        return Reason.INVALID_PAYLOAD
+
+    gov = _gov_params(params)
+    if not gov["enabled"]:
+        return Reason.GOVERNANCE_DISABLED
+
+    target = payload.get("target_version")
+    if not _is_int(target):
+        return Reason.INVALID_PAYLOAD
+
+    target_doc = next((rs for rs in state.rulesets if rs["version"] == target), None)
+    if target_doc is None:
+        return Reason.TARGET_VERSION_NOT_FOUND
+    if target == max(rs["version"] for rs in state.rulesets):
+        return Reason.TARGET_VERSION_NOT_FOUND  # rolling back to the active version is meaningless
+
+    # Constitutional guard: rollback target must not predate governance-on
+    if not _gov_params(target_doc["params"])["enabled"] and _gov_params(params)["enabled"]:
+        return Reason.CONSTITUTIONAL_GUARD
+
+    return None
+
+
+def _apply_rollback(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
+    gov = _gov_params(params)
+    target = tx.payload["target_version"]
+    target_doc = next(rs for rs in state.rulesets if rs["version"] == target)
+
+    proposal_id = f"p{state.next_proposal_id}"
+    state.next_proposal_id += 1
+
+    state.proposals[proposal_id] = {
+        "proposal_id": proposal_id,
+        "proposer": tx.sender,
+        "params": dict(target_doc["params"]),
+        "activation_tick": tx.tick + gov["vote_window_ticks"] + 1,
+        "opened_tick": tx.tick,
+        "closes_tick": tx.tick + gov["vote_window_ticks"],
+        "ballots": {},
+        "status": "open",
+        "is_rollback": True,
+        "target_version": target,
+        "change_tx_hash": tx.content_hash(),
+    }
+
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "ROLLBACK",
+        "proposal_id": proposal_id,
+        "target_version": target,
+        "closes_tick": tx.tick + gov["vote_window_ticks"],
+    }
+
+
+def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger) -> list[dict[str, Any]]:
+    """End-of-tick proposal tally. Deterministic (spec §6)."""
+    events: list[dict[str, Any]] = []
+    if not state.proposals:
+        return events
+
+    gov = _gov_params(params)
+    citizens = len(state.balances)
+    quorum_needed = -(-citizens * gov["quorum_bp"] // 10_000)  # ceil
+    hardened = params.get("constitution_phase") == "hardened"
+    active_version_doc = next(rs for rs in state.rulesets if rs["version"] == max(r["version"] for r in state.rulesets if r["activated_at"] <= tick))
+    trial_end = active_version_doc["activated_at"] + gov["trial_period_ticks"]
+
+    for proposal_id in sorted(state.proposals.keys()):
+        proposal = state.proposals[proposal_id]
+        if proposal["status"] != "open" or tick < proposal["closes_tick"]:
+            continue
+
+        ballots = proposal["ballots"]
+        cast = len(ballots)
+        votes_for = sum(1 for c in ballots.values() if c == "for")
+        votes_against = cast - votes_for
+
+        passed = False
+        if cast >= quorum_needed and cast > 0:
+            # Asymmetric recovery (§6.3): rollback inside the trial period
+            # of the active version needs only a simple majority.
+            in_trial_rollback = proposal["is_rollback"] and tick <= trial_end
+            if in_trial_rollback:
+                passed = votes_for > votes_against
+            elif hardened:
+                passed = votes_for * 3 >= cast * 2  # >= 2/3 of cast
+            else:
+                passed = votes_for > votes_against  # strict majority; tie fails
+
+        if passed:
+            proposal["status"] = "passed"
+            next_version = max(rs["version"] for rs in state.rulesets) + 1
+            doc = RuleSetDoc(
+                version=next_version,
+                params=proposal["params"],
+                activated_at=max(proposal["activation_tick"], tick + 1),
+                change_tx_hash=proposal["change_tx_hash"],
+            )
+            state.rulesets.append(doc.to_dict())
+            events.append({
+                "tick": tick,
+                "action": "PROPOSAL_SETTLED",
+                "proposal_id": proposal_id,
+                "result": "passed",
+                "new_version": next_version,
+                "activated_at": doc.activated_at,
+                "votes_for": votes_for,
+                "votes_against": votes_against,
+                "is_rollback": proposal["is_rollback"],
+            })
+        else:
+            proposal["status"] = "failed"
+            events.append({
+                "tick": tick,
+                "action": "PROPOSAL_SETTLED",
+                "proposal_id": proposal_id,
+                "result": "failed",
+                "votes_for": votes_for,
+                "votes_against": votes_against,
+            })
+
+    return events
+
+
 
 def apply_tick(
     state: WorldState,
@@ -863,6 +1116,9 @@ def apply_tick(
             "BID": lambda t: _validate_bid(state, t, params),
             "BID_FOR_COOP": lambda t: _validate_bid_for_coop(state, t, params),
             "BUY_ESSENTIAL": lambda t: _validate_buy_essential(state, t, params),
+            "PROPOSE": lambda t: _validate_propose(state, t, params),
+            "VOTE": lambda t: _validate_vote(state, t, params),
+            "ROLLBACK": lambda t: _validate_rollback(state, t, params),
         }[tx.action]
 
         reason = validator(tx)
@@ -880,6 +1136,10 @@ def apply_tick(
             entry = _apply_work(state, tx, params)
         elif tx.action == "PRODUCE":
             entry = _apply_produce(state, tx, params)
+        elif tx.action == "PROPOSE":
+            entry = _apply_propose(state, tx, params)
+        elif tx.action == "ROLLBACK":
+            entry = _apply_rollback(state, tx, params)
         else:
             entry = {
                 "TRANSFER": _apply_transfer,
@@ -888,12 +1148,17 @@ def apply_tick(
                 "BID": _apply_bid,
                 "BID_FOR_COOP": _apply_bid_for_coop,
                 "BUY_ESSENTIAL": _apply_buy_essential,
+                "VOTE": _apply_vote,
             }[tx.action](state, tx)
         state.applied.append(entry)
 
     # End-of-tick market clearing (deterministic) — spec §9
     market_events = _clear_markets(state, tick, params, ledger)
     state.applied.extend(market_events)
+
+    # End-of-tick governance settlement (deterministic) — spec §6
+    gov_events = _settle_proposals(state, tick, params, ledger)
+    state.applied.extend(gov_events)
 
     state.tick = tick
     state.ruleset_version = version_for_tick
