@@ -744,6 +744,30 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
 
         clearing = min(w["bid"]["max_price"] for w in winners)
         total_sold = supply - remaining_supply
+        state.last_clearing[good] = clearing  # public price signal
+        floor = state.good_cost_baseline.get(good, 1)
+
+        # WASH_BID detection (§6.4): a winning personal bidder who belongs
+        # to the selling co-op AND bids far above floor is wash-trading —
+        # faking demand on their own listing. Detect the attempt, not just
+        # realized inflation (other bidders may anchor the clearing price).
+        for w in winners:
+            if w["bid"]["coop_id"] is None and w["bid"]["max_price"] > 2 * floor:
+                for entry in entries:
+                    if entry["qty"] > 0:
+                        seller_members = state.coops[entry["coop_id"]].get("members", [])
+                        if w["bid"]["bidder"] in seller_members:
+                            flag = {
+                                "tick": tick,
+                                "kind": "WASH_BID",
+                                "target": w["bid"]["bidder"],
+                                "good": good,
+                                "bid_price": w["bid"]["max_price"],
+                                "clearing": clearing,
+                                "floor": floor,
+                            }
+                            if ("WASH_BID", flag["target"], good) not in {(f["kind"], f["target"], f.get("good", "")) for f in state.flags}:
+                                state.flags.append(flag)
 
         # buyers pay take x clearing (exact)
         for w in winners:

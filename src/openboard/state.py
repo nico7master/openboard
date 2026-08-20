@@ -46,6 +46,7 @@ class WorldState:
     # Phase 6 oversight
     flags: list[dict[str, Any]] = field(default_factory=list)  # public anomaly flags (append-only)
     common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
+    last_clearing: dict[str, int] = field(default_factory=dict)  # good -> last auction clearing price (public price signal)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -71,6 +72,7 @@ class WorldState:
             "next_proposal_id": self.next_proposal_id,
             "flags": list(self.flags),
             "common_pool": dict(sorted(self.common_pool.items())),
+            "last_clearing": dict(sorted(self.last_clearing.items())),
         }
 
     def state_hash(self) -> str:
@@ -99,6 +101,7 @@ class WorldState:
             next_proposal_id=self.next_proposal_id,
             flags=[dict(f) for f in self.flags],
             common_pool=dict(self.common_pool),
+            last_clearing=dict(self.last_clearing),
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
