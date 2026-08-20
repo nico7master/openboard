@@ -22,6 +22,8 @@ REQUIRED_PARAMS = (
     "energy_price",
     "max_work_hours_per_tick",
     "bootstrap_endowment",
+    "essential_need_quota",
+    "surplus_reserve_cap",
 )
 
 VALID_TRIAGE = ("market", "essential", "emergency")
@@ -40,6 +42,26 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
         "hand_tools": 5,
         "machines": 1,
     },
+    "essential_need_quota": {
+        "grain": 10,
+        "vegetables": 8,
+        "fruit": 5,
+        "fish": 4,
+        "meat": 2,
+        "eggs": 6,
+        "milk": 6,
+        "flour": 5,
+        "bread": 4,
+        "canned_food": 3,
+        "cheese": 1,
+        "meals": 3,
+        "housing": 1,
+        "electricity": 50,
+        "heating_fuel": 20,
+        "water": 10,
+        "healthcare": 2,
+    },
+    "surplus_reserve_cap": 5_000,
 }
 
 
@@ -88,7 +110,7 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
         if isinstance(v, bool) or not isinstance(v, int) or v < 0:
             return Reason.INVALID_RULESET
 
-    for key in ("wage_multiplier_bp", "energy_price", "max_work_hours_per_tick"):
+    for key in ("wage_multiplier_bp", "energy_price", "max_work_hours_per_tick", "surplus_reserve_cap"):
         v = params[key]
         if isinstance(v, bool) or not isinstance(v, int) or v < 0:
             return Reason.INVALID_RULESET
@@ -102,6 +124,15 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
     if not isinstance(endowment, dict):
         return Reason.INVALID_RULESET
     for good, qty in endowment.items():
+        if not isinstance(good, str) or isinstance(qty, bool) or not isinstance(qty, int) or qty <= 0:
+            return Reason.INVALID_RULESET
+        if known_goods is not None and good not in known_goods:
+            return Reason.INVALID_RULESET
+
+    quota = params["essential_need_quota"]
+    if not isinstance(quota, dict):
+        return Reason.INVALID_RULESET
+    for good, qty in quota.items():
         if not isinstance(good, str) or isinstance(qty, bool) or not isinstance(qty, int) or qty <= 0:
             return Reason.INVALID_RULESET
         if known_goods is not None and good not in known_goods:

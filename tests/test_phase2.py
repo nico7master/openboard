@@ -62,6 +62,12 @@ def params_with(**overrides) -> dict:
             "hand_tools": 5,
             "machines": 1,
         },
+        "essential_need_quota": {
+            "grain": 10,
+            "bread": 4,
+            "water": 10,
+        },
+        "surplus_reserve_cap": 5_000,
     }
     params.update(overrides)
     return params

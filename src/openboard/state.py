@@ -34,6 +34,12 @@ class WorldState:
     good_cost_baseline: dict[str, int] = field(default_factory=dict)  # good -> credits/unit
     money_minted: int = 0  # credits created by wages (D4)
     money_retired: int = 0  # credits destroyed (surplus retirement arrives Phase 4)
+    # Phase 4 markets
+    citizen_inventory: dict[str, dict[str, int]] = field(default_factory=dict)  # citizen -> good -> qty
+    surplus_pool: int = 0  # society's pool: price-minus-cost deltas flow here
+    treasury_in: int = 0  # cumulative treasury inflow (revenue) — accounting only
+    listings: dict[str, list[dict[str, Any]]] = field(default_factory=dict)  # good -> listing dicts (tick-scoped)
+    bids: list[dict[str, Any]] = field(default_factory=list)  # active bids (tick-scoped)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -50,6 +56,11 @@ class WorldState:
             "good_cost_baseline": dict(sorted(self.good_cost_baseline.items())),
             "money_minted": self.money_minted,
             "money_retired": self.money_retired,
+            "citizen_inventory": {c: dict(sorted(inv.items())) for c, inv in sorted(self.citizen_inventory.items())},
+            "surplus_pool": self.surplus_pool,
+            "treasury_in": self.treasury_in,
+            "listings": {g: list(ls) for g, ls in sorted(self.listings.items())},
+            "bids": list(self.bids),
         }
 
     def state_hash(self) -> str:
@@ -69,6 +80,11 @@ class WorldState:
             good_cost_baseline=dict(self.good_cost_baseline),
             money_minted=self.money_minted,
             money_retired=self.money_retired,
+            citizen_inventory={c: dict(inv) for c, inv in self.citizen_inventory.items()},
+            surplus_pool=self.surplus_pool,
+            treasury_in=self.treasury_in,
+            listings={g: list(ls) for g, ls in self.listings.items()},
+            bids=[dict(b) for b in self.bids],
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
@@ -101,6 +117,7 @@ def _clone_coop(c: dict[str, Any]) -> dict[str, Any]:
         "inventory": dict(c["inventory"]),
         "labor_pool_hours": c.get("labor_pool_hours", 0),
         "wage_remainder_bp": c.get("wage_remainder_bp", 0),
+        "treasury": c.get("treasury", 0),
     }
 
 
@@ -152,4 +169,9 @@ def genesis_state(
         good_cost_baseline=baselines,
         money_minted=0,
         money_retired=0,
+        citizen_inventory={cid: {} for cid in citizens},
+        surplus_pool=0,
+        treasury_in=0,
+        listings={},
+        bids=[],
     )
