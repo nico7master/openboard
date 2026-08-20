@@ -53,6 +53,15 @@ def params_with(**overrides) -> dict:
         "max_coop_members": 12,
         "min_coop_members": 2,
         "triage_overrides": {},
+        "wage_multiplier_bp": 10_000,
+        "energy_price": 2,
+        "max_work_hours_per_tick": 8,
+        "bootstrap_endowment": {
+            "water": 200,
+            "electricity": 500,
+            "hand_tools": 5,
+            "machines": 1,
+        },
     }
     params.update(overrides)
     return params
@@ -253,7 +262,9 @@ class TestCoops:
         assert "farmers" in state.coops
         assert state.coops["farmers"]["members"] == ["alice", "bob"]
         assert state.coops["farmers"]["founded_tick"] == 1
-        assert state.coops["farmers"]["inventory"] == {}
+        # Phase 3: founding grants the votable bootstrap endowment
+        assert state.coops["farmers"]["inventory"]["water"] > 0
+        assert state.coops["farmers"]["labor_pool_hours"] == 0
 
     def test_sender_must_be_member(self):
         state = genesis_state(dict(CITIZENS))

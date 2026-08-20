@@ -27,9 +27,13 @@ class WorldState:
     labor_hours: dict[str, int] = field(default_factory=dict)  # citizen -> lifetime hours
     goods: dict[str, dict[str, str]] = field(default_factory=dict)  # good_id -> {category, triage, unit}
     recipes: dict[str, dict[str, Any]] = field(default_factory=dict)  # recipe_id -> recipe dict
-    coops: dict[str, dict[str, Any]] = field(default_factory=dict)  # coop_id -> {name, members, founded_tick, inventory}
+    coops: dict[str, dict[str, Any]] = field(default_factory=dict)  # coop_id -> coop dict
     rulesets: list[dict[str, Any]] = field(default_factory=list)  # full version history
     ruleset_version: int = 1  # active at current tick
+    # Phase 3 production
+    good_cost_baseline: dict[str, int] = field(default_factory=dict)  # good -> credits/unit
+    money_minted: int = 0  # credits created by wages (D4)
+    money_retired: int = 0  # credits destroyed (surplus retirement arrives Phase 4)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -43,6 +47,9 @@ class WorldState:
             "coops": {k: self.coops[k] for k in sorted(self.coops.keys())},
             "rulesets": list(self.rulesets),
             "ruleset_version": self.ruleset_version,
+            "good_cost_baseline": dict(sorted(self.good_cost_baseline.items())),
+            "money_minted": self.money_minted,
+            "money_retired": self.money_retired,
         }
 
     def state_hash(self) -> str:
@@ -59,6 +66,9 @@ class WorldState:
             coops={k: _clone_coop(v) for k, v in self.coops.items()},
             rulesets=[dict(rs) for rs in self.rulesets],
             ruleset_version=self.ruleset_version,
+            good_cost_baseline=dict(self.good_cost_baseline),
+            money_minted=self.money_minted,
+            money_retired=self.money_retired,
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
@@ -89,6 +99,8 @@ def _clone_coop(c: dict[str, Any]) -> dict[str, Any]:
         "members": list(c["members"]),
         "founded_tick": c["founded_tick"],
         "inventory": dict(c["inventory"]),
+        "labor_pool_hours": c.get("labor_pool_hours", 0),
+        "wage_remainder_bp": c.get("wage_remainder_bp", 0),
     }
 
 
@@ -106,12 +118,13 @@ def genesis_state(
     if not all(isinstance(v, int) and not isinstance(v, bool) for v in citizens.values()):
         raise ValueError("genesis balances must be integers")
 
-    from .catalog import GOODS, RECIPES
+    from .catalog import DEFAULT_BASELINES, GOODS, RECIPES
 
     if goods is None:
         goods = {gid: dict(g) for gid, g in GOODS.items()}
     if recipes is None:
         recipes = {rid: r.to_dict() for rid, r in RECIPES.items()}
+    baselines = {gid: DEFAULT_BASELINES[gid] for gid in goods if gid in DEFAULT_BASELINES}
 
     if ruleset_params is None:
         from .rules import DEFAULT_RULESET_PARAMS
@@ -136,4 +149,7 @@ def genesis_state(
         coops={},
         rulesets=[genesis_ruleset.to_dict()],
         ruleset_version=1,
+        good_cost_baseline=baselines,
+        money_minted=0,
+        money_retired=0,
     )

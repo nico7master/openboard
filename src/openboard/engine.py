@@ -19,7 +19,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE"})
 
 
 def _is_int(v: Any) -> bool:
@@ -167,13 +167,16 @@ def _validate_found_coop(state: WorldState, tx: Transaction, params: dict[str, A
     return None
 
 
-def _apply_found_coop(state: WorldState, tx: Transaction) -> dict[str, Any]:
+def _apply_found_coop(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
     payload = tx.payload
+    endowment = params.get("bootstrap_endowment", {})
     state.coops[payload["coop_id"]] = {
         "name": payload["name"],
         "members": list(payload["members"]),
         "founded_tick": tx.tick,
-        "inventory": {},
+        "inventory": {g: q for g, q in endowment.items()},  # socially granted means of production
+        "labor_pool_hours": 0,
+        "wage_remainder_bp": 0,
     }
     return {
         "tick": tx.tick,
@@ -181,6 +184,7 @@ def _apply_found_coop(state: WorldState, tx: Transaction) -> dict[str, Any]:
         "action": "FOUND_COOP",
         "coop_id": payload["coop_id"],
         "members": list(payload["members"]),
+        "endowment": dict(endowment),
     }
 
 
@@ -218,6 +222,160 @@ def _apply_join_coop(state: WorldState, tx: Transaction) -> dict[str, Any]:
         "sender": tx.sender,
         "action": "JOIN_COOP",
         "coop_id": tx.payload["coop_id"],
+    }
+
+
+# --------------------------------------------------------------------- WORK
+
+
+def _validate_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    if not isinstance(payload, dict) or set(payload.keys()) != {"coop_id", "hours"}:
+        return Reason.INVALID_PAYLOAD
+
+    hours = payload.get("hours")
+    coop_id = payload.get("coop_id")
+
+    if not _is_int(hours):
+        return Reason.INVALID_HOURS
+    if coop_id not in state.coops:
+        return Reason.COOP_NOT_FOUND
+    coop = state.coops[coop_id]
+    if tx.sender not in coop["members"]:
+        return Reason.NOT_A_MEMBER
+    if hours <= 0:
+        return Reason.INVALID_HOURS
+    if hours > params.get("max_work_hours_per_tick", 8):
+        return Reason.INVALID_HOURS
+
+    return None
+
+
+def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
+    coop = state.coops[tx.payload["coop_id"]]
+    hours = tx.payload["hours"]
+    mult_bp = params.get("wage_multiplier_bp", 10_000)
+
+    # Integer-only wage math with remainder accumulation (no floats, ever)
+    total_bp = hours * mult_bp + coop.get("wage_remainder_bp", 0)
+    credits = total_bp // 10_000
+    coop["wage_remainder_bp"] = total_bp % 10_000
+
+    # Money creation by work (D4): wages are minted, not transferred
+    state.balances[tx.sender] += credits
+    state.money_minted += credits
+
+    coop["labor_pool_hours"] += hours
+    state.labor_hours[tx.sender] += hours
+
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "WORK",
+        "coop_id": tx.payload["coop_id"],
+        "hours": hours,
+        "wage_credits": credits,
+    }
+
+
+# ------------------------------------------------------------------ PRODUCE
+
+
+def _validate_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    if not isinstance(payload, dict) or set(payload.keys()) != {"coop_id", "recipe_id", "runs"}:
+        return Reason.INVALID_PAYLOAD
+
+    runs = payload.get("runs")
+    recipe_id = payload.get("recipe_id")
+    coop_id = payload.get("coop_id")
+
+    if not _is_int(runs) or runs <= 0:
+        return Reason.INVALID_RUNS
+    if coop_id not in state.coops:
+        return Reason.COOP_NOT_FOUND
+    coop = state.coops[coop_id]
+    if tx.sender not in coop["members"]:
+        return Reason.NOT_A_MEMBER
+    if recipe_id not in state.recipes:
+        return Reason.RECIPE_NOT_FOUND
+
+    recipe = state.recipes[recipe_id]
+    inventory = coop["inventory"]
+
+    # Material inputs × runs
+    for good, qty in recipe["inputs"].items():
+        if inventory.get(good, 0) < qty * runs:
+            return Reason.NOT_ENOUGH_INPUTS
+
+    # Energy × runs (electricity good)
+    energy_needed = recipe["energy"] * runs
+    if energy_needed > 0 and inventory.get("electricity", 0) < energy_needed:
+        return Reason.NOT_ENOUGH_ENERGY
+
+    # Labor pool × runs
+    if coop.get("labor_pool_hours", 0) < recipe["labor_hours"] * runs:
+        return Reason.NOT_ENOUGH_LABOR
+
+    return None
+
+
+def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
+    coop = state.coops[tx.payload["coop_id"]]
+    recipe = state.recipes[tx.payload["recipe_id"]]
+    runs = tx.payload["runs"]
+    inventory = coop["inventory"]
+
+    # Consume inputs
+    for good, qty in recipe["inputs"].items():
+        inventory[good] -= qty * runs
+
+    # Consume energy
+    energy_consumed = recipe["energy"] * runs
+    if energy_consumed > 0:
+        inventory["electricity"] -= energy_consumed
+
+    # Consume labor from pool
+    coop["labor_pool_hours"] -= recipe["labor_hours"] * runs
+
+    # Produce outputs
+    outputs_produced: dict[str, int] = {}
+    for good, qty in recipe["outputs"].items():
+        inventory[good] = inventory.get(good, 0) + qty * runs
+        outputs_produced[good] = qty * runs
+
+    # Cost baseline: (labor + energy + material inputs) // total output units
+    labor_cost = recipe["labor_hours"] * runs  # 1 credit/hour base accounting
+    energy_cost = energy_consumed * params.get("energy_price", 2)
+    input_cost = sum(
+        qty * runs * state.good_cost_baseline.get(good, 1) for good, qty in recipe["inputs"].items()
+    )
+    total_units = sum(outputs_produced.values())
+
+    baselines_stamped: dict[str, int] = {}
+    if total_units > 0:
+        unit_baseline = (labor_cost + energy_cost + input_cost) // total_units
+        for good in outputs_produced:
+            state.good_cost_baseline[good] = unit_baseline
+            baselines_stamped[good] = unit_baseline
+
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "PRODUCE",
+        "coop_id": tx.payload["coop_id"],
+        "recipe_id": tx.payload["recipe_id"],
+        "runs": runs,
+        "outputs": outputs_produced,
+        "cost_baselines": baselines_stamped,
     }
 
 
@@ -285,6 +443,8 @@ def apply_tick(
             "RULE_CHANGE": lambda t: _validate_rule_change(state, t, params),
             "FOUND_COOP": lambda t: _validate_found_coop(state, t, params),
             "JOIN_COOP": lambda t: _validate_join_coop(state, t, params),
+            "WORK": lambda t: _validate_work(state, t, params),
+            "PRODUCE": lambda t: _validate_produce(state, t, params),
         }[tx.action]
 
         reason = validator(tx)
@@ -296,10 +456,15 @@ def apply_tick(
         ledger.accept(tx)
         if tx.action == "RULE_CHANGE":
             entry = _apply_rule_change(state, tx, ledger)
+        elif tx.action == "FOUND_COOP":
+            entry = _apply_found_coop(state, tx, params)
+        elif tx.action == "WORK":
+            entry = _apply_work(state, tx, params)
+        elif tx.action == "PRODUCE":
+            entry = _apply_produce(state, tx, params)
         else:
             entry = {
                 "TRANSFER": _apply_transfer,
-                "FOUND_COOP": _apply_found_coop,
                 "JOIN_COOP": _apply_join_coop,
             }[tx.action](state, tx)
         state.applied.append(entry)

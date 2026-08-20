@@ -146,6 +146,51 @@ RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
 # Note: medicine and heating_fuel have no starter recipe yet — production
 # coverage is a Phase 3 planning concern, catalog integrity is unaffected.
 
+# Integer cost baselines (credits per unit) — seeds for "production at cost"
+# accounting. Each production run recomputes and overwrites the baselines of
+# the goods it produces (last-production-cost accounting).
+DEFAULT_BASELINES: dict[str, int] = {
+    "grain": 3,
+    "vegetables": 4,
+    "fruit": 4,
+    "fish": 5,
+    "meat": 8,
+    "eggs": 2,
+    "milk": 3,
+    "flour": 5,
+    "bread": 3,
+    "canned_food": 6,
+    "cheese": 12,
+    "meals": 8,
+    "timber": 15,
+    "stone": 12,
+    "iron_ore": 20,
+    "coal": 15,
+    "sand": 8,
+    "lumber": 25,
+    "bricks": 2,
+    "steel": 80,
+    "glass": 20,
+    "fabric": 12,
+    "hand_tools": 60,
+    "machines": 1500,
+    "electronics": 300,
+    "medicine": 100,
+    "clothing": 25,
+    "furniture": 150,
+    "household_goods": 50,
+    "books": 15,
+    "housing": 800,
+    "electricity": 2,
+    "heating_fuel": 5,
+    "water": 2,
+    "transport": 4,
+    "healthcare": 60,
+    "education": 100,
+    "childcare": 8,
+    "maintenance": 30,
+}
+
 
 def validate_catalog() -> list[str]:
     """Integrity check: returns list of problems (empty = healthy)."""

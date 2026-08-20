@@ -13,7 +13,16 @@ from typing import Any
 
 from .errors import Reason
 
-REQUIRED_PARAMS = ("transfer_limit", "max_coop_members", "min_coop_members", "triage_overrides")
+REQUIRED_PARAMS = (
+    "transfer_limit",
+    "max_coop_members",
+    "min_coop_members",
+    "triage_overrides",
+    "wage_multiplier_bp",
+    "energy_price",
+    "max_work_hours_per_tick",
+    "bootstrap_endowment",
+)
 
 VALID_TRIAGE = ("market", "essential", "emergency")
 
@@ -22,6 +31,15 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "max_coop_members": 12,
     "min_coop_members": 2,
     "triage_overrides": {},
+    "wage_multiplier_bp": 10_000,  # basis points: 10000 = 1.0x
+    "energy_price": 2,  # credits per kwh for cost accounting
+    "max_work_hours_per_tick": 8,
+    "bootstrap_endowment": {
+        "water": 200,
+        "electricity": 500,
+        "hand_tools": 5,
+        "machines": 1,
+    },
 }
 
 
@@ -70,8 +88,24 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
         if isinstance(v, bool) or not isinstance(v, int) or v < 0:
             return Reason.INVALID_RULESET
 
+    for key in ("wage_multiplier_bp", "energy_price", "max_work_hours_per_tick"):
+        v = params[key]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            return Reason.INVALID_RULESET
+
     if params["min_coop_members"] < 1:
         return Reason.INVALID_RULESET
+    if params["max_work_hours_per_tick"] < 1:
+        return Reason.INVALID_RULESET
+
+    endowment = params["bootstrap_endowment"]
+    if not isinstance(endowment, dict):
+        return Reason.INVALID_RULESET
+    for good, qty in endowment.items():
+        if not isinstance(good, str) or isinstance(qty, bool) or not isinstance(qty, int) or qty <= 0:
+            return Reason.INVALID_RULESET
+        if known_goods is not None and good not in known_goods:
+            return Reason.INVALID_RULESET
 
     overrides = params["triage_overrides"]
     if not isinstance(overrides, dict):
