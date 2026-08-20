@@ -66,11 +66,11 @@ The D7 machinery: rule-sets as versioned data on the ledger, rule changes as tra
 
 ## Definition of Done (Phase 2 gate)
 
-- [ ] Version pinning battery green (P2-T5)
-- [ ] All Phase 1 tests still green
-- [ ] Mixed fuzz with dynamic rules green
-- [ ] Catalog integrity tests green
-- [ ] No floats in any chain/state data (test-enforced)
+- [x] Version pinning battery green (P2-T5)
+- [x] All Phase 1 tests still green
+- [x] Mixed fuzz with dynamic rules green
+- [x] Catalog integrity tests green
+- [x] No floats in any chain/state data (test-enforced)
 
 ## Out of Scope (later phases)
 - Production execution of recipes (Phase 3), markets/auctions (Phase 4), voting on rule changes (Phase 5), oversight (Phase 6), bots (Phase 7), Cardano (Phase 8)
