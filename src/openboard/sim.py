@@ -7,9 +7,9 @@ then lets bots act each tick. Same seed -> identical state hash.
 from __future__ import annotations
 
 import random
-from typing import Any, Callable
+from typing import Any
 
-from .bots import DecisionFn, _afford, _my_coop, _tx
+from .bots import DecisionFn, _my_coop, _tx
 from .engine import apply_tick
 from .ledger import Ledger, Transaction
 from .metrics import SimMetrics
