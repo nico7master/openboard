@@ -213,7 +213,7 @@ All targets held across stability + adversarial + crisis campaigns, with replays
 
 ## 13. Proposed Defaults (review these!)
 
-### 13.1 Starter goods (32)
+### 13.1 Starter goods (39)
 
 | Category | Goods |
 |---|---|
