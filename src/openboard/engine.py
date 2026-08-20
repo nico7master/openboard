@@ -19,7 +19,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE"})
 
 
 def _is_int(v: Any) -> bool:
@@ -636,6 +636,27 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             auction_bids.setdefault(bid["good"], []).append(bid)
 
     # --- Pass 1: essentials FCFS at the cost floor (D8: need first)
+    # Common-pool draw first: reclaimed hoard goods at cost (§6.4).
+    # Buyers pay the pool; pool value later funds public purposes.
+    for good in sorted(essential_buyers.keys() & state.common_pool.keys()):
+        pool_qty = state.common_pool[good]
+        if pool_qty <= 0:
+            continue
+        for buyer in essential_buyers[good]:
+            if pool_qty <= 0:
+                break
+            take = min(buyer["qty"], pool_qty)
+            price = state.good_cost_baseline.get(good, 1)
+            if state.balances[buyer["bidder"]] < take * price:
+                continue
+            state.balances[buyer["bidder"]] -= take * price
+            state.surplus_pool += take * price  # society reclaims value at cost
+            inv = state.citizen_inventory.setdefault(buyer["bidder"], {})
+            inv[good] = inv.get(good, 0) + take
+            state.common_pool[good] -= take
+            pool_qty -= take
+            buyer["qty"] -= take
+
     for good in sorted(essential_buyers.keys() & state.listings.keys()):
         sold_records: list[dict[str, Any]] = []
         total_sold = 0
@@ -1015,6 +1036,17 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
 
         if passed:
             proposal["status"] = "passed"
+            if proposal.get("intervention") is not None:
+                executed = _execute_intervention(state, tick, params, proposal)
+                events.append({
+                    "tick": tick,
+                    "action": "INTERVENTION_EXECUTED",
+                    "proposal_id": proposal_id,
+                    "votes_for": votes_for,
+                    "votes_against": votes_against,
+                    "executed": executed,
+                })
+                continue
             next_version = max(rs["version"] for rs in state.rulesets) + 1
             doc = RuleSetDoc(
                 version=next_version,
@@ -1047,6 +1079,201 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
 
     return events
 
+
+
+# -------------------------------------------------------------- OVERSIGHT
+
+
+def _ov_params(params: dict[str, Any]) -> dict[str, Any]:
+    ov = params.get("oversight") or {}
+    return {
+        "hoard_multiplier": ov.get("hoard_multiplier", 3),
+        "market_power_share_bp": ov.get("market_power_share_bp", 7_000),
+        "free_rider_min_hours": ov.get("free_rider_min_hours", 5),
+        "council_members": list(ov.get("council_members", [])),
+    }
+
+
+def _detect_anomalies(state: WorldState, tick: int, params: dict[str, Any], listings_snapshot: dict[str, list[dict[str, Any]]] | None = None) -> list[dict[str, Any]]:
+    """Deterministic anomaly detection — spec §6.4. Public, append-only flags.
+
+    MARKET_POWER reads `listings_snapshot` (captured BEFORE clearing) —
+    clearing empties state.listings, but dominance must still be detected.
+    """
+    events: list[dict[str, Any]] = []
+    ov = _ov_params(params)
+    quotas = params.get("essential_need_quota", {})
+    listings = listings_snapshot if listings_snapshot is not None else state.listings
+    flagged = {(f["kind"], f["target"], f.get("good", "")) for f in state.flags}
+
+    for citizen in sorted(state.citizen_inventory.keys()):
+        for good in sorted(state.citizen_inventory[citizen].keys()):
+            quota = quotas.get(good, 0)
+            held = state.citizen_inventory[citizen][good]
+            if quota > 0 and held > ov["hoard_multiplier"] * quota:
+                key = ("HOARD", citizen, good)
+                if key not in flagged:
+                    flag = {"tick": tick, "kind": "HOARD", "target": citizen, "good": good,
+                            "held": held, "threshold": ov["hoard_multiplier"] * quota}
+                    state.flags.append(flag)
+                    events.append({"tick": tick, "action": "OVERSIGHT_FLAG", **flag})
+
+    for good in sorted(listings.keys()):
+        entries = [e for e in listings[good] if e["qty"] > 0]
+        total = sum(e["qty"] for e in entries)
+        if total <= 0:
+            continue
+        by_coop: dict[str, int] = {}
+        for e in entries:
+            by_coop[e["coop_id"]] = by_coop.get(e["coop_id"], 0) + e["qty"]
+        for coop_id in sorted(by_coop.keys()):
+            if by_coop[coop_id] * 10_000 > ov["market_power_share_bp"] * total:
+                key = ("MARKET_POWER", coop_id, good)
+                if key not in flagged:
+                    flag = {"tick": tick, "kind": "MARKET_POWER", "target": coop_id, "good": good,
+                            "share_bp": by_coop[coop_id] * 10_000 // total, "threshold_bp": ov["market_power_share_bp"]}
+                    state.flags.append(flag)
+                    events.append({"tick": tick, "action": "OVERSIGHT_FLAG", **flag})
+
+    for citizen in sorted(state.citizen_inventory.keys()):
+        hours = state.labor_hours.get(citizen, 0)
+        if hours < ov["free_rider_min_hours"] and state.citizen_inventory[citizen]:
+            key = ("FREE_RIDER", citizen, "")
+            if key not in flagged:
+                flag = {"tick": tick, "kind": "FREE_RIDER", "target": citizen,
+                        "hours": hours, "threshold": ov["free_rider_min_hours"]}
+                state.flags.append(flag)
+                events.append({"tick": tick, "action": "OVERSIGHT_FLAG", **flag})
+
+    return events
+
+
+def _validate_intervene(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    gov = _gov_params(params)
+    if not gov["enabled"]:
+        return Reason.GOVERNANCE_DISABLED
+
+    ov = _ov_params(params)
+    if tx.sender not in ov["council_members"]:
+        return Reason.NOT_COUNCIL_MEMBER
+
+    if not isinstance(payload, dict) or set(payload.keys()) != {"intervention"}:
+        return Reason.INVALID_PAYLOAD
+
+    iv = payload.get("intervention")
+    if not isinstance(iv, dict) or "type" not in iv:
+        return Reason.INVALID_INTERVENTION
+
+    itype = iv["type"]
+    if itype == "DISSOLVE_HOARD":
+        if set(iv.keys()) != {"type", "target", "good"}:
+            return Reason.INVALID_INTERVENTION
+        if iv["target"] not in state.balances:
+            return Reason.UNKNOWN_CITIZEN
+        if iv["good"] not in state.goods:
+            return Reason.GOOD_UNKNOWN
+    elif itype == "FINE":
+        if set(iv.keys()) != {"type", "target", "amount"}:
+            return Reason.INVALID_INTERVENTION
+        if iv["target"] not in state.balances:
+            return Reason.UNKNOWN_CITIZEN
+        amount = iv["amount"]
+        if not _is_int(amount) or amount <= 0:
+            return Reason.INVALID_INTERVENTION
+    elif itype == "EMERGENCY_TRIAGE":
+        if set(iv.keys()) != {"type", "good"}:
+            return Reason.INVALID_INTERVENTION
+        if iv["good"] not in state.goods:
+            return Reason.GOOD_UNKNOWN
+    else:
+        return Reason.INTERVENTION_TYPE_UNKNOWN
+
+    return None
+
+
+def _apply_intervene(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
+    gov = _gov_params(params)
+    proposal_id = f"p{state.next_proposal_id}"
+    state.next_proposal_id += 1
+
+    state.proposals[proposal_id] = {
+        "proposal_id": proposal_id,
+        "proposer": tx.sender,
+        "params": None,
+        "intervention": dict(tx.payload["intervention"]),
+        "activation_tick": tx.tick + gov["vote_window_ticks"] + 1,
+        "opened_tick": tx.tick,
+        "closes_tick": tx.tick + gov["vote_window_ticks"],
+        "ballots": {},
+        "status": "open",
+        "is_rollback": False,
+        "target_version": None,
+        "change_tx_hash": tx.content_hash(),
+    }
+
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "INTERVENE",
+        "proposal_id": proposal_id,
+        "intervention": dict(tx.payload["intervention"]),
+        "closes_tick": tx.tick + gov["vote_window_ticks"],
+    }
+
+
+def _execute_intervention(state: WorldState, tick: int, params: dict[str, Any], proposal: dict[str, Any]) -> dict[str, Any]:
+    """Execute a passed intervention. Exact conservation throughout."""
+    iv = proposal["intervention"]
+    itype = iv["type"]
+    quotas = params.get("essential_need_quota", {})
+    ov = _ov_params(params)
+
+    if itype == "DISSOLVE_HOARD":
+        target, good = iv["target"], iv["good"]
+        held = state.citizen_inventory.get(target, {}).get(good, 0)
+        allowed = ov["hoard_multiplier"] * quotas.get(good, 0)
+        excess = max(0, held - allowed)
+        if excess > 0:
+            state.citizen_inventory[target][good] = held - excess
+            state.common_pool[good] = state.common_pool.get(good, 0) + excess
+        return {"type": itype, "target": target, "good": good, "excess_moved": excess, "to": "common_pool"}
+
+    if itype == "FINE":
+        target, amount = iv["target"], iv["amount"]
+        payable = min(amount, state.balances.get(target, 0))
+        if payable > 0:
+            state.balances[target] -= payable
+            state.surplus_pool += payable
+        return {"type": itype, "target": target, "fined": payable, "to": "surplus_pool"}
+
+    if itype == "EMERGENCY_TRIAGE":
+        good = iv["good"]
+        next_version = max(rs["version"] for rs in state.rulesets) + 1
+        new_params = {}
+        for k, v in params.items():
+            if isinstance(v, dict):
+                new_params[k] = dict(v)
+            elif isinstance(v, list):
+                new_params[k] = list(v)
+            else:
+                new_params[k] = v
+        new_params["triage_overrides"] = dict(params.get("triage_overrides", {}))
+        new_params["triage_overrides"][good] = "emergency"
+        doc = RuleSetDoc(
+            version=next_version,
+            params=new_params,
+            activated_at=tick + 1,
+            change_tx_hash=proposal["change_tx_hash"],
+        )
+        state.rulesets.append(doc.to_dict())
+        return {"type": itype, "good": good, "new_version": next_version, "activated_at": tick + 1}
+
+    return {"type": itype, "error": "unknown"}
 
 
 def apply_tick(
@@ -1119,6 +1346,7 @@ def apply_tick(
             "PROPOSE": lambda t: _validate_propose(state, t, params),
             "VOTE": lambda t: _validate_vote(state, t, params),
             "ROLLBACK": lambda t: _validate_rollback(state, t, params),
+            "INTERVENE": lambda t: _validate_intervene(state, t, params),
         }[tx.action]
 
         reason = validator(tx)
@@ -1140,6 +1368,8 @@ def apply_tick(
             entry = _apply_propose(state, tx, params)
         elif tx.action == "ROLLBACK":
             entry = _apply_rollback(state, tx, params)
+        elif tx.action == "INTERVENE":
+            entry = _apply_intervene(state, tx, params)
         else:
             entry = {
                 "TRANSFER": _apply_transfer,
@@ -1152,6 +1382,10 @@ def apply_tick(
             }[tx.action](state, tx)
         state.applied.append(entry)
 
+    # Listings snapshot for oversight: dominance exists while listed,
+    # even though clearing empties state.listings afterwards (§6.4)
+    listings_snapshot = {g: [dict(e) for e in ls] for g, ls in state.listings.items()}
+
     # End-of-tick market clearing (deterministic) — spec §9
     market_events = _clear_markets(state, tick, params, ledger)
     state.applied.extend(market_events)
@@ -1159,6 +1393,10 @@ def apply_tick(
     # End-of-tick governance settlement (deterministic) — spec §6
     gov_events = _settle_proposals(state, tick, params, ledger)
     state.applied.extend(gov_events)
+
+    # End-of-tick oversight detection (deterministic) — spec §6.4
+    ov_events = _detect_anomalies(state, tick, params, listings_snapshot)
+    state.applied.extend(ov_events)
 
     state.tick = tick
     state.ruleset_version = version_for_tick

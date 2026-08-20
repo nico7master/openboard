@@ -26,6 +26,7 @@ REQUIRED_PARAMS = (
     "surplus_reserve_cap",
     "governance",
     "constitution_phase",
+    "oversight",
 )
 
 VALID_TRIAGE = ("market", "essential", "emergency")
@@ -71,6 +72,12 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
         "trial_period_ticks": 10,  # rollback is easy inside this window
     },
     "constitution_phase": "bootstrap",  # "hardened" -> 2/3 majority required
+    "oversight": {
+        "hoard_multiplier": 3,  # essentials held > multiplier x quota = hoard
+        "market_power_share_bp": 7_000,  # >70% listed share of one good
+        "free_rider_min_hours": 5,  # lifetime labor below this = free rider
+        "council_members": [],  # elected council (votable param, D9)
+    },
 }
 
 
@@ -170,6 +177,17 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             return Reason.INVALID_RULESET
     q = gov["quorum_bp"]
     if isinstance(q, bool) or not isinstance(q, int) or q < 0 or q > 10_000:
+        return Reason.INVALID_RULESET
+
+    ov = params["oversight"]
+    if not isinstance(ov, dict) or set(ov.keys()) != {"hoard_multiplier", "market_power_share_bp", "free_rider_min_hours", "council_members"}:
+        return Reason.INVALID_RULESET
+    for key in ("hoard_multiplier", "market_power_share_bp", "free_rider_min_hours"):
+        v = ov[key]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            return Reason.INVALID_RULESET
+    council = ov["council_members"]
+    if not isinstance(council, list) or not all(isinstance(m, str) for m in council):
         return Reason.INVALID_RULESET
 
     # unknown extra keys are rejected too: complete documents only

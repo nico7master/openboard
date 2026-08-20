@@ -75,6 +75,12 @@ def params_with(**overrides) -> dict:
             "trial_period_ticks": 10,
         },
         "constitution_phase": "bootstrap",
+        "oversight": {
+            "hoard_multiplier": 3,
+            "market_power_share_bp": 7_000,
+            "free_rider_min_hours": 5,
+            "council_members": [],
+        },
     }
     params.update(overrides)
     return params

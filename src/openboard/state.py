@@ -43,6 +43,9 @@ class WorldState:
     # Phase 5 governance
     proposals: dict[str, dict[str, Any]] = field(default_factory=dict)  # proposal_id -> proposal dict
     next_proposal_id: int = 1  # deterministic counter (p1, p2, ...)
+    # Phase 6 oversight
+    flags: list[dict[str, Any]] = field(default_factory=list)  # public anomaly flags (append-only)
+    common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -66,6 +69,8 @@ class WorldState:
             "bids": list(self.bids),
             "proposals": {p: dict(pr) for p, pr in sorted(self.proposals.items())},
             "next_proposal_id": self.next_proposal_id,
+            "flags": list(self.flags),
+            "common_pool": dict(sorted(self.common_pool.items())),
         }
 
     def state_hash(self) -> str:
@@ -92,6 +97,8 @@ class WorldState:
             bids=[dict(b) for b in self.bids],
             proposals={p: _clone_proposal(pr) for p, pr in self.proposals.items()},
             next_proposal_id=self.next_proposal_id,
+            flags=[dict(f) for f in self.flags],
+            common_pool=dict(self.common_pool),
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
