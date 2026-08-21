@@ -176,8 +176,8 @@ class Run:
                 good = e.get("good")
                 qty = 0
                 for w in e.get("winners", []):
-                    if w.get("bid", {}).get("coop_id") is None:  # citizens only
-                        qty += w.get("take", 0)
+                    if w.get("coop_id") is None:  # citizens only (flat winner dict)
+                        qty += w.get("qty", 0)
                 if qty:
                     cat = s.goods.get(good, {}).get("category", "other")
                     bought_by_cat[cat] = bought_by_cat.get(cat, 0) + qty

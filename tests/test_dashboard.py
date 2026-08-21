@@ -75,8 +75,8 @@ class TestAnalytics:
                     bought_expected += e.get("sold", 0)
                 elif e.get("action") == "MARKET_CLEAR_AUCTION":
                     for w in e.get("winners", []):
-                        if w.get("bid", {}).get("coop_id") is None:
-                            bought_expected += w.get("take", 0)
+                        if w.get("coop_id") is None:
+                            bought_expected += w.get("qty", 0)
         assert sum(r.timeline["produced"]) == produced_expected
         assert sum(r.timeline["bought"]) == bought_expected
         assert len(r.timeline["produced"]) == len(r.timeline["tick"])
