@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenBoard — Economy Dashboard</title>
+<script src="/static/vendor/alpine.min.js" defer></script>
+<script src="/static/vendor/chart.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117; --panel: #161b22; --border: #30363d; --text: #e6edf3;
+  --dim: #8b949e; --accent: #58a6ff; --green: #3fb950; --red: #f85149;
+  --yellow: #d29922; --purple: #bc8cff; --mono: 'SF Mono', 'Cascadia Code', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, 'Segoe UI', sans-serif; font-size: 14px; padding: 16px; }
+
+.header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.logo { font-size: 20px; font-weight: 700; color: var(--accent); }
+.logo span { color: var(--dim); font-weight: 400; font-size: 13px; }
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+button { background: #21262d; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; transition: all .15s; }
+button:hover { border-color: var(--accent); color: var(--accent); }
+button.primary { background: #1f6feb33; border-color: var(--accent); color: var(--accent); }
+button.danger:hover { border-color: var(--red); color: var(--red); }
+button.small { padding: 3px 10px; font-size: 12px; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+
+input, select, textarea { background: #0d1117; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; overflow: auto; }
+.panel h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--dim); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.col-3 { grid-column: span 3; } .col-4 { grid-column: span 4; } .col-6 { grid-column: span 6; }
+.col-8 { grid-column: span 8; } .col-12 { grid-column: span 12; }
+@media (max-width: 1100px) { .col-3, .col-4, .col-6, .col-8 { grid-column: span 12; } }
+
+.stats { display: flex; gap: 20px; flex-wrap: wrap; margin-left: auto; }
+.stat { text-align: right; }
+.stat .label { font-size: 11px; color: var(--dim); text-transform: uppercase; }
+.stat .value { font-size: 18px; font-weight: 600; font-family: var(--mono); }
+
+.chart-wrap { height: 220px; position: relative; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th { text-align: left; color: var(--dim); font-weight: 500; padding: 4px 8px; border-bottom: 1px solid var(--border); font-size: 11.5px; }
+td { padding: 4px 8px; border-bottom: 1px solid #21262d; font-family: var(--mono); font-size: 12px; }
+tr:hover td { background: #1c2129; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.badge.green { background: #3fb95022; color: var(--green); }
+.badge.red { background: #f8514922; color: var(--red); }
+.badge.yellow { background: #d2992222; color: var(--yellow); }
+.badge.blue { background: #58a6ff22; color: var(--accent); }
+.badge.purple { background: #bc8cff22; color: var(--purple); }
+.badge.gray { background: #8b949e22; color: var(--dim); }
+
+.feed { max-height: 320px; overflow-y: auto; font-family: var(--mono); font-size: 11.5px; }
+.feed-item { padding: 4px 8px; border-left: 2px solid var(--border); margin-bottom: 4px; }
+.feed-item .t { color: var(--dim); margin-right: 8px; }
+.feed-item.market { border-color: var(--accent); }
+.feed-item.flag { border-color: var(--yellow); }
+.feed-item.gov { border-color: var(--purple); }
+.feed-item.reject { border-color: var(--red); }
+
+.action-form { display: flex; flex-direction: column; gap: 8px; }
+.form-row { display: flex; gap: 8px; align-items: center; }
+.form-row label { min-width: 90px; color: var(--dim); font-size: 12px; }
+.form-row input, .form-row select { flex: 1; }
+textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-size: 12px; }
+
+.pending-list { font-family: var(--mono); font-size: 12px; color: var(--yellow); }
+.toast { position: fixed; bottom: 20px; right: 20px; background: #1f6feb; color: white; padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 100; animation: fade 3s forwards; }
+@keyframes fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.vote-btns { display: flex; gap: 4px; }
+.scroll-y { max-height: 300px; overflow-y: auto; }
+.muted { color: var(--dim); }
+.mono { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div x-data="dashboard()">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">⬢ OpenBoard <span>economy dashboard</span></div>
+  <div class="controls">
+    <button class="primary" @click="tick()" :disabled="busy">▶ Tick</button>
+    <button @click="toggleAutoplay()" :class="autoplay.running ? 'danger' : ''">
+      <span x-text="autoplay.running ? '⏸ Stop' : '⏩ Autoplay'"></span>
+    </button>
+    <input type="range" min="0.1" max="3" step="0.1" x-model.number="autoplay.interval" style="width:80px" @change="setAutoplay()">
+    <span class="muted mono" x-text="autoplay.interval + 's'"></span>
+    <button class="danger" @click="resetModal = true">⟲ Reset</button>
+    <button @click="save()">💾 Save</button>
+    <label class="muted" style="cursor:pointer">📂 Load
+      <input type="file" accept=".json" style="display:none" @change="load($event)">
+    </label>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="label">Tick</div><div class="value" x-text="state.tick ?? '—'"></div></div>
+    <div class="stat"><div class="label">Money</div><div class="value" x-text="fmt(timeline.money?.at(-1))"></div></div>
+    <div class="stat"><div class="label">Gini</div><div class="value" x-text="fmt(timeline.gini?.at(-1))"></div></div>
+    <div class="stat"><div class="label">Surplus</div><div class="value" x-text="fmt(state.surplus_pool)"></div></div>
+    <div class="stat"><div class="label">Ledger</div><div class="value"><span x-text="state.ledger_counts?.accepted ?? 0" style="color:var(--green)"></span>/<span x-text="state.ledger_counts?.rejected ?? 0" style="color:var(--red)"></span></div></div>
+  </div>
+</div>
+
+<div class="grid">
+
+<!-- CHARTS -->
+<div class="panel col-6">
+  <h3>📈 Gini coefficient <span class="muted">(lower = more equal)</span></h3>
+  <div x-show="chartError" style="color:var(--red); font-size:11px; margin-bottom:6px" x-text="chartError"></div>
+  <div class="chart-wrap"><canvas id="giniChart"></canvas></div>
+</div>
+<div class="panel col-6">
+  <h3>💰 Money supply & surplus <span class="muted mono" style="font-size:10px" x-text="chartDebug"></span></h3>
+  <div class="chart-wrap"><canvas id="moneyChart"></canvas></div>
+</div>
+
+<!-- CITIZENS -->
+<div class="panel col-4">
+  <h3>👥 Citizens <span class="muted" x-text="(state.citizens?.length ?? 0) + ' active'"></span></h3>
+  <div class="scroll-y">
+  <table>
+    <thead><tr><th>Name</th><th>₡ Balance</th><th>Hrs</th><th>Goods</th></tr></thead>
+    <tbody>
+      <template x-for="(name, i) in state.citizens ?? []" :key="name">
+        <tr :style="isBot(name) ? '' : 'color: var(--yellow)'">
+          <td><span x-text="name"></span> <span x-show="!isBot(name)" title="human">👤</span></td>
+          <td x-text="fmt(state.balances?.[name])"></td>
+          <td x-text="state.labor_hours?.[name] ?? 0"></td>
+          <td class="muted" x-text="invSummary(state.citizen_inventory?.[name])"></td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- CO-OPS -->
+<div class="panel col-4">
+  <h3>🏭 Co-ops</h3>
+  <div class="scroll-y">
+  <template x-for="(coop, id) in state.coops ?? {}" :key="id">
+    <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border)">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px">
+        <strong x-text="id"></strong>
+        <span class="mono">₡<span x-text="fmt(coop.treasury)"></span></span>
+      </div>
+      <div class="muted" style="font-size:12px" x-text="coop.members.join(', ')"></div>
+      <div class="mono" style="font-size:11.5px; margin-top:4px" x-text="invSummary(coop.inventory)"></div>
+      <div class="muted" style="font-size:11px">labor pool: <span x-text="coop.labor_pool_hours"></span>h</div>
+    </div>
+  </template>
+  </div>
+</div>
+
+<!-- MARKET -->
+<div class="panel col-4">
+  <h3>🏪 Market</h3>
+  <div style="margin-bottom: 12px">
+    <div class="muted" style="font-size:11px; margin-bottom:6px">LAST CLEARING PRICES</div>
+    <template x-for="(good, price) in state.last_clearing ?? {}" :key="good">
+      <div class="form-row" style="justify-content:space-between; padding: 2px 0">
+        <span x-text="good"></span>
+        <span class="mono">
+          <span x-text="price"></span>
+          <span class="muted" style="font-size:11px" x-text="' / floor ' + (state.good_cost_baseline?.[good] ?? '?')"></span>
+        </span>
+      </div>
+    </template>
+    <div x-show="!Object.keys(state.last_clearing ?? {}).length" class="muted">No trades yet</div>
+  </div>
+  <div class="muted" style="font-size:11px; margin-bottom:6px">COMMON POOL <span class="badge purple" x-show="Object.keys(state.common_pool ?? {}).length" x-text="invSummary(state.common_pool)"></span></div>
+  <div style="border-top:1px solid var(--border); padding-top:10px">
+    <div class="muted" style="font-size:11px; margin-bottom:6px">COST BASELINES (selected)</div>
+    <div class="scroll-y" style="max-height:140px">
+      <template x-for="good in ['bread','grain','flour','fish','water','steel','furniture']" :key="good">
+        <div class="form-row" style="justify-content:space-between; padding: 2px 0" x-show="state.good_cost_baseline?.[good] !== undefined">
+          <span x-text="good"></span>
+          <span class="mono" x-text="state.good_cost_baseline?.[good]"></span>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<!-- GOVERNANCE -->
+<div class="panel col-6">
+  <h3>⚖️ Governance
+    <span>
+      <span class="badge" :class="state.governance_enabled ? 'green' : 'gray'" x-text="state.governance_enabled ? 'LIVE' : 'bootstrap'"></span>
+      <span class="badge blue" x-text="'v' + (state.ruleset_version ?? 1)"></span>
+      <span class="badge" :class="state.constitution_phase === 'hardened' ? 'red' : 'yellow'" x-text="state.constitution_phase"></span>
+    </span>
+  </h3>
+  <div class="scroll-y">
+    <div x-show="!Object.keys(state.proposals ?? {}).length" class="muted">No proposals yet</div>
+    <template x-for="(p, pid) in state.proposals ?? {}" :key="pid">
+      <div style="padding:8px; border:1px solid var(--border); border-radius:6px; margin-bottom:8px">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <div>
+            <strong class="mono" x-text="pid"></strong>
+            <span class="muted" x-text="'by ' + p.proposer + ' · closes t' + p.closes_tick"></span>
+          </div>
+          <span class="badge" :class="p.status === 'passed' ? 'green' : p.status === 'open' ? 'blue' : 'red'" x-text="p.status"></span>
+        </div>
+        <div style="margin-top:6px; display:flex; justify-content:space-between; align-items:center">
+          <div>
+            <span style="color:var(--green)" x-text="'✓ ' + p.votes_for"></span>
+            <span style="color:var(--red); margin-left:10px" x-text="'✗ ' + p.votes_against"></span>
+            <span x-show="p.is_rollback" class="badge yellow" style="margin-left:8px">rollback</span>
+            <span x-show="p.is_intervention" class="badge purple" style="margin-left:4px" x-text="'intervention: ' + (p.intervention?.type ?? '')"></span>
+          </div>
+          <div class="vote-btns" x-show="p.status === 'open' && state.governance_enabled">
+            <button class="small" @click="act(state.citizens?.[0] ?? 'worker_a', 'VOTE', {proposal_id: pid, choice: 'for'})" :disabled="busy">Vote ✓</button>
+            <button class="small" @click="act(state.citizens?.[0] ?? 'worker_a', 'VOTE', {proposal_id: pid, choice: 'against'})" :disabled="busy">Vote ✗</button>
+          </div>
+        </div>
+        <details x-show="p.params">
+          <summary class="muted" style="font-size:11px; cursor:pointer">parameters</summary>
+          <pre class="mono" style="font-size:10.5px; white-space:pre-wrap; color:var(--dim)" x-text="JSON.stringify(p.params, null, 1)"></pre>
+        </details>
+      </div>
+    </template>
+  </div>
+</div>
+
+<!-- OVERSIGHT -->
+<div class="panel col-6">
+  <h3>🛡️ Oversight
+    <span class="muted" x-text="state.council_members?.length ? 'council: ' + state.council_members.join(', ') : ''"></span>
+  </h3>
+  <div class="scroll-y">
+    <div x-show="!state.flags?.length" class="muted">No anomalies detected 🎉</div>
+    <template x-for="(f, i) in (state.flags ?? []).slice().reverse()" :key="i">
+      <div style="padding:6px 10px; border:1px solid var(--border); border-left:3px solid var(--yellow); border-radius:4px; margin-bottom:6px; font-size:12.5px">
+        <span class="badge yellow" x-text="f.kind"></span>
+        <strong x-text="f.target"></strong>
+        <span class="muted" x-text="f.good ? '(' + f.good + ')' : ''"></span>
+        <span class="muted mono" style="float:right" x-text="'t' + f.tick"></span>
+      </div>
+    </template>
+  </div>
+</div>
+
+<!-- PLAY AS CITIZEN -->
+<div class="panel col-6">
+  <h3>🎮 Play as citizen <span class="muted">(joins next tick)</span></h3>
+  <div class="action-form">
+    <div class="form-row">
+      <label>Citizen</label>
+      <select x-model="action.sender">
+        <template x-for="c in state.citizens ?? []" :key="c"><option :value="c" x-text="c + (isBot(c) ? '' : ' 👤')"></option></template>
+      </select>
+      <select x-model="action.type">
+        <option value="WORK">Work</option>
+        <option value="BUY_ESSENTIAL">Buy essential</option>
+        <option value="BID">Bid on market</option>
+        <option value="BID_FOR_COOP">Bid for co-op</option>
+        <option value="LIST_GOOD">List goods</option>
+        <option value="PRODUCE">Produce</option>
+        <option value="TRANSFER">Transfer</option>
+        <option value="VOTE">Vote</option>
+        <option value="PROPOSE">Propose rule</option>
+        <option value="ROLLBACK">Rollback</option>
+        <option value="INTERVENE">Intervene</option>
+      </select>
+    </div>
+
+    <!-- WORK -->
+    <template x-if="action.type === 'WORK'">
+      <div class="form-row">
+        <label>Co-op</label>
+        <select x-model="action.payload.coop_id">
+          <option value="">— choose —</option>
+          <template x-for="(c, id) in state.coops ?? {}" :key="id"><option :value="id" x-text="id"></option></template>
+        </select>
+        <label style="min-width:50px">Hours</label>
+        <input type="number" min="1" max="8" x-model.number="action.payload.hours">
+      </div>
+    </template>
+
+    <!-- BUY_ESSENTIAL / BID -->
+    <template x-if="action.type === 'BUY_ESSENTIAL' || action.type === 'BID'">
+      <div class="form-row">
+        <label>Good</label>
+        <select x-model="action.payload.good">
+          <option value="">— choose —</option>
+          <template x-for="g in state.goods ?? []" :key="g"><option :value="g" x-text="g + ' (₡' + (state.good_cost_baseline?.[g] ?? '?') + ')'"></option></template>
+        </select>
+        <template x-if="action.type === 'BID'">
+          <input type="number" placeholder="max price" x-model.number="action.payload.max_price" style="width:100px">
+        </template>
+        <input type="number" placeholder="qty" min="1" x-model.number="action.payload.qty" style="width:80px">
+      </div>
+    </template>
+
+    <!-- BID_FOR_COOP / LIST_GOOD -->
+    <template x-if="action.type === 'BID_FOR_COOP' || action.type === 'LIST_GOOD'">
+      <div class="form-row">
+        <label>Co-op</label>
+        <select x-model="action.payload.coop_id">
+          <option value="">— choose —</option>
+          <template x-for="(c, id) in state.coops ?? {}" :key="id"><option :value="id" x-text="id"></option></template>
+        </select>
+        <select x-model="action.payload.good">
+          <option value="">— good —</option>
+          <template x-for="g in state.goods ?? []" :key="g"><option :value="g" x-text="g"></option></template>
+        </select>
+        <template x-if="action.type === 'BID_FOR_COOP'">
+          <input type="number" placeholder="price" x-model.number="action.payload.max_price" style="width:80px">
+        </template>
+        <input type="number" placeholder="qty" min="1" x-model.number="action.payload.qty" style="width:80px">
+      </div>
+    </template>
+
+    <!-- PRODUCE -->
+    <template x-if="action.type === 'PRODUCE'">
+      <div class="form-row">
+        <label>Co-op</label>
+        <select x-model="action.payload.coop_id">
+          <option value="">— choose —</option>
+          <template x-for="(c, id) in state.coops ?? {}" :key="id"><option :value="id" x-text="id"></option></template>
+        </select>
+        <select x-model="action.payload.recipe_id">
+          <option value="">— recipe —</option>
+          <template x-for="(r, rid) in state.recipes ?? {}" :key="rid">
+            <option :value="rid" x-text="rid + ' (' + recipeSummary(r) + ')'"></option>
+          </template>
+        </select>
+        <input type="number" placeholder="runs" min="1" x-model.number="action.payload.runs" style="width:70px">
+      </div>
+    </template>
+
+    <!-- TRANSFER -->
+    <template x-if="action.type === 'TRANSFER'">
+      <div class="form-row">
+        <label>To</label>
+        <select x-model="action.payload.to">
+          <option value="">— choose —</option>
+          <template x-for="c in state.citizens ?? []" :key="c"><option :value="c" x-text="c"></option></template>
+        </select>
+        <label style="min-width:50px">Amount</label>
+        <input type="number" min="1" x-model.number="action.payload.amount">
+      </div>
+    </template>
+
+    <!-- VOTE -->
+    <template x-if="action.type === 'VOTE'">
+      <div class="form-row">
+        <label>Proposal</label>
+        <select x-model="action.payload.proposal_id">
+          <option value="">— open proposals —</option>
+          <template x-for="(p, pid) in state.proposals ?? {}" :key="pid">
+            <option x-show="p.status === 'open'" :value="pid" x-text="pid + ' by ' + p.proposer"></option>
+          </template>
+        </select>
+        <select x-model="action.payload.choice"><option value="for">for</option><option value="against">against</option></select>
+      </div>
+    </template>
+
+    <!-- PROPOSE / ROLLBACK / INTERVENE: JSON -->
+    <template x-if="['PROPOSE', 'ROLLBACK', 'INTERVENE'].includes(action.type)">
+      <div>
+        <div class="muted" style="font-size:11px; margin-bottom:4px" x-text="jsonHint"></div>
+        <textarea class="json" x-model="action.json" spellcheck="false"></textarea>
+      </div>
+    </template>
+
+    <div class="form-row" style="justify-content:space-between">
+      <button class="primary" @click="submitAction()" :disabled="busy || !action.sender">Queue action</button>
+      <div class="pending-list" x-show="state.pending?.length">
+        <span x-text="state.pending?.length"></span> pending: <span x-text="state.pending?.map(p => p.action).join(', ')"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTS -->
+<div class="panel col-3">
+  <h3>🤖 Bots <span class="muted" x-text="Object.keys(state.bots ?? {}).length"></span></h3>
+  <div class="scroll-y" style="max-height:180px; margin-bottom:10px">
+    <template x-for="(meta, name) in state.bots ?? {}" :key="name">
+      <div class="form-row" style="justify-content:space-between; padding:2px 0">
+        <span class="mono" x-text="name"></span>
+        <span style="display:flex; gap:6px; align-items:center">
+          <span class="muted" style="font-size:11px" x-text="meta.coop ?? '—'"></span>
+          <button class="small danger" @click="removeBot(name)">✕</button>
+        </span>
+      </div>
+    </template>
+  </div>
+  <div class="action-form">
+    <div class="form-row">
+      <input placeholder="name" x-model="newBot.name" style="flex:1">
+    </div>
+    <div class="form-row">
+      <select x-model="newBot.archetype" style="flex:1">
+        <template x-for="a in state.archetypes ?? []" :key="a"><option :value="a" x-text="a"></option></template>
+      </select>
+    </div>
+    <div class="form-row">
+      <select x-model="newBot.coop" style="flex:1">
+        <option value="">no coop</option>
+        <template x-for="(c, id) in state.coops ?? {}" :key="id"><option :value="id" x-text="id"></option></template>
+      </select>
+    </div>
+    <button class="small" @click="addBot()" :disabled="!newBot.name || busy">+ Add bot</button>
+  </div>
+</div>
+
+<!-- EVENTS FEED -->
+<div class="panel col-3">
+  <h3>📡 Events <span class="muted">latest</span></h3>
+  <div class="feed scroll-y">
+    <template x-for="(e, i) in (state.events ?? []).slice().reverse().slice(0, 60)" :key="state.tick + '-' + i">
+      <div class="feed-item" :class="feedClass(e)">
+        <span class="t" x-text="'t' + e.tick"></span>
+        <span x-text="feedText(e)"></span>
+      </div>
+    </template>
+  </div>
+</div>
+
+<!-- LEDGER -->
+<div class="panel col-12">
+  <h3>📜 Ledger (recent) <span class="muted">immutable · hash-chained</span></h3>
+  <table>
+    <thead><tr><th>Seq</th><th>Tick</th><th>Action</th><th>Sender</th><th>Result</th></tr></thead>
+    <tbody>
+      <template x-for="r in (state.ledger_recent ?? []).slice().reverse()" :key="r.seq">
+        <tr>
+          <td class="muted" x-text="r.seq"></td>
+          <td x-text="r.tick"></td>
+          <td x-text="r.action"></td>
+          <td x-text="r.sender"></td>
+          <td>
+            <span class="badge" :class="r.accepted ? 'green' : 'red'" x-text="r.accepted ? '✓ accepted' : r.reason"></span>
+          </td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /grid -->
+
+<!-- RESET MODAL -->
+<div x-show="resetModal" style="position:fixed; inset:0; background:#000a; display:flex; align-items:center; justify-content:center; z-index:50" @click.self="resetModal = false">
+  <div class="panel" style="width:380px">
+    <h3>⟲ Reset economy</h3>
+    <div class="action-form">
+      <div class="form-row">
+        <label>Seed</label>
+        <input type="number" x-model.number="resetConfig.seed">
+      </div>
+      <div class="form-row">
+        <label>Governance</label>
+        <select x-model="resetConfig.governance">
+          <option :value="false">bootstrap (instant rules)</option>
+          <option :value="true">LIVE (votes required)</option>
+        </select>
+      </div>
+      <div class="form-row" style="justify-content:flex-end; gap:8px">
+        <button @click="resetModal = false">Cancel</button>
+        <button class="danger" @click="reset()">Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div x-show="toast" x-transition class="toast" x-text="toast"></div>
+
+</div><!-- /x-data -->
+
+<script>
+const chartStore = {};  // Chart.js instances live OUTSIDE Alpine's reactive proxy —
+// proxying complex chart internals breaks data binding silently.
+
+function dashboard() {
+  return {
+    state: {}, timeline: {}, autoplay: { running: false, interval: 0.75 },
+    busy: false, toast: '', resetModal: false, chartError: '', chartDebug: '',
+    resetConfig: { seed: 42, governance: false },
+    newBot: { name: '', archetype: 'honest_worker', coop: 'farmers' },
+    action: { sender: '', type: 'WORK', payload: {}, json: '{}' },
+    pollTimer: null,
+
+    get jsonHint() {
+      const hints = {
+        PROPOSE: 'JSON: {"params": {...full rule params...}, "activation_tick": N} — full params required; copy from a ruleset version',
+        ROLLBACK: 'JSON: {"target_version": N}',
+        INTERVENE: 'JSON: {"intervention": {"type": "FINE|DISSOLVE_HOARD|EMERGENCY_TRIAGE", ...}} — council members only',
+      };
+      return hints[this.action.type] || '';
+    },
+
+    async init() {
+      await this.refresh();
+      this.action.sender = this.state.citizens?.[0] ?? '';
+      this.initCharts();
+      this.pollTimer = setInterval(() => this.refresh(), 1000);
+    },
+
+    async api(path, opts = {}) {
+      const res = await fetch(path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...opts,
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+      });
+      return res.json();
+    },
+
+    async refresh() {
+      try {
+        const s = await this.api('/api/state');
+        this.state = s;
+        this.timeline = s.timeline ?? {};
+        this.autoplay = s.autoplay ?? this.autoplay;
+        this.updateCharts();
+      } catch (e) { /* server restarting */ }
+    },
+
+    async tick() {
+      this.busy = true;
+      try {
+        await this.api('/api/tick', { method: 'POST' });
+        await this.refresh();
+      } finally { this.busy = false; }
+    },
+
+    async toggleAutoplay() {
+      this.autoplay.running = !this.autoplay.running;
+      await this.api('/api/autoplay', { method: 'POST', body: { running: this.autoplay.running, interval: this.autoplay.interval } });
+    },
+
+    async setAutoplay() {
+      await this.api('/api/autoplay', { method: 'POST', body: { interval: this.autoplay.interval } });
+    },
+
+    async reset() {
+      this.busy = true;
+      try {
+        await this.api('/api/reset', { method: 'POST', body: this.resetConfig });
+        this.resetModal = false;
+        await this.refresh();
+        this.action.sender = this.state.citizens?.[0] ?? '';
+        this.showToast('Economy reset (seed ' + this.resetConfig.seed + ')');
+      } finally { this.busy = false; }
+    },
+
+    act(sender, action, payload) {
+      return this.api('/api/action', { method: 'POST', body: { sender, action, payload } });
+    },
+
+    async submitAction() {
+      this.busy = true;
+      try {
+        let payload;
+        if (['PROPOSE', 'ROLLBACK', 'INTERVENE'].includes(this.action.type)) {
+          payload = JSON.parse(this.action.json);
+        } else {
+          payload = Object.fromEntries(Object.entries(this.action.payload).filter(([k, v]) => v !== '' && v !== null && v !== undefined));
+        }
+        const res = await this.act(this.action.sender, this.action.type, payload);
+        if (res.ok) {
+          this.showToast('Queued ' + this.action.type + ' for next tick');
+          await this.refresh();
+        } else {
+          this.showToast('Error: ' + (res.error ?? 'rejected'));
+        }
+      } catch (e) {
+        this.showToast('Invalid JSON: ' + e.message);
+      } finally { this.busy = false; }
+    },
+
+    async addBot() {
+      this.busy = true;
+      try {
+        const res = await this.api('/api/bots', { method: 'POST', body: { op: 'add', ...this.newBot } });
+        if (res.ok) { this.newBot.name = ''; this.showToast('Bot added'); await this.refresh(); }
+        else this.showToast('Error: ' + res.error);
+      } finally { this.busy = false; }
+    },
+
+    async removeBot(name) {
+      await this.api('/api/bots', { method: 'POST', body: { op: 'remove', name } });
+      await this.refresh();
+    },
+
+    async save() {
+      const res = await this.api('/api/save');
+      const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'openboard-run-t' + (this.state.tick ?? 0) + '.json';
+      a.click();
+      this.showToast('Run saved (deterministic replay file)');
+    },
+
+    async load(ev) {
+      const file = ev.target.files[0];
+      if (!file) return;
+      try {
+        const content = JSON.parse(await file.text());
+        const res = await this.api('/api/load', { method: 'POST', body: { content } });
+        if (res.ok) { await this.refresh(); this.showToast('Run restored at tick ' + res.tick); }
+        else this.showToast('Load failed: ' + res.error);
+      } catch (e) { this.showToast('Invalid file: ' + e.message); }
+      ev.target.value = '';
+    },
+
+    // ------------------------------------------------------------ charts
+
+    initCharts() {
+      try {
+        this._initChartsInner();
+      } catch (e) {
+        this.chartError = String(e);
+        console.error('chart init failed:', e);
+      }
+    },
+
+    _initChartsInner() {
+      const ctx1 = document.getElementById('giniChart');
+      const ctx2 = document.getElementById('moneyChart');
+      if (chartStore.gini) { chartStore.gini.destroy(); chartStore.gini = null; }
+      if (chartStore.money) { chartStore.money.destroy(); chartStore.money = null; }
+      chartStore.gini = new Chart(ctx1, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Gini ×10⁴', data: [], borderColor: '#bc8cff', backgroundColor: '#bc8cff22', fill: true, tension: 0.3, pointRadius: 0 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { display: false }, y: { grid: { color: '#21262d' }, ticks: { color: '#8b949e' } } },
+        },
+      });
+      chartStore.money = new Chart(ctx2, {
+        type: 'line',
+        data: { labels: [], datasets: [
+          { label: 'Money supply', data: [], borderColor: '#58a6ff', backgroundColor: '#58a6ff22', fill: true, tension: 0.3, pointRadius: 0 },
+          { label: 'Surplus pool', data: [], borderColor: '#d29922', tension: 0.3, pointRadius: 0 },
+        ] },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: { legend: { labels: { color: '#8b949e' } } },
+          scales: { x: { display: false }, y: { grid: { color: '#21262d' }, ticks: { color: '#8b949e' } } },
+        },
+      });
+    },
+
+    updateCharts() {
+      if (!chartStore.gini) {
+        this.initCharts();
+        if (!chartStore.gini) return;
+      }
+      const t = this.timeline;
+      chartStore.gini.data.labels = t.tick ?? [];
+      chartStore.gini.data.datasets[0].data = t.gini ?? [];
+      chartStore.gini.update('none');
+      chartStore.money.data.labels = t.tick ?? [];
+      chartStore.money.data.datasets[0].data = t.money ?? [];
+      chartStore.money.data.datasets[1].data = t.surplus ?? [];
+      chartStore.money.update('none');
+      this.chartDebug = 'charts: ' + (t.gini?.length ?? 0) + ' pts, v' + (this.chartVersion = (this.chartVersion ?? 0) + 1);
+    },
+
+    // ------------------------------------------------------------ helpers
+
+    fmt(v) { return v === undefined || v === null ? '—' : Number(v).toLocaleString(); },
+
+    isBot(name) { return !!this.state.bots?.[name]; },
+
+    invSummary(inv) {
+      if (!inv) return '';
+      const parts = Object.entries(inv).filter(([, q]) => q > 0).map(([g, q]) => g + ':' + q);
+      return parts.length ? parts.slice(0, 5).join(' ') + (parts.length > 5 ? ' …' : '') : '';
+    },
+
+    recipeSummary(r) {
+      if (!r) return '';
+      const ins = Object.entries(r.inputs ?? {}).map(([g, q]) => q + ' ' + g).join('+') || '—';
+      const outs = Object.entries(r.outputs ?? {}).map(([g, q]) => q + ' ' + g).join('+');
+      return ins + ' → ' + outs;
+    },
+
+    feedClass(e) {
+      const a = e.action ?? '';
+      if (a.startsWith('MARKET') || a === 'SURPLUS_RETIRE') return 'market';
+      if (a.startsWith('OVERSIGHT')) return 'flag';
+      if (a.startsWith('PROPOSAL') || a.startsWith('INTERVENTION')) return 'gov';
+      if (a === 'REJECTED') return 'reject';
+      return '';
+    },
+
+    feedText(e) {
+      const a = e.action ?? '';
+      if (a === 'MARKET_CLEAR_AUCTION') return e.good + ': ' + e.sold + ' sold @ ₡' + e.clearing_price + (e.surplus_delta ? ' (+' + e.surplus_delta + ' surplus)' : '');
+      if (a === 'MARKET_CLEAR_ESSENTIAL') return e.good + ': ' + e.sold + ' essential @ floor';
+      if (a === 'SURPLUS_RETIRE') return 'retired ₡' + e.excess_retired + ' from pool (cap)';
+      if (a === 'OVERSIGHT_FLAG') return '⚑ ' + e.kind + ': ' + e.target + (e.good ? ' (' + e.good + ')' : '');
+      if (a === 'PROPOSAL_SETTLED') return 'proposal ' + e.proposal_id + ' ' + e.result + ' (' + e.votes_for + '✓/' + e.votes_against + '✗)';
+      if (a === 'INTERVENTION_EXECUTED') return 'intervention ' + (e.executed?.type ?? '') + ' on ' + (e.executed?.target ?? e.executed?.good ?? '');
+      if (a === 'PRODUCE') { const o = Object.entries(e.outputs ?? {}).map(([g, q]) => q + ' ' + g).join(', '); return e.coop_id + ' produced ' + o; }
+      if (a === 'WORK') return e.sender + ' worked (+' + (e.wages ?? 0) + '₡)';
+      if (a === 'RULE_CHANGE') return 'rule v' + e.new_version + ' activates t' + e.activated_at;
+      if (a === 'FOUND_COOP') return e.coop_id + ' founded';
+      if (a === 'INTERVENE') return 'council proposes ' + (e.intervention?.type ?? '');
+      return a;
+    },
+
+    showToast(msg) {
+      this.toast = msg;
+      setTimeout(() => this.toast = '', 3000);
+    },
+  };
+}
+</script>
+</body>
+</html>

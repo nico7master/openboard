@@ -1,0 +1,151 @@
+"""Dashboard server tests: Run lifecycle, save/load determinism,
+human action queueing, bot management, governance mode."""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
+
+# Import dashboard/server.py (it inserts src/ into sys.path itself)
+_spec = importlib.util.spec_from_file_location(
+    "dashboard_server", Path(__file__).parent.parent / "dashboard" / "server.py"
+)
+server = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(server)
+
+
+class TestRunLifecycle:
+    def test_fresh_run_and_ticks(self):
+        r = server.Run(seed=42)
+        assert r.state.tick == 1  # founding applied
+        assert len(r.state.coops) == 3
+        for _ in range(10):
+            r.tick()
+        assert r.state.tick == 11
+        assert len(r.timeline["tick"]) == 11
+        assert len(r.timeline["gini"]) == 11
+
+    def test_money_invariant_holds(self):
+        r = server.Run(seed=42)
+        initial = 500 * 8 + 600 + 600  # citizens + seeded treasuries
+        for _ in range(20):
+            r.tick()
+        treasuries = sum(c.get("treasury", 0) for c in r.state.coops.values())
+        total = sum(r.state.balances.values()) + r.state.surplus_pool + treasuries
+        assert total == initial + r.state.money_minted - r.state.money_retired
+
+
+class TestSaveLoad:
+    def test_round_trip_deterministic(self):
+        r = server.Run(seed=42)
+        for _ in range(25):
+            r.tick()
+        h1 = r.state.state_hash()
+
+        save = r.to_save()
+        assert save["format"] == "openboard-run-v1"
+
+        r2 = server.Run.from_save(save)
+        assert r2.state.state_hash() == h1
+
+    def test_continue_after_load_deterministic(self):
+        r = server.Run(seed=7)
+        for _ in range(10):
+            r.tick()
+        r2 = server.Run.from_save(r.to_save())
+        for _ in range(5):
+            r.tick()
+            r2.tick()
+        assert r.state.state_hash() == r2.state.state_hash()
+
+    def test_human_actions_survive_round_trip(self):
+        r = server.Run(seed=3)
+        for _ in range(5):
+            r.tick()
+        r.queue_action("worker_a", "TRANSFER", {"to": "worker_b", "amount": 50})
+        r.tick()  # action executed
+        h1 = r.state.state_hash()
+        r2 = server.Run.from_save(r.to_save())
+        assert r2.state.state_hash() == h1
+
+    def test_rejects_unknown_format(self):
+        with pytest.raises(ValueError):
+            server.Run.from_save({"format": "garbage"})
+
+
+class TestHumanActions:
+    def test_action_joins_next_tick(self):
+        r = server.Run(seed=42)
+        for _ in range(3):
+            r.tick()
+        tx = r.queue_action("worker_a", "TRANSFER", {"to": "worker_b", "amount": 50})
+        assert tx.tick == r.state.tick + 1  # next tick
+        assert len(r.pending) == 1
+        r.tick()
+        assert len(r.pending) == 0
+        assert r.state.balances["worker_b"] > 500  # transfer + wages
+
+    def test_action_recorded_in_batches(self):
+        r = server.Run(seed=42)
+        for _ in range(3):
+            r.tick()
+        r.queue_action("worker_a", "TRANSFER", {"to": "worker_b", "amount": 10})
+        t = r.state.tick + 1
+        r.tick()
+        assert any(
+            d["action"] == "TRANSFER" and d["sender"] == "worker_a"
+            for d in r.batches[t]
+        )
+
+
+class TestBotManagement:
+    def test_add_and_remove_bot(self):
+        r = server.Run(seed=42)
+        for _ in range(3):
+            r.tick()
+        r.add_bot("greta", "hoarder", "farmers")
+        assert "greta" in r.bots
+        assert "greta" in r.state.balances
+        assert "greta" in r.state.coops["farmers"]["members"]
+        r.tick()  # greta acts without crash
+        r.remove_bot("greta")
+        assert "greta" not in r.bots
+
+    def test_new_bot_can_work(self):
+        r = server.Run(seed=42)
+        for _ in range(3):
+            r.tick()
+        r.add_bot("greta", "hoarder", "farmers")
+        hours_before = r.state.labor_hours.get("greta", 0)
+        for _ in range(3):
+            r.tick()
+        assert r.state.labor_hours.get("greta", 0) >= hours_before  # WORK accepted
+
+
+class TestGovernanceMode:
+    def test_governance_run(self):
+        r = server.Run(seed=9, governance=True)
+        assert r.state.active_ruleset_params()["governance"]["enabled"]
+        for _ in range(10):
+            r.tick()
+        # RULE_CHANGE is locked under governance
+        from openboard import Ledger, Transaction, apply_tick
+        tx = Transaction(tick=r.state.tick + 1, sender="worker_a", action="RULE_CHANGE",
+                         payload={"params": r.state.active_ruleset_params(), "activation_tick": r.state.tick + 5},
+                         ruleset_version=r.state.ruleset_version)
+        pre = len(r.ledger.records)
+        apply_tick(r.state, r.ledger, [tx], current_tick=tx.tick)
+        assert r.ledger.records[-1].reason == "GOVERNANCE_LOCKED"
+
+    def test_view_shape(self):
+        r = server.Run(seed=1, governance=True)
+        v = r.view()
+        for key in ("tick", "citizens", "balances", "coops", "proposals", "flags",
+                    "timeline", "events", "bots", "pending", "archetypes", "recipes"):
+            assert key in v, f"view missing {key}"
+        assert v["governance_enabled"] is True
+        assert "honest_worker" in v["archetypes"]
+        assert "farmer" in v["archetypes"]  # specialists included
