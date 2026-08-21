@@ -38,6 +38,88 @@ class TestRunLifecycle:
         assert total == initial + r.state.money_minted - r.state.money_retired
 
 
+class TestAnalytics:
+    def test_analytics_money_pie_sums_to_supply(self):
+        r = server.Run(seed=42)
+        for _ in range(15):
+            r.tick()
+        old_run, server.RUN = server.RUN, r
+        try:
+            client = r.app.test_client() if hasattr(r, "app") else None
+            assert client is not None or True
+            from flask import Flask
+            # use the module-level app but temporarily swap RUN
+            client = server.app.test_client()
+            resp = client.get("/api/analytics")
+            assert resp.status_code == 200
+            data = resp.get_json()
+            assert data["ok"] is True
+            assert sum(data["money_pie"].values()) == data["money_total"]
+        finally:
+            server.RUN = old_run
+
+    def test_timeline_flows_match_events(self):
+        r = server.Run(seed=42)
+        produced_expected = 0
+        bought_expected = 0
+        for _ in range(10):
+            events = r.tick()
+            t = r.state.tick
+            # feed return is a sliding window; only count this tick's events
+            for e in events:
+                if e.get("tick") != t:
+                    continue
+                if e.get("action") == "PRODUCE":
+                    produced_expected += sum(e.get("outputs", {}).values())
+                elif e.get("action") == "MARKET_CLEAR_ESSENTIAL":
+                    bought_expected += e.get("sold", 0)
+                elif e.get("action") == "MARKET_CLEAR_AUCTION":
+                    for w in e.get("winners", []):
+                        if w.get("bid", {}).get("coop_id") is None:
+                            bought_expected += w.get("take", 0)
+        assert sum(r.timeline["produced"]) == produced_expected
+        assert sum(r.timeline["bought"]) == bought_expected
+        assert len(r.timeline["produced"]) == len(r.timeline["tick"])
+
+    def test_goods_table_covers_catalog(self):
+        r = server.Run(seed=42)
+        r.tick()
+        old_run, server.RUN = server.RUN, r
+        try:
+            client = server.app.test_client()
+            data = client.get("/api/analytics").get_json()
+            goods = {g["good"] for g in data["goods_table"]}
+            assert goods == set(r.state.goods.keys())
+            bread = [g for g in data["goods_table"] if g["good"] == "bread"][0]
+            assert bread["triage"] == "essential"
+            assert bread["cost_baseline"] is not None
+        finally:
+            server.RUN = old_run
+
+    def test_alerts_fire_on_overproduction(self):
+        r = server.Run(seed=42)
+        for _ in range(60):
+            r.tick()
+        old_run, server.RUN = server.RUN, r
+        try:
+            client = server.app.test_client()
+            data = client.get("/api/analytics").get_json()
+            msgs = " | ".join(a["msg"] for a in data["alerts"])
+            assert "overproduction" in msgs or "pile" in msgs
+        finally:
+            server.RUN = old_run
+
+    def test_save_load_preserves_totals(self):
+        r = server.Run(seed=42)
+        for _ in range(25):
+            r.tick()
+        saved = r.to_save()
+        r2 = server.Run.from_save(saved)
+        assert r2.totals == r.totals
+        assert r2.timeline["produced"] == r.timeline["produced"]
+        assert r2.timeline["bought"] == r.timeline["bought"]
+
+
 class TestSaveLoad:
     def test_round_trip_deterministic(self):
         r = server.Run(seed=42)

@@ -90,8 +90,12 @@ class Run:
         self.batches: dict[int, list[dict[str, Any]]] = {}  # tick -> tx dicts
         self.injections: list[dict[str, Any]] = []  # recorded state edits
 
-        self.timeline = {"tick": [], "gini": [], "money": [], "surplus": []}
+        self.timeline = {"tick": [], "gini": [], "money": [], "surplus": [],
+                         "produced": [], "bought": [],
+                         "produced_cat": {}, "bought_cat": {}}
         self.feed: list[dict[str, Any]] = []  # rolling events
+        self.totals: dict[str, dict[str, int]] = {"produced": {}, "bought": {}}
+        self._last_events: list[dict[str, Any]] = []
 
         # tick 1: founding
         founding = [
@@ -114,6 +118,7 @@ class Run:
         apply_tick(self.state, self.ledger, batch, current_tick=tick)
         self.batches[tick] = [t.to_dict() for t in batch]
         events = self.state.applied[pre:]
+        self._last_events = events
         self.metrics.record_tick(self.state, events)
         for e in events:
             self.feed.append(dict(e))
@@ -149,9 +154,51 @@ class Run:
         self.timeline["gini"].append(gini(wealth))
         self.timeline["money"].append(money)
         self.timeline["surplus"].append(s.surplus_pool)
+
+        # --- flow aggregates (God View) ---
+        produced_by_cat: dict[str, int] = {}
+        bought_by_cat: dict[str, int] = {}
+        for e in self._last_events:
+            act = e.get("action")
+            if act == "PRODUCE":
+                for good, qty in e.get("outputs", {}).items():
+                    cat = s.goods.get(good, {}).get("category", "other")
+                    produced_by_cat[cat] = produced_by_cat.get(cat, 0) + qty
+                    self.totals["produced"][good] = self.totals["produced"].get(good, 0) + qty
+            elif act == "MARKET_CLEAR_ESSENTIAL":
+                good = e.get("good")
+                qty = e.get("sold", 0)
+                if qty:
+                    cat = s.goods.get(good, {}).get("category", "other")
+                    bought_by_cat[cat] = bought_by_cat.get(cat, 0) + qty
+                    self.totals["bought"][good] = self.totals["bought"].get(good, 0) + qty
+            elif act == "MARKET_CLEAR_AUCTION":
+                good = e.get("good")
+                qty = 0
+                for w in e.get("winners", []):
+                    if w.get("bid", {}).get("coop_id") is None:  # citizens only
+                        qty += w.get("take", 0)
+                if qty:
+                    cat = s.goods.get(good, {}).get("category", "other")
+                    bought_by_cat[cat] = bought_by_cat.get(cat, 0) + qty
+                    self.totals["bought"][good] = self.totals["bought"].get(good, 0) + qty
+        self.timeline["produced"].append(sum(produced_by_cat.values()))
+        self.timeline["bought"].append(sum(bought_by_cat.values()))
+        for key in ("produced_cat", "bought_cat"):
+            hist = self.timeline[key]
+            for cat in set(list(produced_by_cat) + list(bought_by_cat)):
+                hist.setdefault(cat, []).append(0)
+            src = produced_by_cat if key == "produced_cat" else bought_by_cat
+            for cat, series in hist.items():
+                series.append(src.get(cat, 0))
         for key in self.timeline:
-            if len(self.timeline[key]) > 600:
-                self.timeline[key] = self.timeline[key][-600:]
+            if isinstance(self.timeline[key], list):
+                if len(self.timeline[key]) > 600:
+                    self.timeline[key] = self.timeline[key][-600:]
+            else:  # category series dict
+                for cat in self.timeline[key]:
+                    if len(self.timeline[key][cat]) > 600:
+                        self.timeline[key][cat] = self.timeline[key][cat][-600:]
 
     # ------------------------------------------------------------ actions
 
@@ -225,7 +272,10 @@ class Run:
             run.batches = {}
             run.injections = []
             run.feed = []
-            run.timeline = {"tick": [], "gini": [], "money": [], "surplus": []}
+            run.timeline = {"tick": [], "gini": [], "money": [], "surplus": [],
+                             "produced": [], "bought": [],
+                             "produced_cat": {}, "bought_cat": {}}
+            run.totals = {"produced": {}, "bought": {}}
             run.metrics = SimMetrics()
             run.state = genesis_state({n: 500 for n, _, _ in BASELINE_BOTS},
                                       ruleset_params=run._params())
@@ -369,6 +419,100 @@ def index():
 @app.get("/api/state")
 def api_state():
     return jsonify(RUN.view())
+
+
+@app.get("/api/analytics")
+def api_analytics():
+    """God View analytics: money locations, production/purchase pies,
+    per-good flows, plain-language alerts. Derived read-only."""
+    with RUN.lock:
+        s = RUN.state
+        # money locations
+        citizens_money = sum(s.balances.values())
+        treasuries = {cid: c.get("treasury", 0) for cid, c in sorted(s.coops.items())}
+        treasury_money = sum(treasuries.values())
+        money_pie = {
+            "citizens": citizens_money,
+            "coop_treasuries": treasury_money,
+            "surplus_pool": s.surplus_pool,
+        }
+        # category pies from run totals
+        def _by_cat(kind: str) -> dict[str, int]:
+            out: dict[str, int] = {}
+            for good, qty in RUN.totals.get(kind, {}).items():
+                if qty <= 0:
+                    continue
+                cat = s.goods.get(good, {}).get("category", "other")
+                out[cat] = out.get(cat, 0) + qty
+            return dict(sorted(out.items()))
+
+        # per-good flow table
+        goods_table = []
+        for good in sorted(s.goods.keys()):
+            meta = s.goods[good]
+            coop_stock = sum(c["inventory"].get(good, 0) for c in s.coops.values())
+            citizen_stock = sum(inv.get(good, 0) for inv in s.citizen_inventory.values())
+            listed = sum(e["qty"] for e in s.listings.get(good, []) if e["qty"] > 0)
+            goods_table.append({
+                "good": good,
+                "category": meta.get("category", "other"),
+                "triage": meta.get("triage", "market"),
+                "produced_total": RUN.totals["produced"].get(good, 0),
+                "bought_total": RUN.totals["bought"].get(good, 0),
+                "listed_now": listed,
+                "coop_stock": coop_stock,
+                "citizen_stock": citizen_stock,
+                "common_pool": s.common_pool.get(good, 0),
+                "last_price": s.last_clearing.get(good),
+                "cost_baseline": s.good_cost_baseline.get(good),
+            })
+
+        # plain-language alerts
+        alerts: list[dict[str, str]] = []
+        for cid, amount in treasuries.items():
+            if amount < 50:
+                alerts.append({"level": "warn",
+                               "msg": f"{cid} nearly bankrupt (₡{amount} treasury)"})
+        for cid, c in s.coops.items():
+            for good, qty in c["inventory"].items():
+                if good not in s.goods or s.goods[good].get("category") in ("utility",):
+                    continue
+                if qty > 200 and good not in ("electricity", "water"):
+                    alerts.append({"level": "warn",
+                                   "msg": f"{cid} overproduction pile: {qty} {good} unsold"})
+        for name, bal in s.balances.items():
+            if bal < 10:
+                alerts.append({"level": "alert", "msg": f"{name} is out of money (₡{bal})"})
+        recent_flags = s.flags[-8:]
+        for f in recent_flags:
+            kind = f.get("kind", "?")
+            target = f.get("target", "?")
+            good = f.get("good", "")
+            alerts.append({"level": "flag",
+                           "msg": f"Oversight {kind}: {target} {('(' + good + ')') if good else ''} t{f.get('tick', '?')}"})
+        if s.surplus_pool > 1000 and s.money_retired == 0:
+            alerts.append({"level": "info",
+                           "msg": f"Surplus pool ₡{s.surplus_pool} not circulating — no spending rules yet (circular-flow milestone)"})
+
+        return jsonify({
+            "ok": True,
+            "tick": s.tick,
+            "money_pie": money_pie,
+            "money_total": citizens_money + treasury_money + s.surplus_pool,
+            "money_minted": s.money_minted,
+            "money_retired": s.money_retired,
+            "produced_pie": _by_cat("produced"),
+            "bought_pie": _by_cat("bought"),
+            "goods_table": goods_table,
+            "alerts": alerts,
+            "timeline": {
+                "tick": list(RUN.timeline["tick"]),
+                "produced": list(RUN.timeline["produced"]),
+                "bought": list(RUN.timeline["bought"]),
+                "produced_cat": {c: list(v) for c, v in RUN.timeline["produced_cat"].items()},
+                "bought_cat": {c: list(v) for c, v in RUN.timeline["bought_cat"].items()},
+            },
+        })
 
 
 @app.post("/api/tick")

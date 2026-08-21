@@ -76,6 +76,9 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 @keyframes fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
 .vote-btns { display: flex; gap: 4px; }
 .scroll-y { max-height: 300px; overflow-y: auto; }
+.view-tabs { display: flex; gap: 4px; margin: 0 12px; }
+.view-tabs .tab { padding: 6px 14px; font-size: 13px; }
+.view-tabs .tab.active { background: #58a6ff22; border-color: var(--accent); color: var(--accent); }
 .muted { color: var(--dim); }
 .mono { font-family: var(--mono); }
 </style>
@@ -86,6 +89,10 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 <!-- HEADER -->
 <div class="header">
   <div class="logo">⬢ OpenBoard <span>economy dashboard</span></div>
+  <div class="view-tabs">
+    <button :class="view === 'dashboard' ? 'tab active' : 'tab'" @click="setView('dashboard')">🎛 Dashboard</button>
+    <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 World</button>
+  </div>
   <div class="controls">
     <button class="primary" @click="tick()" :disabled="busy">▶ Tick</button>
     <button @click="toggleAutoplay()" :class="autoplay.running ? 'danger' : ''">
@@ -108,7 +115,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   </div>
 </div>
 
-<div class="grid">
+<div class="grid" x-show="view === 'dashboard'">
 
 <!-- CHARTS -->
 <div class="panel col-6">
@@ -450,6 +457,81 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 
 </div><!-- /grid -->
 
+<!-- WORLD VIEW -->
+<div class="grid" x-show="view === 'world'">
+
+  <!-- FLOW CHART -->
+  <div class="panel col-12">
+    <h3>🌊 Circular flow <span class="muted">units produced vs bought by citizens per tick — the loop must close</span></h3>
+    <div class="chart-wrap" style="height:240px"><canvas id="flowChart"></canvas></div>
+  </div>
+
+  <!-- MONEY PIE -->
+  <div class="panel col-4">
+    <h3>💰 Where is the money?</h3>
+    <div class="chart-wrap"><canvas id="moneyPie"></canvas></div>
+    <div class="muted" style="font-size:11.5px; margin-top:8px">
+      Total <span class="mono" x-text="fmt(analytics.money_total)"></span> cr ·
+      minted <span class="mono" style="color:var(--green)" x-text="fmt(analytics.money_minted)"></span> ·
+      retired <span class="mono" style="color:var(--red)" x-text="fmt(analytics.money_retired)"></span>
+    </div>
+  </div>
+
+  <!-- PRODUCTION PIE -->
+  <div class="panel col-4">
+    <h3>🏭 What is produced <span class="muted">by sector, all time</span></h3>
+    <div class="chart-wrap"><canvas id="prodPie"></canvas></div>
+  </div>
+
+  <!-- PURCHASES PIE -->
+  <div class="panel col-4">
+    <h3>🛒 What citizens buy <span class="muted">by sector, all time</span></h3>
+    <div class="chart-wrap"><canvas id="buyPie"></canvas></div>
+  </div>
+
+  <!-- ALERTS -->
+  <div class="panel col-4">
+    <h3>🚨 World alerts <span class="muted" x-text="(analytics.alerts ?? []).length"></span></h3>
+    <div class="scroll-y" style="max-height:260px">
+      <template x-for="(a, i) in analytics.alerts ?? []" :key="i">
+        <div class="feed-item" :class="a.level" style="margin-bottom:6px; padding:6px 10px; border-left:3px solid; font-size:12px"
+             :style="a.level === 'warn' ? 'border-color:var(--yellow)' : a.level === 'alert' ? 'border-color:var(--red)' : a.level === 'flag' ? 'border-color:var(--purple)' : 'border-color:var(--accent)'">
+          <span x-text="a.msg"></span>
+        </div>
+      </template>
+      <div x-show="!(analytics.alerts ?? []).length" class="muted">All quiet.</div>
+    </div>
+  </div>
+
+  <!-- GOODS TABLE -->
+  <div class="panel col-8">
+    <h3>📦 All goods <span class="muted">flows, stocks, price vs cost</span></h3>
+    <div class="scroll-y" style="max-height:260px">
+    <table>
+      <thead><tr><th>Good</th><th>Sector</th><th>Triage</th><th>Prod</th><th>Bought</th><th>Listed</th><th>Coop</th><th>Citiz</th><th>Pool</th><th>Price</th><th>Floor</th></tr></thead>
+      <tbody>
+        <template x-for="g in analytics.goods_table ?? []" :key="g.good">
+          <tr>
+            <td x-text="g.good"></td>
+            <td class="muted" x-text="g.category"></td>
+            <td><span class="badge" :class="g.triage === 'essential' ? 'green' : g.triage === 'emergency' ? 'red' : 'gray'" x-text="g.triage"></span></td>
+            <td class="mono" x-text="fmt(g.produced_total)"></td>
+            <td class="mono" x-text="fmt(g.bought_total)"></td>
+            <td class="mono" x-text="g.listed_now || '—'"></td>
+            <td class="mono" x-text="g.coop_stock || '—'"></td>
+            <td class="mono" x-text="g.citizen_stock || '—'"></td>
+            <td class="mono" x-text="g.common_pool || '—'"></td>
+            <td class="mono" x-text="g.last_price ?? '—'"></td>
+            <td class="mono muted" x-text="g.cost_baseline ?? '—'"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+</div><!-- /world grid -->
+
 <!-- RESET MODAL -->
 <div x-show="resetModal" style="position:fixed; inset:0; background:#000a; display:flex; align-items:center; justify-content:center; z-index:50" @click.self="resetModal = false">
   <div class="panel" style="width:380px">
@@ -485,6 +567,7 @@ const chartStore = {};  // Chart.js instances live OUTSIDE Alpine's reactive pro
 function dashboard() {
   return {
     state: {}, timeline: {}, autoplay: { running: false, interval: 0.75 },
+    view: 'dashboard', analytics: {}, worldReady: false,
     busy: false, toast: '', resetModal: false, chartError: '', chartDebug: '',
     resetConfig: { seed: 42, governance: false },
     newBot: { name: '', archetype: 'honest_worker', coop: 'farmers' },
@@ -523,7 +606,20 @@ function dashboard() {
         this.timeline = s.timeline ?? {};
         this.autoplay = s.autoplay ?? this.autoplay;
         this.updateCharts();
+        if (this.view === 'world') {
+          const a = await this.api('/api/analytics');
+          this.analytics = a;
+          this.updateWorldCharts();
+        }
       } catch (e) { /* server restarting */ }
+    },
+
+    setView(v) {
+      this.view = v;
+      if (v === 'world') {
+        this.$nextTick(() => this.initWorldCharts());
+        this.api('/api/analytics').then(a => { this.analytics = a; this.updateWorldCharts(); });
+      }
     },
 
     async tick() {
@@ -668,6 +764,80 @@ function dashboard() {
       chartStore.money.data.datasets[1].data = t.surplus ?? [];
       chartStore.money.update('none');
       this.chartDebug = 'charts: ' + (t.gini?.length ?? 0) + ' pts, v' + (this.chartVersion = (this.chartVersion ?? 0) + 1);
+    },
+
+    // ------------------------------------------------------------ world view charts
+
+    initWorldCharts() {
+      try {
+        this._initWorldChartsInner();
+      } catch (e) {
+        this.chartError = String(e);
+        console.error('world chart init failed:', e);
+      }
+    },
+
+    _initWorldChartsInner() {
+      const flow = document.getElementById('flowChart');
+      if (flow) {
+        if (chartStore.flow) { chartStore.flow.destroy(); }
+        chartStore.flow = new Chart(flow, {
+          type: 'line',
+          data: { labels: [], datasets: [
+            { label: 'Produced units', data: [], borderColor: '#3fb950', backgroundColor: '#3fb95022', fill: true, tension: 0.3, pointRadius: 0 },
+            { label: 'Bought units', data: [], borderColor: '#58a6ff', backgroundColor: '#58a6ff22', fill: true, tension: 0.3, pointRadius: 0 },
+          ] },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            plugins: { legend: { labels: { color: '#8b949e' } } },
+            scales: { x: { display: false }, y: { grid: { color: '#21262d' }, ticks: { color: '#8b949e' } } },
+          },
+        });
+      }
+      const pieDefs = [
+        ['moneyPie', 'moneyPieChart', ['#58a6ff', '#d29922', '#bc8cff']],
+        ['prodPie', 'prodPieChart', ['#3fb950', '#d29922', '#58a6ff', '#bc8cff', '#f85149', '#39c5cf']],
+        ['buyPie', 'buyPieChart', ['#58a6ff', '#3fb950', '#d29922', '#bc8cff', '#f85149', '#39c5cf']],
+      ];
+      for (const [elId, storeKey, palette] of pieDefs) {
+        const el = document.getElementById(elId);
+        if (!el) continue;
+        if (chartStore[storeKey]) { chartStore[storeKey].destroy(); }
+        chartStore[storeKey] = new Chart(el, {
+          type: 'doughnut',
+          data: { labels: [], datasets: [{ data: [], backgroundColor: palette, borderColor: '#0d1117', borderWidth: 2 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            plugins: { legend: { position: 'right', labels: { color: '#8b949e', boxWidth: 12, font: { size: 11 } } } },
+          },
+        });
+      }
+      this.worldReady = true;
+    },
+
+    _updatePie(storeKey, dataObj) {
+      const ch = chartStore[storeKey];
+      if (!ch) return;
+      const labels = Object.keys(dataObj ?? {});
+      const values = Object.values(dataObj ?? {}).map(v => Math.max(0, v));
+      ch.data.labels = labels;
+      ch.data.datasets[0].data = values;
+      ch.update('none');
+    },
+
+    updateWorldCharts() {
+      if (!this.worldReady) this.initWorldCharts();
+      const a = this.analytics;
+      const t = a?.timeline;
+      if (chartStore.flow && t) {
+        chartStore.flow.data.labels = t.tick ?? [];
+        chartStore.flow.data.datasets[0].data = t.produced ?? [];
+        chartStore.flow.data.datasets[1].data = t.bought ?? [];
+        chartStore.flow.update('none');
+      }
+      this._updatePie('moneyPieChart', a?.money_pie);
+      this._updatePie('prodPieChart', a?.produced_pie);
+      this._updatePie('buyPieChart', a?.bought_pie);
     },
 
     // ------------------------------------------------------------ helpers
