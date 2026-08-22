@@ -333,6 +333,25 @@ def _validate_produce(state: WorldState, tx: Transaction, params: dict[str, Any]
     return None
 
 
+def _vwap_add(state: WorldState, coop_id: str, good: str, qty_before: int, qty_added: int, unit_price: int) -> None:
+    """Moving-average purchase cost, integer 1/10,000 cr per unit.
+    qty_before is the coop's inventory of `good` before this purchase."""
+    per = state.coop_vwap.setdefault(coop_id, {})
+    old_v = per.get(good)
+    if old_v is None:
+        # seed from book baseline scaled to 1e-4 units
+        old_v = state.good_cost_baseline.get(good, 1) * 10_000
+    new_v = (old_v * qty_before + unit_price * 10_000 * qty_added) // (qty_before + qty_added) if (qty_before + qty_added) > 0 else old_v
+    per[good] = new_v
+
+
+def _vwap_unit_cost(state: WorldState, coop_id: str, good: str) -> int:
+    """Coop's per-unit cost of `good` in whole credits: VWAP if tracked,
+    else book baseline (replacement-cost fallback)."""
+    v = state.coop_vwap.get(coop_id, {}).get(good)
+    return v // 10_000 if v is not None else state.good_cost_baseline.get(good, 1)
+
+
 def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
     coop = state.coops[tx.payload["coop_id"]]
     recipe = state.recipes[tx.payload["recipe_id"]]
@@ -356,14 +375,19 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     # the surplus pool, which recycles it to citizens). Capped at treasury.
     cr = params.get("capital_rent") or {}
     machine_rent_rate = cr.get("per_machine_used", 0)
+    tool_rent_rate = cr.get("per_tool_used", 0)
     machines_used = recipe["inputs"].get("machines", 0) * runs
+    tools_used = recipe["inputs"].get("hand_tools", 0) * runs
     capital_rent = 0
-    if machine_rent_rate > 0 and machines_used > 0:
+    if (machine_rent_rate > 0 and machines_used > 0) or (tool_rent_rate > 0 and tools_used > 0):
         treasury = coop.get("treasury", 0)
-        capital_rent = min(machine_rent_rate * machines_used, treasury)
+        capital_rent = min(machine_rent_rate * machines_used + tool_rent_rate * tools_used, treasury)
         if capital_rent > 0:
             coop["treasury"] = treasury - capital_rent
-            state.surplus_pool += capital_rent
+            # Earmarked depreciation reserve: capital refresh draws from
+            # this fund only, so replacement money is never spent on
+            # dividends (the t~800 machine-death failure mode).
+            state.capital_fund += capital_rent
 
     # Produce outputs
     outputs_produced: dict[str, int] = {}
@@ -375,11 +399,23 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     # Round UP, never down: production at cost must not price below cost.
     # Floor division priced high-output staples (100 grain per run) at 0,
     # collapsing the whole market into pure surplus.
+    vwap_on = (params.get("cost_accounting") or {}).get("method") == "vwap"
     labor_cost = recipe["labor_hours"] * runs  # 1 credit/hour base accounting
-    energy_cost = energy_consumed * params.get("energy_price", 2)
-    input_cost = sum(
-        qty * runs * state.good_cost_baseline.get(good, 1) for good, qty in recipe["inputs"].items()
-    )
+    if vwap_on:
+        coop_id_ = tx.payload["coop_id"]
+        energy_cost = energy_consumed * _vwap_unit_cost(state, coop_id_, "electricity") if energy_consumed else 0
+        input_cost = sum(
+            qty * runs * _vwap_unit_cost(state, coop_id_, good) for good, qty in recipe["inputs"].items()
+        )
+        if (params.get("capital_refresh") or {}).get("interval_ticks", 0) > 0:
+            burned = recipe["inputs"].get("machines", 0) * runs + recipe["inputs"].get("hand_tools", 0) * runs
+            if burned:
+                state.capital_burned[coop_id_] = state.capital_burned.get(coop_id_, 0) + burned
+    else:
+        energy_cost = energy_consumed * params.get("energy_price", 2)
+        input_cost = sum(
+            qty * runs * state.good_cost_baseline.get(good, 1) for good, qty in recipe["inputs"].items()
+        )
     total_units = sum(outputs_produced.values())
 
     baselines_stamped: dict[str, int] = {}
@@ -787,6 +823,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                                 state.flags.append(flag)
 
         # buyers pay take x clearing (exact)
+        vwap_on = (params.get("cost_accounting") or {}).get("method") == "vwap"
         for w in winners:
             bid = w["bid"]
             payment = w["take"] * clearing
@@ -794,6 +831,8 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                 coop = state.coops[bid["coop_id"]]
                 coop["treasury"] = coop.get("treasury", 0) - payment
                 inv = coop["inventory"]
+                if vwap_on:
+                    _vwap_add(state, bid["coop_id"], good, inv.get(good, 0) - w["take"], w["take"], clearing)
             else:
                 state.balances[bid["bidder"]] -= payment
                 inv = state.citizen_inventory.setdefault(bid["bidder"], {})
@@ -1041,6 +1080,69 @@ def _coop_distribute_phase(state: WorldState, tick: int, params: dict[str, Any])
             "per_member": per,
             "total": paid,
             "treasury_after": coop["treasury"],
+        })
+    return events
+
+
+# Target capital stocks for public maintenance (until the toolsmith
+# milestone makes capital goods endogenous).
+_CAP_TARGETS = {"hand_tools": 100, "machines": 25}
+_CAP_REPLACEMENT_COST = {"hand_tools": 60, "machines": 1_500}
+
+
+def _capital_refresh_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every interval_ticks, top up capital stocks below target.
+
+    Replacement cost is paid from the surplus pool and retired (public
+    capital maintenance takes money out of supply). Deterministic: sorted
+    coop ids, spend while the pool lasts. Inert without the rule param.
+    """
+    cr = params.get("capital_refresh") or {}
+    interval = cr.get("interval_ticks", 0)
+    if interval <= 0 or tick % interval != 0:
+        return []
+
+    events: list[dict[str, Any]] = []
+    for coop_id in sorted(state.coops.keys()):
+        coop = state.coops[coop_id]
+        inv = coop.get("inventory", {})
+        top_up: dict[str, int] = {}
+        cost = 0
+        for good, target in _CAP_TARGETS.items():
+            need = max(0, target - inv.get(good, 0))
+            per_batch = cr.get(good, 0)
+            give = min(need, per_batch) if per_batch > 0 else need
+            if give > 0:
+                top_up[good] = give
+                cost += give * _CAP_REPLACEMENT_COST[good]
+        if not top_up or cost <= 0:
+            continue
+        if cost > state.capital_fund:
+            # partial in deterministic order: tools first, then machines
+            spend = 0
+            partial: dict[str, int] = {}
+            for good in sorted(top_up.keys(), key=lambda g: _CAP_REPLACEMENT_COST[g]):
+                for unit in range(top_up[good]):
+                    nxt = spend + _CAP_REPLACEMENT_COST[good]
+                    if nxt > state.capital_fund:
+                        break
+                    spend = nxt
+                    partial[good] = partial.get(good, 0) + 1
+            if not partial:
+                continue
+            top_up = partial
+            cost = spend
+        for good, qty in top_up.items():
+            inv[good] = inv.get(good, 0) + qty
+        state.capital_fund -= cost
+        state.money_retired += cost
+        events.append({
+            "tick": tick,
+            "action": "CAPITAL_REFRESH",
+            "coop_id": coop_id,
+            "granted": top_up,
+            "cost_retired": cost,
+            "fund_after": state.capital_fund,
         })
     return events
 
@@ -1621,6 +1723,11 @@ def apply_tick(
     # Patronage: co-op surplus above a buffer returns to members.
     coop_events = _coop_distribute_phase(state, tick, params)
     state.applied.extend(coop_events)
+
+    # Public capital maintenance: society replaces worn-out tools and
+    # machines, paying replacement cost from the pool (and retiring it).
+    refresh_events = _capital_refresh_phase(state, tick, params)
+    state.applied.extend(refresh_events)
 
     # End-of-tick governance settlement (deterministic) — spec §6
     gov_events = _settle_proposals(state, tick, params, ledger)

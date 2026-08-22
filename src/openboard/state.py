@@ -53,6 +53,17 @@ class WorldState:
     dividends_paid: int = 0  # cumulative credits paid as citizen dividends
     services_paid: int = 0  # cumulative credits refunded for essential consumption
     coop_dividends_paid: int = 0  # cumulative patronage dividends coop -> members
+    # True-cost accounting: per-coop VWAP per good, integer 1/10,000 cr per
+    # unit. Populated only when the active ruleset enables cost_accounting
+    # vwap (replay compat: absent param -> stays empty -> hash unchanged).
+    coop_vwap: dict[str, dict[str, int]] = field(default_factory=dict)
+    # Capital maintenance: cumulative tools/machines consumed per co-op
+    # (tracked only while capital_refresh is active).
+    capital_burned: dict[str, int] = field(default_factory=dict)
+    # Depreciation reserve: capital rent is earmarked here and ONLY capital
+    # refresh draws from it. Populated only when capital_rent is active
+    # (replay compat: absent param -> 0 -> hash unchanged).
+    capital_fund: int = 0
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -96,6 +107,12 @@ class WorldState:
             snap["services_paid"] = self.services_paid
         if self.coop_dividends_paid:
             snap["coop_dividends_paid"] = self.coop_dividends_paid
+        if self.coop_vwap:
+            snap["coop_vwap"] = {c: dict(sorted(g.items())) for c, g in sorted(self.coop_vwap.items())}
+        if self.capital_burned:
+            snap["capital_burned"] = dict(sorted(self.capital_burned.items()))
+        if self.capital_fund:
+            snap["capital_fund"] = self.capital_fund
         return snap
 
     def state_hash(self) -> str:
@@ -130,6 +147,9 @@ class WorldState:
             dividends_paid=self.dividends_paid,
             services_paid=self.services_paid,
             coop_dividends_paid=self.coop_dividends_paid,
+            coop_vwap={c: dict(g) for c, g in self.coop_vwap.items()},
+            capital_burned=dict(self.capital_burned),
+            capital_fund=self.capital_fund,
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:

@@ -89,12 +89,22 @@ def make_specialist(
                         "coop_id": coop_id, "good": "electricity", "max_price": price, "qty": qty,
                     }, v))
 
-        # produce when feasible and demand says so
+        # solvency guard: estimate the NEXT run's input cost at bid prices
+        # (book baseline + 1). Producing while unable to restock inputs is
+        # the insolvency death spiral observed at t~800 (millers at 0).
+        next_run_cost = recipe.get("energy", 0) * (state.good_cost_baseline.get("electricity", 2) + 1)
+        next_run_cost += sum(
+            q * (state.good_cost_baseline.get(g, 1) + 1)
+            for g, q in recipe["inputs"].items()
+            if g != "electricity"
+        )
+        # produce when feasible, demand says so, and we can restock after
         if (
             want_produce
             and c["labor_pool_hours"] >= recipe["labor_hours"]
             and c["inventory"].get("electricity", 0) >= recipe["energy"]
             and all(c["inventory"].get(g, 0) >= q for g, q in recipe["inputs"].items())
+            and (c.get("treasury", 0) >= next_run_cost or stock < stock_target // 2)
         ):
             out.append(_tx(tick, who, "PRODUCE", {
                 "coop_id": coop_id, "recipe_id": recipe_id, "runs": 1,

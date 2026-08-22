@@ -100,3 +100,24 @@
 - **Gate criteria amended**: recycling (dividends + services > 0, pool
   bounded) replaces 'retirement fires >= 1' — spending-priority keeps the
   pool below the retirement cap by design; retirement stays unit-tested.
+
+### 2026-08-22 — Hard Core: long-run survival (true cost + depreciation fund)
+
+- **VWAP true-cost accounting** (`cost_accounting: vwap`): baselines stamp
+  from co-ops' realized purchase costs (integer 1/10,000 cr moving average),
+  not book values. Millers' book-cost bleed to treasury 0 was the t~800
+  freeze's first cause. Off in genesis; old saves replay byte-identically.
+- **Earmarked depreciation fund**: machine/tool rent flows into a dedicated
+  `capital_fund`; ONLY capital refresh draws from it. Prior design let
+  dividends spend the machine-replacement money — society starved its own
+  capital (miners hit 0 machines). Self-balancing: 1,500 in per machine
+  burn, 1,500 out per replacement (fund steady ~980 at t2000).
+- **Capital refresh retirement**: public capital maintenance retires money
+  from supply (77k over 2,000 ticks) — the first working money sink; also
+  fixed 'retirement never fires'.
+- **Solvency guard**: specialists skip PRODUCE when treasury can't cover the
+  next run's inputs (prevents producing into insolvency).
+- **Long-run gate**: 3 seeds x 2,000 ticks, zero unmet in final 500, Gini
+  <= 0.5, utilities above floors, invariant exact (~100s).
+- Result: loop 1.00, Gini 0.475 (savings-creep remains, B5-B6), machines
+  sustained indefinitely, zero unmet from t1 to t2000.

@@ -40,9 +40,9 @@ SPECIALISTS = {
     "farmer": make_specialist("grain_farming", "grain", {"water": 5}, stock_target=100),
     "miller": make_specialist("grain_to_flour", "flour", {"grain": 10}, stock_target=100),
     "baker": make_specialist("flour_to_bread", "bread", {"flour": 5}, stock_target=100),
-    "miner": make_specialist("coal_mining", "coal", {}, stock_target=100),
+    "miner": make_specialist("coal_mining", "coal", {}, stock_target=120),
     "power_worker": make_specialist("electricity_coal", "electricity", {"coal": 4}, stock_target=250),
-    "water_worker": make_specialist("water_service", "water", {"electricity": 5}, stock_target=150),
+    "water_worker": make_specialist("water_service", "water", {"electricity": 5}, stock_target=250),
 }
 
 BASELINE_BOTS: list[tuple[str, Any, str]] = [
@@ -154,7 +154,7 @@ class Run:
     def _record_timeline(self) -> None:
         s = self.state
         treasuries = sum(c.get("treasury", 0) for c in s.coops.values())
-        money = sum(s.balances.values()) + s.surplus_pool + treasuries
+        money = sum(s.balances.values()) + s.surplus_pool + treasuries + s.capital_fund
         self.timeline["tick"].append(s.tick)
         wealth = (list(s.balances.values()) + [s.surplus_pool]
                   + [c.get("treasury", 0) for c in s.coops.values()])
@@ -346,7 +346,13 @@ class Run:
         # Public capital, private use: co-ops consuming machines as inputs
         # pay society the replacement cost into the surplus pool, which
         # recycles it to citizens (dividends/services).
-        params["capital_rent"] = {"per_machine_used": 1_500}
+        params["capital_rent"] = {"per_machine_used": 1_500, "per_tool_used": 60}
+        # True-cost accounting: baselines stamp from realized purchase
+        # costs (VWAP), not book values (hard core A1).
+        params["cost_accounting"] = {"method": "vwap"}
+        # Public capital maintenance until the toolsmith chain exists:
+        # worn tools/machines replaced, cost retired from the pool (A3).
+        params["capital_refresh"] = {"interval_ticks": 25, "hand_tools": 50, "machines": 5}
         # Patronage: co-op surplus above an operating buffer flows back to
         # worker-members. The buffer (1,600) also reserves rent capacity:
         # capital rent is charged from the treasury at use time, so a drained
@@ -483,6 +489,7 @@ def api_analytics():
             "citizens": citizens_money,
             "coop_treasuries": treasury_money,
             "surplus_pool": s.surplus_pool,
+                    "capital_fund": s.capital_fund,
         }
         # category pies from run totals
         def _by_cat(kind: str) -> dict[str, int]:
@@ -544,6 +551,34 @@ def api_analytics():
                 if streak >= 5:
                     alerts.append({"level": "alert",
                                    "msg": f"{citizen} unmet need {good} for {streak} ticks — supply or income failing"})
+        # supply halt: persistent unmet demand + near-zero world stock (A3)
+        halt_demand: dict[str, int] = {}
+        for citizen, streaks in s.unmet_needs.items():
+            for good, streak in streaks.items():
+                if streak >= 10:
+                    halt_demand[good] = halt_demand.get(good, 0) + 1
+        for good, sufferers in sorted(halt_demand.items()):
+            total_stock = sum(c["inventory"].get(good, 0) for c in s.coops.values())
+            total_stock += sum(ls["qty"] for ls in s.listings.get(good, []))
+            total_stock += sum(inv.get(good, 0) for inv in s.citizen_inventory.values())
+            if total_stock <= 5:
+                alerts.append({"level": "alert",
+                               "msg": f"SUPPLY HALT: {good} — {sufferers} citizens unserved 10+ ticks, world stock {total_stock}"})
+        # insolvency warning: treasury below a production run's input cost (A3).
+        # A coop's recipe is derived from its last PRODUCE event (state-only).
+        last_recipe: dict[str, str] = {}
+        for e in reversed(s.applied):
+            if e and e.get("action") == "PRODUCE" and e.get("coop_id") not in last_recipe:
+                last_recipe[e["coop_id"]] = e["recipe_id"]
+        for cid, c in sorted(s.coops.items()):
+            recipe = s.recipes.get(last_recipe.get(cid, ""))
+            if not recipe:
+                continue
+            est = recipe.get("energy", 0) * (s.good_cost_baseline.get("electricity", 2) + 1)
+            est += sum(q * (s.good_cost_baseline.get(g, 1) + 1) for g, q in recipe.get("inputs", {}).items() if g != "electricity")
+            if c.get("treasury", 0) < est:
+                alerts.append({"level": "warn",
+                               "msg": f"{cid} cannot afford next production run (₡{c.get('treasury', 0)} < ~₡{est} inputs)"})
 
         return jsonify({
             "ok": True,

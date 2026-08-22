@@ -268,7 +268,7 @@ class TestDashboardCircular:
         assert s.consumed_totals.get("water", 0) > 50
         assert s.dividends_paid > 0 or s.services_paid > 0
         # exact money invariant: initial + minted - retired
-        total = (sum(s.balances.values()) + s.surplus_pool
+        total = (sum(s.balances.values()) + s.surplus_pool + s.capital_fund
                  + sum(c.get("treasury", 0) for c in s.coops.values()))
         assert total == 500 * 14 + 600 * 4 + s.money_minted - s.money_retired
 

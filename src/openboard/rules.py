@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "transfer_limit": 0,  # 0 = unlimited
@@ -238,10 +238,27 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
 
     if "capital_rent" in params:
         cr = params["capital_rent"]
-        if not isinstance(cr, dict) or set(cr.keys()) != {"per_machine_used"}:
+        if not isinstance(cr, dict) or set(cr.keys()) != {"per_machine_used", "per_tool_used"}:
             return Reason.INVALID_RULESET
-        v = cr["per_machine_used"]
-        if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 5_000:
+        for key in ("per_machine_used", "per_tool_used"):
+            v = cr[key]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 5_000:
+                return Reason.INVALID_RULESET
+
+    if "cost_accounting" in params:
+        ca = params["cost_accounting"]
+        if not isinstance(ca, dict) or set(ca.keys()) != {"method"} or ca["method"] != "vwap":
+            return Reason.INVALID_RULESET
+
+    if "capital_refresh" in params:
+        crr = params["capital_refresh"]
+        if not isinstance(crr, dict) or set(crr.keys()) != {"interval_ticks", "hand_tools", "machines"}:
+            return Reason.INVALID_RULESET
+        for key in ("interval_ticks", "hand_tools", "machines"):
+            v = crr[key]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 10_000:
+                return Reason.INVALID_RULESET
+        if crr["interval_ticks"] < 1:
             return Reason.INVALID_RULESET
 
     # unknown extra keys are rejected too: complete documents only
