@@ -1369,6 +1369,22 @@ def _apply_rollback(state: WorldState, tx: Transaction, params: dict[str, Any]) 
     }
 
 
+def _is_constitutional(proposal_params: dict[str, Any], active_params: dict[str, Any]) -> bool:
+    """Constitutional matters: changing the voting rules themselves, the
+    oversight council, or the constitution phase. These require 2/3 of
+    ALL citizens (Stage 1: blocks majority capture via strategic votes —
+    proven necessary by the faction-capture experiment)."""
+    if proposal_params.get("governance") != active_params.get("governance"):
+        return True
+    new_council = (proposal_params.get("oversight") or {}).get("council_members")
+    old_council = (active_params.get("oversight") or {}).get("council_members")
+    if new_council != old_council:
+        return True
+    if proposal_params.get("constitution_phase") != active_params.get("constitution_phase"):
+        return True
+    return False
+
+
 def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger) -> list[dict[str, Any]]:
     """End-of-tick proposal tally. Deterministic (spec §6)."""
     events: list[dict[str, Any]] = []
@@ -1393,12 +1409,20 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
         votes_against = cast - votes_for
 
         passed = False
+        constitutional = (
+            proposal.get("intervention") is None
+            and _is_constitutional(proposal["params"], params)
+        )
         if cast >= quorum_needed and cast > 0:
             # Asymmetric recovery (§6.3): rollback inside the trial period
             # of the active version needs only a simple majority.
             in_trial_rollback = proposal["is_rollback"] and tick <= trial_end
             if in_trial_rollback:
                 passed = votes_for > votes_against
+            elif constitutional:
+                # 2/3 of ALL citizens — not just cast. Strategic abstention
+                # cannot lower the bar for changing the rules of voting.
+                passed = votes_for * 3 >= citizens * 2
             elif hardened:
                 passed = votes_for * 3 >= cast * 2  # >= 2/3 of cast
             else:
@@ -1435,6 +1459,7 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
                 "votes_for": votes_for,
                 "votes_against": votes_against,
                 "is_rollback": proposal["is_rollback"],
+                "constitutional": constitutional,
             })
         else:
             proposal["status"] = "failed"
@@ -1445,6 +1470,7 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
                 "result": "failed",
                 "votes_for": votes_for,
                 "votes_against": votes_against,
+                "constitutional": constitutional,
             })
 
     return events

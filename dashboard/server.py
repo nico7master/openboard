@@ -27,6 +27,7 @@ from openboard.engine import apply_tick  # noqa: E402
 from openboard.ledger import Ledger, Transaction  # noqa: E402
 from openboard.metrics import SimMetrics, gini  # noqa: E402
 from openboard.rules import DEFAULT_RULESET_PARAMS  # noqa: E402
+from openboard.politics import make_politician  # noqa: E402
 from openboard.sim import make_specialist  # noqa: E402
 from openboard.state import WorldState, genesis_state  # noqa: E402
 
@@ -76,6 +77,35 @@ BASELINE_COOPS = [
 BASELINE_TREASURIES = {"millers": 600, "bakers": 600, "power_plant": 600, "water_works": 600}
 
 
+# Stage 1 — democracy in the loop: a balanced electorate overlaid on the
+# economic cast when governance is LIVE. Egalitarians (equality), a
+# libertarian (low tax), pragmatists (fix shortages) — politics emerges
+# from the same citizens who work and eat. Name-based so saves round-trip.
+POLITICAL_ROLES = {
+    "worker_a": "egalitarian",
+    "worker_b": "egalitarian",
+    "baker_a": "egalitarian",
+    "farmer_b": "egalitarian",
+    "miner_b": "egalitarian",
+    "farmer_a": "libertarian",
+    "miner_a": "libertarian",
+    "power_b": "libertarian",
+    "water_b": "libertarian",
+    "miller_a": "pragmatist",
+    "miller_b": "pragmatist",
+    "power_a": "pragmatist",
+    "water_a": "pragmatist",
+    "baker_b": "pragmatist",
+}
+
+
+def _wrap_politics(name: str, fn, governance: bool):
+    role = POLITICAL_ROLES.get(name)
+    if governance and role:
+        return make_politician(fn, role)
+    return fn
+
+
 class Run:
     """One engine run: world, bots, timeline, feed, save/replay."""
 
@@ -120,7 +150,7 @@ class Run:
             self._inject({"after_tick": 1, "op": "pantry", "citizen": name,
                           "goods": {"bread": 3, "water": 3, "electricity": 3}})
         for name, fn, coop in BASELINE_BOTS:
-            self.bots[name] = {"fn": fn, "coop": coop}
+            self.bots[name] = {"fn": _wrap_politics(name, fn, self.governance), "coop": coop}
         self._record_timeline()
 
     # ------------------------------------------------------------ internals
@@ -337,7 +367,7 @@ class Run:
                     fn = dict((b[0], b[1]) for b in BASELINE_BOTS)[name]
                 else:
                     fn = ARCHETYPES.get("honest_worker")
-                run.bots[name] = {"fn": fn, "coop": coop}
+                run.bots[name] = {"fn": _wrap_politics(name, fn, run.governance), "coop": coop}
         return run
 
     def _params(self) -> dict[str, Any]:

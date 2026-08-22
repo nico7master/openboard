@@ -145,3 +145,23 @@
 - **scripts/stress.py**: reusable 3-seed deep diagnostic (gini path, unmet,
   velocity proxies, price-floor spreads, stockouts, flag census) — the
   harness that caught every issue above and both of my own regressions.
+
+### 2026-08-22 — Stage 1: democracy in the loop (GATE PASSED)
+
+- **Constitutional guard (new engine rule)**: changing governance params,
+  the oversight council, or constitution phase now requires 2/3 of ALL
+  citizens, not just cast votes. Motivated by the faction experiment: a
+  60% bloc otherwise rigs quorum->0 then repeals anything. Ordinary
+  economic rules stay simple-majority — democracy lives, capture dies.
+- **Perception = visible rich-poor spread (x100), not Gini**: empirically
+  the balance-Gini never crossed the trigger while the spread sat at 10x
+  for 1,400+ ticks (untaxed heal run). Citizens see spread, not statistics.
+- **Heal experiment PROVEN**: wealth tax removed at genesis -> society
+  detects divergence by tick ~200, votes the tax back stepwise, converges
+  at its OWN equilibrium: 900bp (society chose 4.5x the designer's 200bp
+  and stayed stable: gini 2,207, zero unmet, invariant exact).
+- **Politics does not destabilize**: governance-active normal runs match
+  the hardened baseline (gini ~2,193 vs 2,320; zero unmet final 500).
+- Determinism note: seeds 42/7/123 produce near-identical political
+  trajectories (same proposal counts) — political behavior is a function
+  of public state, as designed.
