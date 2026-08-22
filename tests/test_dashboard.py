@@ -21,7 +21,7 @@ class TestRunLifecycle:
     def test_fresh_run_and_ticks(self):
         r = server.Run(seed=42)
         assert r.state.tick == 1  # founding applied
-        assert len(r.state.coops) == 6
+        assert len(r.state.coops) == 18  # Stage 3: extended cast with competition + capital chain
         for _ in range(10):
             r.tick()
         assert r.state.tick == 11
@@ -30,11 +30,15 @@ class TestRunLifecycle:
 
     def test_money_invariant_holds(self):
         r = server.Run(seed=42)
-        initial = 500 * 14 + 600 * 4  # citizens + seeded treasuries (millers, bakers, power, water)
+        # genesis money = citizen stakes + seeded treasuries (read, don't hardcode:
+        # the baseline cast grows across stages)
+        initial = sum(r.state.balances.values()) + sum(
+            c.get("treasury", 0) for c in r.state.coops.values())
         for _ in range(20):
             r.tick()
         treasuries = sum(c.get("treasury", 0) for c in r.state.coops.values())
-        total = sum(r.state.balances.values()) + r.state.surplus_pool + treasuries
+        total = (sum(r.state.balances.values()) + r.state.surplus_pool
+                 + r.state.capital_fund + treasuries)
         assert total == initial + r.state.money_minted - r.state.money_retired
 
 

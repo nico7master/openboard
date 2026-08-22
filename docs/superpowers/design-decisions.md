@@ -165,3 +165,30 @@
 - Determinism note: seeds 42/7/123 produce near-identical political
   trajectories (same proposal counts) — political behavior is a function
   of public state, as designed.
+
+## Stage 3 — Competition & Real Capital (2026-08-22)
+- **D-S3-1: Market-priced capital baselines.** Under extended_catalog, machine/tool
+  cost baselines reflect batch market reality (160/25), not legacy one-off book
+  values (1,500/60). Book values leaking into VWAP fallback priced coal at 71
+  and froze the downstream chain. Lesson: a cost floor must reflect what the
+  good actually costs to make NOW, not what it once cost.
+- **D-S3-2: Capital goods list freely.** The consumable stock buffer (10) is
+  wrong for tools/machines: their purpose is sale. Buffering them deadlocked
+  the toolsmith chain (8 machines held, never listed). Capital lists at any stock.
+- **D-S3-3: Batch-cycle seed treasuries.** Heavy coops (steel ~800/run,
+  machines ~2,200/batch) need seeds covering multiple cycles until internal
+  trade reaches steady state; otherwise the chain freezes mid-flight.
+- **D-S3-4: Wind power as structural competition.** wind_farm recipe is
+  labor-only (zero material inputs): renewable electricity competes with coal
+  power on price forever, no input dependency.
+- **D-S3-5: Probe hygiene.** Timeline metrics (unmet etc.) are event-driven via
+  _last_events; driving apply_tick directly makes them stale. Gates must read
+  state.unmet_needs directly.
+- **D-S3-6: Capital backstop as social ownership made real.** When a producer
+  coop burns its last tool/machine and cannot afford a replacement, the market
+  cannot save it: no capital -> no output -> no income -> permanent deadlock.
+  Society's capital fund (earmarked depreciation rent) steps in as last-resort
+  maintainer of the means of production — exactly the source model's principle.
+  Guardrails: only proven production recipes count (no free capital for
+  never-producers), booked as retirement so the money invariant stays exact,
+  deterministic order, replay-safe via out-of-state cache.

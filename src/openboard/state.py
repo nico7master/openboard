@@ -217,6 +217,9 @@ def genesis_state(
         goods = {gid: dict(g) for gid, g in GOODS.items()}
     if recipes is None:
         recipes = {rid: r.to_dict() for rid, r in RECIPES.items()}
+        _default_recipes = True
+    else:
+        _default_recipes = False
     baselines = {gid: DEFAULT_BASELINES[gid] for gid in goods if gid in DEFAULT_BASELINES}
 
     if ruleset_params is None:
@@ -227,6 +230,19 @@ def genesis_state(
     else:
         params = dict(ruleset_params)
         params["triage_overrides"] = dict(ruleset_params.get("triage_overrides", {}))
+
+    if _default_recipes and params.get("extended_catalog"):
+        # Stage 3: competition & real capital. Activated only by rule
+        # param so pre-Stage-3 worlds replay byte-identically.
+        from .catalog import EXTENDED_RECIPES
+        recipes.update({rid: r.to_dict() for rid, r in EXTENDED_RECIPES.items()})
+        # Capital baselines must reflect MARKET reality (batch-built
+        # machines ~160cr), not the legacy one-off book value (1,500).
+        # Otherwise the book value leaks into producer cost floors via
+        # VWAP fallback and prices coal at 71cr — killing the whole
+        # downstream chain (observed collapse by t~200).
+        baselines["machines"] = 160
+        baselines["hand_tools"] = 25
 
     genesis_ruleset = RuleSetDoc(
         version=1, params=params, activated_at=0, change_tx_hash="genesis"

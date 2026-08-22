@@ -44,6 +44,18 @@ SPECIALISTS = {
     "miner": make_specialist("coal_mining", "coal", {}, stock_target=120),
     "power_worker": make_specialist("electricity_coal", "electricity", {"coal": 4}, stock_target=250),
     "water_worker": make_specialist("water_service", "water", {"electricity": 5}, stock_target=250),
+    # Stage 3: toolsmith chain (recipes live in the extended catalog)
+    "logger": make_specialist("logging", "timber", {}, stock_target=40),
+    "sawyer": make_specialist("sawmill", "lumber", {"timber": 5}, stock_target=40),
+    "iron_miner": make_specialist("iron_mining", "iron_ore", {}, stock_target=60),
+    "steelworker": make_specialist("steelmaking_batch", "steel", {"iron_ore": 20, "coal": 12}, stock_target=60),
+    "sand_worker": make_specialist("sand_extraction", "sand", {}, stock_target=60),
+    "glassmaker": make_specialist("glassmaking", "glass", {"sand": 4}, stock_target=40),
+    "electronics_worker": make_specialist("electronics_assembly", "electronics", {"steel": 1, "glass": 2, "coal": 1}, stock_target=30),
+    "toolmaker": make_specialist("hand_tools_craft", "hand_tools", {"steel": 2, "lumber": 1}, stock_target=60),
+    "machinist": make_specialist("machine_building_batch", "machines", {"steel": 20, "electronics": 6, "glass": 4}, stock_target=25),
+    # Competition: second power producer
+    "wind_worker": make_specialist("wind_farm", "electricity", {}, stock_target=250),
 }
 
 BASELINE_BOTS: list[tuple[str, Any, str]] = [
@@ -62,6 +74,32 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
     ("water_b", SPECIALISTS["water_worker"], "water_works"),
     ("worker_a", ARCHETYPES["honest_worker"], "farmers"),
     ("worker_b", ARCHETYPES["honest_worker"], "farmers"),
+    # Stage 3: capital chain
+    ("logger_a", SPECIALISTS["logger"], "loggers"),
+    ("logger_b", SPECIALISTS["logger"], "loggers"),
+    ("sawyer_a", SPECIALISTS["sawyer"], "sawmill_co"),
+    ("sawyer_b", SPECIALISTS["sawyer"], "sawmill_co"),
+    ("iron_a", SPECIALISTS["iron_miner"], "iron_miners"),
+    ("iron_b", SPECIALISTS["iron_miner"], "iron_miners"),
+    ("steel_a", SPECIALISTS["steelworker"], "steelworks"),
+    ("steel_b", SPECIALISTS["steelworker"], "steelworks"),
+    ("sand_a", SPECIALISTS["sand_worker"], "sand_co"),
+    ("sand_b", SPECIALISTS["sand_worker"], "sand_co"),
+    ("glass_a", SPECIALISTS["glassmaker"], "glassworks"),
+    ("glass_b", SPECIALISTS["glassmaker"], "glassworks"),
+    ("elec_a", SPECIALISTS["electronics_worker"], "electronics_co"),
+    ("elec_b", SPECIALISTS["electronics_worker"], "electronics_co"),
+    ("tool_a", SPECIALISTS["toolmaker"], "toolworks"),
+    ("tool_b", SPECIALISTS["toolmaker"], "toolworks"),
+    ("mach_a", SPECIALISTS["machinist"], "machine_works"),
+    ("mach_b", SPECIALISTS["machinist"], "machine_works"),
+    # Competition: second power, grain, bread
+    ("wind_a", SPECIALISTS["wind_worker"], "wind_farm"),
+    ("wind_b", SPECIALISTS["wind_worker"], "wind_farm"),
+    ("farmer_c", SPECIALISTS["farmer"], "farmers_north"),
+    ("farmer_d", SPECIALISTS["farmer"], "farmers_north"),
+    ("baker_c", SPECIALISTS["baker"], "city_bakers"),
+    ("baker_d", SPECIALISTS["baker"], "city_bakers"),
 ]
 
 BASELINE_COOPS = [
@@ -71,10 +109,41 @@ BASELINE_COOPS = [
     {"coop_id": "miners", "members": ["miner_a", "miner_b"]},
     {"coop_id": "power_plant", "members": ["power_a", "power_b"]},
     {"coop_id": "water_works", "members": ["water_a", "water_b"]},
+    {"coop_id": "loggers", "members": ["logger_a", "logger_b"]},
+    {"coop_id": "sawmill_co", "members": ["sawyer_a", "sawyer_b"]},
+    {"coop_id": "iron_miners", "members": ["iron_a", "iron_b"]},
+    {"coop_id": "steelworks", "members": ["steel_a", "steel_b"]},
+    {"coop_id": "sand_co", "members": ["sand_a", "sand_b"]},
+    {"coop_id": "glassworks", "members": ["glass_a", "glass_b"]},
+    {"coop_id": "electronics_co", "members": ["elec_a", "elec_b"]},
+    {"coop_id": "toolworks", "members": ["tool_a", "tool_b"]},
+    {"coop_id": "machine_works", "members": ["mach_a", "mach_b"]},
+    {"coop_id": "wind_farm", "members": ["wind_a", "wind_b"]},
+    {"coop_id": "farmers_north", "members": ["farmer_c", "farmer_d"]},
+    {"coop_id": "city_bakers", "members": ["baker_c", "baker_d"]},
 ]
 
 # Input-buying coops need starting treasuries to bootstrap their chains.
-BASELINE_TREASURIES = {"millers": 600, "bakers": 600, "power_plant": 600, "water_works": 600}
+BASELINE_TREASURIES = {
+    "millers": 600, "bakers": 600, "power_plant": 600, "water_works": 600,
+    "sawmill_co": 600, "glassworks": 600,
+    "toolworks": 600, "city_bakers": 600, "farmers_north": 600,
+    # heavy-batch coops: seeds cover MULTIPLE batch cycles until the
+    # chain's internal trade reaches steady state (a machine batch alone
+    # costs ~2,200cr in inputs; too-small seeds froze the chain mid-flight)
+    "steelworks": 2_600, "electronics_co": 1_600, "machine_works": 4_200,
+}
+# Stage 3 one-time capital bootstrap: extraction coops get seed tools and
+# machines ONLY at founding; every replacement is bought on the market
+# from toolworks/machine_works at cost. Breaks the chicken-and-egg (nothing
+# can be produced before tools exist) without a standing rule.
+CAPITAL_BOOTSTRAP = {
+    "loggers": {"hand_tools": 10},
+    "sand_co": {"hand_tools": 10},
+    "iron_miners": {"hand_tools": 5, "machines": 2},
+    "miners": {"hand_tools": 5, "machines": 3},
+    "power_plant": {"machines": 2},
+}
 
 
 # Stage 1 — democracy in the loop: a balanced electorate overlaid on the
@@ -87,15 +156,26 @@ POLITICAL_ROLES = {
     "baker_a": "egalitarian",
     "farmer_b": "egalitarian",
     "miner_b": "egalitarian",
+    "wind_a": "egalitarian",
+    "baker_c": "egalitarian",
+    "tool_a": "egalitarian",
+    "glass_a": "egalitarian",
     "farmer_a": "libertarian",
     "miner_a": "libertarian",
     "power_b": "libertarian",
     "water_b": "libertarian",
+    "iron_a": "libertarian",
+    "sawyer_a": "libertarian",
+    "mach_a": "libertarian",
     "miller_a": "pragmatist",
     "miller_b": "pragmatist",
     "power_a": "pragmatist",
     "water_a": "pragmatist",
     "baker_b": "pragmatist",
+    "logger_a": "pragmatist",
+    "steel_a": "pragmatist",
+    "elec_a": "pragmatist",
+    "sand_a": "pragmatist",
 }
 
 
@@ -144,6 +224,9 @@ class Run:
         self._apply_batch(1, founding)
         for coop, amount in BASELINE_TREASURIES.items():
             self._inject({"after_tick": 1, "op": "treasury", "coop": coop, "amount": amount})
+        # one-time capital seed (recorded injection, replayed on load)
+        for coop, goods in CAPITAL_BOOTSTRAP.items():
+            self._inject({"after_tick": 1, "op": "capital", "coop": coop, "goods": goods})
         # starting pantry: 3 days of essentials so the bootstrap transient
         # (first production/sales ticks) never registers as unmet need
         for name, _, _ in BASELINE_BOTS:
@@ -181,6 +264,10 @@ class Run:
             self.state.balances[inj["name"]] = inj["balance"]
             self.state.labor_hours[inj["name"]] = self.state.labor_hours.get(inj["name"], 0)
             self.state.citizen_inventory.setdefault(inj["name"], {})
+        elif op == "capital":
+            inv = self.state.coops[inj["coop"]]["inventory"]
+            for good, qty in inj["goods"].items():
+                inv[good] = inv.get(good, 0) + qty
         elif op == "pantry":
             inv = self.state.citizen_inventory.setdefault(inj["citizen"], {})
             for good, qty in inj["goods"].items():
@@ -402,9 +489,11 @@ class Run:
         # at ~5,400 cr — the honest-worker equilibrium. See
         # tests/test_hardcore.py::test_zombie_wage_farming_is_bounded.
         # params["labor_pool_cap"] = 2_000  # available for adversarial study
-        # Public capital maintenance until the toolsmith chain exists:
-        # worn tools/machines replaced, cost retired from the pool (A3).
-        params["capital_refresh"] = {"interval_ticks": 25, "hand_tools": 50, "machines": 5}
+        # Stage 3: the toolsmith chain replaces the capital_refresh rule.
+        # Co-ops buy tools/machines on the market; the rule stays available
+        # for adversarial what-if study but is OFF in the baseline.
+        params["extended_catalog"] = True
+        params["capital_backstop"] = {"interval_ticks": 10}
         # Patronage: co-op surplus above an operating buffer flows back to
         # worker-members. The buffer (1,600) also reserves rent capacity:
         # capital rent is charged from the treasury at use time, so a drained
@@ -413,9 +502,10 @@ class Run:
         # Utilities bridge: coal_mining consumes hand_tools/machines per
         # run and no toolsmith coop exists yet (capital goods = next
         # milestone). Larger votable endowment keeps utilities alive.
+        # Utilities-only endowment: capital comes from the market now
+        # (targeted seed via CAPITAL_BOOTSTRAP, replacements purchased).
         params["bootstrap_endowment"] = {
             "water": 200, "electricity": 500,
-            "hand_tools": 100, "machines": 25,
         }
         if self.governance:
             params["governance"] = {"enabled": True, "vote_window_ticks": 3,
@@ -636,7 +726,8 @@ def api_analytics():
             "ok": True,
             "tick": s.tick,
             "money_pie": money_pie,
-            "money_total": citizens_money + treasury_money + s.surplus_pool,
+            "money_total": (citizens_money + treasury_money
+                            + s.surplus_pool + s.capital_fund),
             "money_minted": s.money_minted,
             "money_retired": s.money_retired,
             "produced_pie": _by_cat("produced"),

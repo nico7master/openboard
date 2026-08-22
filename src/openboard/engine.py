@@ -419,10 +419,14 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
         input_cost = sum(
             qty * runs * _vwap_unit_cost(state, coop_id_, good) for good, qty in recipe["inputs"].items()
         )
-        if (params.get("capital_refresh") or {}).get("interval_ticks", 0) > 0:
-            burned = recipe["inputs"].get("machines", 0) * runs + recipe["inputs"].get("hand_tools", 0) * runs
-            if burned:
-                state.capital_burned[coop_id_] = state.capital_burned.get(coop_id_, 0) + burned
+        # Track capital consumption whenever capital goods are used as
+        # inputs (Stage 3 gate metric: self-sustained capital). Was gated
+        # behind capital_refresh; decoupled so market-bought capital is
+        # also visible. capital_burned only enters snapshots when nonzero —
+        # worlds that never burn capital hash identically.
+        burned = recipe["inputs"].get("machines", 0) * runs + recipe["inputs"].get("hand_tools", 0) * runs
+        if burned:
+            state.capital_burned[coop_id_] = state.capital_burned.get(coop_id_, 0) + burned
     else:
         energy_cost = energy_consumed * params.get("energy_price", 2)
         input_cost = sum(
@@ -1385,6 +1389,85 @@ def _is_constitutional(proposal_params: dict[str, Any], active_params: dict[str,
     return False
 
 
+_BACKSTOP_CACHE: dict[int, list] = {}  # id(state) -> [scanned_len, {coop: set(recipe_ids)}]
+
+
+def _capital_backstop_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Society's last-resort capital maintenance (Stage 3 deadlock fix).
+
+    A producer co-op that lacks recipe-required tools/machines AND cannot
+    afford the market price is structurally deadlocked: no capital -> no
+    output -> no income -> never able to buy capital (observed: miners
+    frozen at treasury == machine floor forever). Society owns the means
+    of production, so the capital fund (earmarked machine/tool rent)
+    provides the replacement directly.
+
+    Booked as retirement: credits leave the capital fund and leave supply,
+    keeping the money invariant exact. Deterministic: sorted coop ids.
+    Inert without the rule param (replay compat).
+    """
+    cb = params.get("capital_backstop") or {}
+    interval = cb.get("interval_ticks", 0)
+    if interval <= 0 or tick % interval != 0:
+        return []
+
+    # Which recipes has each coop ACTUALLY run? Derived from applied
+    # history (deterministic), cached outside state so state hashes and
+    # replays stay byte-identical. Only proven production counts: a coop
+    # whose recipes never need machines must not receive them free.
+    cache = _BACKSTOP_CACHE.setdefault(id(state), [0, {}])
+    scanned, recipe_map = cache
+    if len(state.applied) > scanned:
+        for e in state.applied[scanned:]:
+            if e.get("action") == "PRODUCE":
+                recipe_map.setdefault(e.get("coop_id"), set()).add(e.get("recipe_id"))
+        cache[0] = len(state.applied)
+
+    events: list[dict[str, Any]] = []
+    for coop_id in sorted(state.coops.keys()):
+        coop = state.coops[coop_id]
+        inv = coop.get("inventory", {})
+        # capital goods required by the recipes THIS coop actually runs
+        required: dict[str, int] = {}
+        for rid in sorted(recipe_map.get(coop_id, ())):
+            recipe = state.recipes.get(rid)
+            if not recipe:
+                continue
+            for good in ("hand_tools", "machines"):
+                q = recipe.get("inputs", {}).get(good, 0)
+                if q > 0:
+                    required[good] = max(required.get(good, 0), q)
+        if not required:
+            continue
+        gave: dict[str, int] = {}
+        cost = 0
+        for good in sorted(required.keys()):
+            need = required[good] - inv.get(good, 0)
+            if need <= 0:
+                continue
+            price = state.good_cost_baseline.get(good, 1) + 1
+            # deadlock signature: cannot afford even one unit on the market
+            if coop.get("treasury", 0) >= price:
+                continue
+            while need > 0 and state.capital_fund >= price:
+                state.capital_fund -= price
+                state.money_retired += price
+                inv[good] = inv.get(good, 0) + 1
+                cost += price
+                need -= 1
+                gave[good] = gave.get(good, 0) + 1
+        if gave:
+            events.append({
+                "tick": tick,
+                "action": "CAPITAL_BACKSTOP",
+                "coop_id": coop_id,
+                "gave": gave,
+                "cost": cost,
+                "fund_after": state.capital_fund,
+            })
+    return events
+
+
 def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger) -> list[dict[str, Any]]:
     """End-of-tick proposal tally. Deterministic (spec §6)."""
     events: list[dict[str, Any]] = []
@@ -1815,6 +1898,11 @@ def apply_tick(
     # machines, paying replacement cost from the pool (and retiring it).
     refresh_events = _capital_refresh_phase(state, tick, params)
     state.applied.extend(refresh_events)
+
+    # Capital backstop: society un-deadlocks producer co-ops that burned
+    # their last machine and can never afford another (deterministic).
+    backstop_events = _capital_backstop_phase(state, tick, params)
+    state.applied.extend(backstop_events)
 
     # End-of-tick governance settlement (deterministic) — spec §6
     gov_events = _settle_proposals(state, tick, params, ledger)

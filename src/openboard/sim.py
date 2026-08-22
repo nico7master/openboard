@@ -97,6 +97,27 @@ def make_specialist(
                         "coop_id": coop_id, "good": "electricity", "max_price": price, "qty": qty,
                     }, v))
 
+        # capital maintenance: keep recipe-required tools/machines in
+        # stock ALWAYS, not only when producing. Machines burn during
+        # production runs; if replenishment waits for a produce signal,
+        # a burned-out coop can never restart (observed: miners stuck at
+        # 0 machines forever because coal stock stayed above target).
+        for cap_good in ("hand_tools", "machines"):
+            cap_need = recipe["inputs"].get(cap_good, 0)
+            if cap_need <= 0:
+                continue
+            cap_have = c["inventory"].get(cap_good, 0)
+            if cap_have < cap_need:
+                cap_floor = state.good_cost_baseline.get(cap_good, 1)
+                cap_price = cap_floor + 1
+                cap_treasury = c.get("treasury", 0)
+                cap_qty = min(cap_need - cap_have, cap_treasury // cap_price) if cap_price > 0 else cap_need - cap_have
+                if cap_qty > 0:
+                    out.append(_tx(tick, who, "BID_FOR_COOP", {
+                        "coop_id": coop_id, "good": cap_good,
+                        "max_price": cap_price, "qty": cap_qty,
+                    }, v))
+
         # solvency guard: estimate the NEXT run's input cost at bid prices
         # (book baseline + 1). Producing while unable to restock inputs is
         # the insolvency death spiral observed at t~800 (millers at 0).
@@ -118,11 +139,16 @@ def make_specialist(
                 "coop_id": coop_id, "recipe_id": recipe_id, "runs": 1,
             }, v))
 
-        # list the surplus of our output (keep a buffer of 10)
+        # list the surplus of our output (keep a buffer of 10).
+        # Capital goods (tools/machines) list at ANY stock: their whole
+        # purpose is sale, and a fixed buffer deadlocked the toolsmith
+        # chain (machine_works held 8 machines, could never list them,
+        # buyers starved -> economy-wide capital freeze).
         held = c["inventory"].get(output_good, 0)
-        if held > 10:
+        buffer = 0 if output_good in ("hand_tools", "machines") else 10
+        if held > buffer:
             out.append(_tx(tick, who, "LIST_GOOD", {
-                "coop_id": coop_id, "good": output_good, "qty": held - 10,
+                "coop_id": coop_id, "good": output_good, "qty": held - buffer,
             }, v))
 
         out.extend(personal_needs(who, state, params, tick))

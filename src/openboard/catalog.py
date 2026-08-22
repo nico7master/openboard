@@ -149,6 +149,25 @@ RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
 # Integer cost baselines (credits per unit) — seeds for "production at cost"
 # accounting. Each production run recomputes and overwrites the baselines of
 # the goods it produces (last-production-cost accounting).
+# Extended catalog (Stage 3: competition & real capital). These recipes
+# activate ONLY when the ruleset param `extended_catalog` is true — old
+# worlds replay byte-identically (recipes hash into state).
+#
+# Economics notes:
+# - machine_building_batch: 8 machines/run at ~1/4 the book unit cost of
+#   one-off machine_building (scale). Affordable replacement is what makes
+#   market-bought capital viable (coal revenue ~360cr/run could never
+#   cover a 2160cr machine every run).
+# - steelmaking_batch: economies of scale (4.5 labor-h/steel vs 6).
+# - wind_farm: renewable electricity, labor-only cost — diversifies the
+#   power sector and gives electricity real competition.
+EXTENDED_RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
+    _r("machine_building_batch", {"steel": 20, "electronics": 6, "glass": 4}, 120, 60, {"machines": 8}),
+    _r("steelmaking_batch", {"iron_ore": 20, "coal": 12}, 90, 80, {"steel": 20}),
+    _r("wind_farm", {}, 25, 0, {"electricity": 100}),
+]}
+
+
 DEFAULT_BASELINES: dict[str, int] = {
     "grain": 3,
     "vegetables": 4,

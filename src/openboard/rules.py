@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "transfer_limit": 0,  # 0 = unlimited
@@ -244,6 +244,18 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             v = cr[key]
             if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 5_000:
                 return Reason.INVALID_RULESET
+
+    if "extended_catalog" in params:
+        if not isinstance(params["extended_catalog"], bool):
+            return Reason.INVALID_RULESET
+
+    if "capital_backstop" in params:
+        cb = params["capital_backstop"]
+        if not isinstance(cb, dict) or set(cb.keys()) != {"interval_ticks"}:
+            return Reason.INVALID_RULESET
+        iv = cb["interval_ticks"]
+        if isinstance(iv, bool) or not isinstance(iv, int) or iv <= 0 or iv > 1_000:
+            return Reason.INVALID_RULESET
 
     if "cost_accounting" in params:
         ca = params["cost_accounting"]

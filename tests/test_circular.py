@@ -270,7 +270,9 @@ class TestDashboardCircular:
         # exact money invariant: initial + minted - retired
         total = (sum(s.balances.values()) + s.surplus_pool + s.capital_fund
                  + sum(c.get("treasury", 0) for c in s.coops.values()))
-        assert total == 500 * 14 + 600 * 4 + s.money_minted - s.money_retired
+        from server import BASELINE_TREASURIES
+        initial = 500 * len(s.balances) + sum(BASELINE_TREASURIES.values())
+        assert total == initial + s.money_minted - s.money_retired
 
     def test_analytics_has_circular_sections(self):
         r = server.Run(seed=42)
