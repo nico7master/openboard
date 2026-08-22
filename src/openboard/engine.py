@@ -254,7 +254,18 @@ def _validate_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -
         return Reason.NOT_A_MEMBER
     if hours <= 0:
         return Reason.INVALID_HOURS
+    # Anti-exploit (wage-mint farming): logging labor society cannot use
+    # mints unbacked credits forever. A coop's labor pool only accepts
+    # hours it could plausibly consume (cap = planned slack).
+    cap = params.get("labor_pool_cap")
+    if cap is not None and coop["labor_pool_hours"] + hours > cap:
+        return Reason.LABOR_POOL_FULL
     if hours > params.get("max_work_hours_per_tick", 8):
+        return Reason.INVALID_HOURS
+    # Cumulative per-tick cap (anti multi-transaction mint exploit): the
+    # per-tx cap alone allowed N WORK txs to mint N x cap in one tick.
+    cum_cap = params.get("max_work_hours_cumulative")
+    if cum_cap is not None and state.worked_hours_tick.get(tx.sender, 0) + hours > cum_cap:
         return Reason.INVALID_HOURS
 
     return None
@@ -276,6 +287,7 @@ def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
 
     coop["labor_pool_hours"] += hours
     state.labor_hours[tx.sender] += hours
+    state.worked_hours_tick[tx.sender] = state.worked_hours_tick.get(tx.sender, 0) + hours
 
     return {
         "tick": tx.tick,
@@ -1084,6 +1096,41 @@ def _coop_distribute_phase(state: WorldState, tick: int, params: dict[str, Any])
     return events
 
 
+def _wealth_tax_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Wealth tax above a threshold, paid into the surplus pool.
+
+    Integer floor math, deterministic (sorted citizens). A pure transfer:
+    money supply unchanged. Inert without the rule param.
+    """
+    wt = params.get("wealth_tax")
+    if not wt:
+        return []
+    threshold = wt.get("threshold", 0)
+    rate_bp = wt.get("rate_bp", 0)
+    if threshold <= 0 or rate_bp <= 0:
+        return []
+
+    events: list[dict[str, Any]] = []
+    for who in sorted(state.balances.keys()):
+        bal = state.balances[who]
+        excess = bal - threshold
+        if excess <= 0:
+            continue
+        tax = excess * rate_bp // 10_000
+        if tax <= 0:
+            continue
+        state.balances[who] = bal - tax
+        state.surplus_pool += tax
+        events.append({
+            "tick": tick,
+            "action": "WEALTH_TAX",
+            "citizen": who,
+            "tax": tax,
+            "pool_after": state.surplus_pool,
+        })
+    return events
+
+
 # Target capital stocks for public maintenance (until the toolsmith
 # milestone makes capital goods endogenous).
 _CAP_TARGETS = {"hand_tools": 100, "machines": 25}
@@ -1449,6 +1496,11 @@ def _detect_anomalies(state: WorldState, tick: int, params: dict[str, Any], list
         by_coop: dict[str, int] = {}
         for e in entries:
             by_coop[e["coop_id"]] = by_coop.get(e["coop_id"], 0) + e["qty"]
+        # Dominance only means something with competition to dominate:
+        # with a single producer per good (baseline structure), 100% share
+        # is structural, not abuse. Require >= 2 listing coops.
+        if len(by_coop) < 2:
+            continue
         for coop_id in sorted(by_coop.keys()):
             if by_coop[coop_id] * 10_000 > ov["market_power_share_bp"] * total:
                 key = ("MARKET_POWER", coop_id, good)
@@ -1615,6 +1667,9 @@ def apply_tick(
     """
     tick = state.tick + 1 if current_tick is None else current_tick
 
+    # Ephemeral per-tick WORK counter: fresh every tick (never snapshotted).
+    state.worked_hours_tick = {}
+
     # Version pinning: the version active for THIS tick, resolved from history
     from .rules import active_version
 
@@ -1723,6 +1778,12 @@ def apply_tick(
     # Patronage: co-op surplus above a buffer returns to members.
     coop_events = _coop_distribute_phase(state, tick, params)
     state.applied.extend(coop_events)
+
+    # Progressive wealth tax: balances above the threshold pay a rate into
+    # the surplus pool (recycled via dividends/services). Caps savings
+    # concentration without touching subsistence balances.
+    tax_events = _wealth_tax_phase(state, tick, params)
+    state.applied.extend(tax_events)
 
     # Public capital maintenance: society replaces worn-out tools and
     # machines, paying replacement cost from the pool (and retiring it).

@@ -64,6 +64,10 @@ class WorldState:
     # refresh draws from it. Populated only when capital_rent is active
     # (replay compat: absent param -> 0 -> hash unchanged).
     capital_fund: int = 0
+    # Ephemeral per-tick WORK-hours counter (anti multi-tx mint exploit).
+    # Cleared at tick boundaries before any snapshot -> state hashes are
+    # unaffected; populated only while transactions are being applied.
+    worked_hours_tick: dict[str, int] = field(default_factory=dict)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""

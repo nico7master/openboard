@@ -31,9 +31,17 @@ def make_specialist(
         coop_id = _my_coop(state, who)
         if coop_id is None:
             return []
-        out = [_tx(tick, who, "WORK", {"coop_id": coop_id, "hours": 8}, v)]
         c = state.coops[coop_id]
         recipe = state.recipes[recipe_id]
+        out = []
+        # Right to work: citizens log hours freely; society mints the wage
+        # (D4). Idle-pool wages act as the income floor that funds essential
+        # consumption — recycled by wealth tax + dividends, NOT an exploit.
+        # The engine-side labor_pool_cap bounds adversarial farming; honest
+        # pools never approach it because production consumes them.
+        _cap = params.get("labor_pool_cap")
+        if _cap is None or c["labor_pool_hours"] + 8 <= _cap:
+            out.append(_tx(tick, who, "WORK", {"coop_id": coop_id, "hours": 8}, v))
 
         listed = sum(
             e["qty"] for e in state.listings.get(output_good, [])

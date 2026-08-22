@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "transfer_limit": 0,  # 0 = unlimited
@@ -259,6 +259,27 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 10_000:
                 return Reason.INVALID_RULESET
         if crr["interval_ticks"] < 1:
+            return Reason.INVALID_RULESET
+
+    if "wealth_tax" in params:
+        wt = params["wealth_tax"]
+        if not isinstance(wt, dict) or set(wt.keys()) != {"threshold", "rate_bp"}:
+            return Reason.INVALID_RULESET
+        for key in ("threshold", "rate_bp"):
+            v = wt[key]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 1_000_000:
+                return Reason.INVALID_RULESET
+        if wt["rate_bp"] > 10_000:
+            return Reason.INVALID_RULESET
+
+    if "max_work_hours_cumulative" in params:
+        v = params["max_work_hours_cumulative"]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 1 or v > 168:
+            return Reason.INVALID_RULESET
+
+    if "labor_pool_cap" in params:
+        v = params["labor_pool_cap"]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 1_000_000:
             return Reason.INVALID_RULESET
 
     # unknown extra keys are rejected too: complete documents only

@@ -67,3 +67,70 @@ class TestLongRunSurvival:
 
             # (g) capital fund sustained replacement (machines alive)
             assert s.capital_burned.get("miners", 0) > 0, f"seed {seed}: no capital burn tracked"
+
+
+class TestExploits:
+    def test_zombie_wage_farming_is_bounded(self):
+        """Two citizens found a coop, log hours, never produce. Minted
+        income must converge under the progressive wealth tax (steady state
+        ~5,400 cr at 8/tick with 2% above 5,000)."""
+        from openboard.engine import apply_tick  # noqa: E402
+        from openboard.ledger import Transaction  # noqa: E402
+        from openboard.state import genesis_state  # noqa: E402
+
+        params = {
+            "needs": {},
+            "wealth_tax": {"threshold": 5_000, "rate_bp": 200},
+            "max_work_hours_per_tick": 8,
+        }
+        s = genesis_state({"zed_a": 500, "zed_b": 500}, ruleset_params=params)
+        led = __import__("openboard.ledger", fromlist=["Ledger"]).Ledger()
+        v = s.ruleset_version
+        apply_tick(s, led, [Transaction(tick=1, sender="zed_a", action="FOUND_COOP",
+                                        payload={"coop_id": "zombies", "name": "zombies",
+                                                 "members": ["zed_a", "zed_b"]},
+                                        ruleset_version=v)], current_tick=1)
+        assert "zombies" in s.coops, "founding rejected"
+        for t in range(2, 1_002):
+            batch = [
+                Transaction(tick=t, sender=w, action="WORK",
+                            payload={"coop_id": "zombies", "hours": 8},
+                            ruleset_version=v)
+                for w in ("zed_a", "zed_b")
+            ]
+            apply_tick(s, led, batch, current_tick=t)
+
+        for w in ("zed_a", "zed_b"):
+            bal = s.balances[w]
+            assert bal < 7_000, f"{w} farming unbounded: {bal}"
+        assert any(e and e.get("action") == "WEALTH_TAX" for e in s.applied)
+
+    def test_multiple_work_per_tick_capped(self):
+        """An attacker submitting many WORK txs in one tick must not mint
+        beyond max_work_hours_per_tick cumulative hours."""
+        from openboard.engine import apply_tick  # noqa: E402
+        from openboard.ledger import Ledger, Transaction  # noqa: E402
+        from openboard.state import genesis_state  # noqa: E402
+
+        params = {"needs": {}, "max_work_hours_per_tick": 8, "max_work_hours_cumulative": 8}
+        s = genesis_state({"greed": 500, "mule": 500}, ruleset_params=params)
+        led = Ledger()
+        v = s.ruleset_version
+        apply_tick(s, led, [Transaction(tick=1, sender="greed", action="FOUND_COOP",
+                                        payload={"coop_id": "sweatshop", "name": "sweatshop",
+                                                 "members": ["greed", "mule"]},
+                                        ruleset_version=v)], current_tick=1)
+        assert "sweatshop" in s.coops
+        # attack A: identical txs -> all duplicates after the first hash
+        # attack B: distinct txs (8,7,6,5,4,3,2,1 = 36h) -> dedup-proof
+        hours_list = [8, 8, 8, 7, 6, 5, 4, 3, 2, 1]
+        apply_tick(s, led, [
+            Transaction(tick=2, sender="greed", action="WORK",
+                        payload={"coop_id": "sweatshop", "hours": h}, ruleset_version=v)
+            for h in hours_list
+        ], current_tick=2)
+        # cumulative minted hours this tick must stay <= cap (8), not 44;
+        # deterministic hash-sort admits a subset (e.g. 1+2+3=6), never more
+        minted = s.balances["greed"] - 500
+        assert 0 < minted <= 8, minted
+        assert s.coops["sweatshop"]["labor_pool_hours"] == minted

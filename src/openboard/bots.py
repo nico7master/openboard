@@ -55,7 +55,9 @@ def honest_worker(who, state, params, tick, rng) -> list[Transaction]:
     coop = _my_coop(state, who)
     out: list[Transaction] = []
     if coop is not None:
-        out.append(_work(tick, who, coop, 6, v))
+        _cap = params.get("labor_pool_cap")
+        if _cap is None or state.coops[coop]["labor_pool_hours"] + 6 <= _cap:
+            out.append(_work(tick, who, coop, 6, v))
     # modest market bid on food, only when pantry is low (no slow hoarding)
     held_bread = state.citizen_inventory.get(who, {}).get("bread", 0)
     floor = state.good_cost_baseline.get("bread", 3)

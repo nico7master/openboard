@@ -114,6 +114,11 @@ class Run:
         self._apply_batch(1, founding)
         for coop, amount in BASELINE_TREASURIES.items():
             self._inject({"after_tick": 1, "op": "treasury", "coop": coop, "amount": amount})
+        # starting pantry: 3 days of essentials so the bootstrap transient
+        # (first production/sales ticks) never registers as unmet need
+        for name, _, _ in BASELINE_BOTS:
+            self._inject({"after_tick": 1, "op": "pantry", "citizen": name,
+                          "goods": {"bread": 3, "water": 3, "electricity": 3}})
         for name, fn, coop in BASELINE_BOTS:
             self.bots[name] = {"fn": fn, "coop": coop}
         self._record_timeline()
@@ -146,6 +151,10 @@ class Run:
             self.state.balances[inj["name"]] = inj["balance"]
             self.state.labor_hours[inj["name"]] = self.state.labor_hours.get(inj["name"], 0)
             self.state.citizen_inventory.setdefault(inj["name"], {})
+        elif op == "pantry":
+            inv = self.state.citizen_inventory.setdefault(inj["citizen"], {})
+            for good, qty in inj["goods"].items():
+                inv[good] = inv.get(good, 0) + qty
         elif op == "join_coop":
             members = self.state.coops[inj["coop"]]["members"]
             if inj["name"] not in members:
@@ -350,6 +359,19 @@ class Run:
         # True-cost accounting: baselines stamp from realized purchase
         # costs (VWAP), not book values (hard core A1).
         params["cost_accounting"] = {"method": "vwap"}
+        # Progressive wealth tax: savings above 5,000 pay 2%/tick into the
+        # pool (recycled via dividends) — caps savings concentration.
+        params["wealth_tax"] = {"threshold": 5_000, "rate_bp": 200}
+        # Anti multi-tx mint exploit: cumulative WORK hours per citizen per
+        # tick are capped (per-tx cap alone allowed 10 txs = 10x mint).
+        params["max_work_hours_cumulative"] = 8
+        # NOTE: labor_pool_cap stays OFF in the baseline. Stress runs proved
+        # idle-pool wages are the income pump (D4 right-to-work): capping
+        # them starved all demand (balances hit 0). Wage farming is instead
+        # self-limiting: wealth_tax 2%/tick above 5,000 caps a pure farmer
+        # at ~5,400 cr — the honest-worker equilibrium. See
+        # tests/test_hardcore.py::test_zombie_wage_farming_is_bounded.
+        # params["labor_pool_cap"] = 2_000  # available for adversarial study
         # Public capital maintenance until the toolsmith chain exists:
         # worn tools/machines replaced, cost retired from the pool (A3).
         params["capital_refresh"] = {"interval_ticks": 25, "hand_tools": 50, "machines": 5}

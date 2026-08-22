@@ -121,3 +121,27 @@
   <= 0.5, utilities above floors, invariant exact (~100s).
 - Result: loop 1.00, Gini 0.475 (savings-creep remains, B5-B6), machines
   sustained indefinitely, zero unmet from t1 to t2000.
+
+### 2026-08-22 — Hardening rounds 1-2 (autonomous stress loop)
+
+- **Progressive wealth tax** (`wealth_tax` {threshold 5,000, rate_bp 200}):
+  balances above threshold pay into the pool, recycled via dividends.
+  Fixed savings concentration: Gini 0.489 -> 0.232 flat, balances banded
+  6.0k-6.3k. Votable rule param like everything else.
+- **MARKET_POWER competition gate**: dominance flags only fire when >= 2
+  coops list the good. Single-producer-per-good is structural (baseline),
+  not abuse — killed 6 permanent noise flags.
+- **Bootstrap pantry**: 3 days of bread/water/electricity at founding so
+  the supply-chain spin-up never registers as unmet need.
+- **Cumulative WORK-hours cap** (`max_work_hours_cumulative`, ephemeral
+  per-tick counter, hash-safe): per-tx cap alone allowed N distinct WORK
+  txs to mint N x cap in one tick. Closed with exploit test.
+- **Zombie wage-farming proven bounded**: idle-pool wages are the income
+  pump (D4 right-to-work), NOT an exploit — wealth tax converges a pure
+  farmer to ~5,400 cr (= honest-worker equilibrium). Lesson learned the
+  hard way: capping idle labor collapsed all demand (balances hit 0,
+  minted 215k -> 5.7k); labor_pool_cap stays available but OFF in
+  baseline, documented in code comments + regression tests.
+- **scripts/stress.py**: reusable 3-seed deep diagnostic (gini path, unmet,
+  velocity proxies, price-floor spreads, stockouts, flag census) — the
+  harness that caught every issue above and both of my own regressions.
