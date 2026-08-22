@@ -9,7 +9,7 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .bots import DecisionFn, _my_coop, _tx
+from .bots import DecisionFn, _my_coop, _tx, personal_needs
 from .engine import apply_tick
 from .ledger import Ledger, Transaction
 from .metrics import SimMetrics
@@ -20,9 +20,11 @@ def make_specialist(
     recipe_id: str,
     output_good: str,
     buys: dict[str, int],
+    stock_target: int = 40,
 ) -> DecisionFn:
-    """A producer bot specialized in one recipe:
-    work, buy missing inputs from the market, produce, list the surplus."""
+    """A producer bot specialized in one recipe: work, buy missing inputs,
+    produce only up to a stock target (demand-driven, no infinite piles),
+    list the surplus, and personally buy daily needs (circular flow)."""
 
     def bot(who: str, state: WorldState, params: dict[str, Any], tick: int, rng: random.Random) -> list[Transaction]:
         v = state.ruleset_version
@@ -33,21 +35,64 @@ def make_specialist(
         c = state.coops[coop_id]
         recipe = state.recipes[recipe_id]
 
-        # buy missing inputs from the market (treasury must afford it)
-        for good, want in sorted(buys.items()):
-            have = c["inventory"].get(good, 0)
-            need = max(0, want - have)
-            floor = state.good_cost_baseline.get(good, 1)
-            price = floor + 1
-            treasury = c.get("treasury", 0)
-            if need > 0 and treasury >= price * need:
-                out.append(_tx(tick, who, "BID_FOR_COOP", {
-                    "coop_id": coop_id, "good": good, "max_price": price, "qty": need,
-                }, v))
+        listed = sum(
+            e["qty"] for e in state.listings.get(output_good, [])
+            if e["coop_id"] == coop_id
+        )
+        stock = c["inventory"].get(output_good, 0) + listed
+        want_produce = stock < stock_target
 
-        # produce when feasible
+        # buy missing inputs from the market (treasury must afford it),
+        # sized to at most one production run beyond the target
+        if want_produce:
+            out_units = sum(recipe["outputs"].values())
+            runs_wanted = max(1, (stock_target - stock + out_units - 1) // out_units)
+            for good, want_per_run in sorted(buys.items()):
+                have = c["inventory"].get(good, 0)
+                need = max(0, runs_wanted * want_per_run - have)
+                floor = state.good_cost_baseline.get(good, 1)
+                price = floor + 1
+                treasury = c.get("treasury", 0)
+                # affordability-capped: buy what we can now, more next tick
+                # (all-or-nothing froze coops forever when a full top-up
+                # cost slightly more than the treasury held)
+                qty = min(need, treasury // price) if price > 0 else need
+                if qty > 0:
+                    out.append(_tx(tick, who, "BID_FOR_COOP", {
+                        "coop_id": coop_id, "good": good, "max_price": price, "qty": qty,
+                    }, v))
+            # also recipe-native inputs when our own stock is short
+            for good, want_per_run in sorted(recipe["inputs"].items()):
+                if good in buys:
+                    continue
+                have = c["inventory"].get(good, 0)
+                need = max(0, runs_wanted * want_per_run - have)
+                floor = state.good_cost_baseline.get(good, 1)
+                price = floor + 1
+                treasury = c.get("treasury", 0)
+                qty = min(need, treasury // price) if price > 0 else need
+                if qty > 0:
+                    out.append(_tx(tick, who, "BID_FOR_COOP", {
+                        "coop_id": coop_id, "good": good, "max_price": price, "qty": qty,
+                    }, v))
+            # energy is an input too: coops must buy electricity to run
+            # recipes (bootstrap endowment is finite; utilities sell power)
+            if recipe.get("energy", 0) > 0 and "electricity" not in buys:
+                have = c["inventory"].get("electricity", 0)
+                need = max(0, runs_wanted * recipe["energy"] - have)
+                floor = state.good_cost_baseline.get("electricity", 1)
+                price = floor + 1
+                treasury = c.get("treasury", 0)
+                qty = min(need, treasury // price) if price > 0 else need
+                if qty > 0:
+                    out.append(_tx(tick, who, "BID_FOR_COOP", {
+                        "coop_id": coop_id, "good": "electricity", "max_price": price, "qty": qty,
+                    }, v))
+
+        # produce when feasible and demand says so
         if (
-            c["labor_pool_hours"] >= recipe["labor_hours"]
+            want_produce
+            and c["labor_pool_hours"] >= recipe["labor_hours"]
             and c["inventory"].get("electricity", 0) >= recipe["energy"]
             and all(c["inventory"].get(g, 0) >= q for g, q in recipe["inputs"].items())
         ):
@@ -62,9 +107,12 @@ def make_specialist(
                 "coop_id": coop_id, "good": output_good, "qty": held - 10,
             }, v))
 
+        out.extend(personal_needs(who, state, params, tick))
         return out
 
     return bot
+
+
 
 
 def run_simulation(

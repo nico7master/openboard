@@ -56,11 +56,12 @@ def honest_worker(who, state, params, tick, rng) -> list[Transaction]:
     out: list[Transaction] = []
     if coop is not None:
         out.append(_work(tick, who, coop, 6, v))
+    # modest market bid on food, only when pantry is low (no slow hoarding)
+    held_bread = state.citizen_inventory.get(who, {}).get("bread", 0)
     floor = state.good_cost_baseline.get("bread", 3)
-    if _afford(state, who, floor + 1, 2):
-        out.append(_buy_essential(tick, who, "bread", 2, v))
-    if _afford(state, who, floor + 2, 1) and rng.random() < 0.3:
+    if held_bread < 2 and _afford(state, who, floor + 2, 1) and rng.random() < 0.3:
         out.append(_bid(tick, who, "bread", floor + 2, 1, v))
+    out.extend(personal_needs(who, state, params, tick))
     return out
 
 
@@ -239,3 +240,36 @@ ARCHETYPES: dict[str, DecisionFn] = {
     "gray_market_smuggler": gray_market_smuggler,
     "innovator": innovator,
 }
+
+
+def personal_needs(who, state, params, tick):
+    """Buy this citizen's daily needs (circular flow): essentials via
+    BUY_ESSENTIAL (quota-bounded), market goods via BID at floor+1.
+    Buys only when holdings are below 2x the daily quota."""
+    v = state.ruleset_version
+    out = []
+    needs = params.get("needs", {})
+    inv = state.citizen_inventory.get(who, {})
+    balance = state.balances.get(who, 0)
+    for good in sorted(needs.keys()):
+        quota = needs[good]
+        if quota <= 0:
+            continue
+        held = inv.get(good, 0)
+        if held >= 2 * quota:
+            continue
+        want = min(quota, 2 * quota - held)
+        floor = state.good_cost_baseline.get(good, 1)
+        triage = state.effective_triage(good) if good in state.goods else "market"
+        if triage in ("essential", "emergency"):
+            eq = params.get("essential_need_quota", {}).get(good, 0)
+            qty = min(want, eq) if eq > 0 else 0
+            if qty > 0 and balance >= floor * qty:
+                out.append(_tx(tick, who, "BUY_ESSENTIAL", {"good": good, "qty": qty}, v))
+        else:
+            price = floor + 1
+            if balance >= price * want:
+                out.append(_tx(tick, who, "BID", {
+                    "good": good, "max_price": price, "qty": want,
+                }, v))
+    return out

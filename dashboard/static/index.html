@@ -133,13 +133,16 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   <h3>👥 Citizens <span class="muted" x-text="(state.citizens?.length ?? 0) + ' active'"></span></h3>
   <div class="scroll-y">
   <table>
-    <thead><tr><th>Name</th><th>₡ Balance</th><th>Hrs</th><th>Goods</th></tr></thead>
+    <thead><tr><th>Name</th><th>₡ Balance</th><th>Hrs</th><th>Needs</th><th>Goods</th></tr></thead>
     <tbody>
       <template x-for="(name, i) in state.citizens ?? []" :key="name">
         <tr :style="isBot(name) ? '' : 'color: var(--yellow)'">
           <td><span x-text="name"></span> <span x-show="!isBot(name)" title="human">👤</span></td>
           <td x-text="fmt(state.balances?.[name])"></td>
           <td x-text="state.labor_hours?.[name] ?? 0"></td>
+          <td><template x-for="(streak, good) in (analytics.circular?.unmet_needs?.[name] ?? {})" :key="good">
+            <span class="badge red" style="margin-right:3px" :title="streak + ' ticks unmet'" x-text="good + ' ✗' + streak"></span>
+          </template><span x-show="!Object.keys(analytics.circular?.unmet_needs?.[name] ?? {}).length" class="badge green">✓ fed</span></td>
           <td class="muted" x-text="invSummary(state.citizen_inventory?.[name])"></td>
         </tr>
       </template>
@@ -464,6 +467,13 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   <div class="panel col-12">
     <h3>🌊 Circular flow <span class="muted">units produced vs bought by citizens per tick — the loop must close</span></h3>
     <div class="chart-wrap" style="height:240px"><canvas id="flowChart"></canvas></div>
+    <div style="display:flex; gap:14px; margin-top:8px; font-size:12px; flex-wrap:wrap">
+      <span class="muted">🔁 Loop:</span>
+      <span>🍞 consumed <span class="mono" x-text="fmt(analytics.circular?.consumed_totals?.bread ?? 0)"></span></span>
+      <span>💸 dividends <span class="mono" x-text="fmt(analytics.circular?.dividends_paid ?? 0)"></span> cr</span>
+      <span>🏥 services <span class="mono" x-text="fmt(analytics.circular?.services_paid ?? 0)"></span> cr</span>
+      <span>⚠️ unmet now <span class="mono" x-text="Object.keys(analytics.circular?.unmet_needs ?? {}).length"></span> citizens</span>
+    </div>
   </div>
 
   <!-- MONEY PIE -->
@@ -786,6 +796,7 @@ function dashboard() {
           data: { labels: [], datasets: [
             { label: 'Produced units', data: [], borderColor: '#3fb950', backgroundColor: '#3fb95022', fill: true, tension: 0.3, pointRadius: 0 },
             { label: 'Bought units', data: [], borderColor: '#58a6ff', backgroundColor: '#58a6ff22', fill: true, tension: 0.3, pointRadius: 0 },
+            { label: 'Consumed units', data: [], borderColor: '#d29922', backgroundColor: '#d2992222', fill: false, tension: 0.3, pointRadius: 0 },
           ] },
           options: {
             responsive: true, maintainAspectRatio: false, animation: false,
@@ -833,6 +844,7 @@ function dashboard() {
         chartStore.flow.data.labels = t.tick ?? [];
         chartStore.flow.data.datasets[0].data = t.produced ?? [];
         chartStore.flow.data.datasets[1].data = t.bought ?? [];
+        chartStore.flow.data.datasets[2].data = t.consumed ?? [];
         chartStore.flow.update('none');
       }
       this._updatePie('moneyPieChart', a?.money_pie);

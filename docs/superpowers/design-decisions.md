@@ -82,3 +82,21 @@
 
 ## Open questions queue
 - (empty — all brainstorm questions resolved; ready for spec assembly)
+
+
+### 2026-08-22 — Circular flow closure (patronage + capital rent)
+
+- **Co-op patronage dividends**: co-op treasury surplus above a 1,600 cr
+  operating buffer returns 50%/tick to worker-members. Rationale: treasuries
+  are socially-owned conduits, not hoards; dead money in treasuries broke
+  the circular flow (Gini 0.541 with frozen 21k miner treasury).
+- **Use-based capital rent**: consuming a machine as recipe input pays
+  society 1,500 cr (replacement cost) into the surplus pool. Rationale: free
+  endowment capital became private rent capture — coal's cost baseline embeds
+  machine depreciation the miners billed but never paid. Rent is charged on
+  USE, not holdings (holding-based billing drained idle co-ops and caused
+  42 unmet needs; use-based kept zero unmet while compressing Gini 0.541 ->
+  0.347). Both params votable (D7 rules-as-data).
+- **Gate criteria amended**: recycling (dividends + services > 0, pool
+  bounded) replaces 'retirement fires >= 1' — spending-priority keeps the
+  pool below the retirement cap by design; retirement stays unit-tested.

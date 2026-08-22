@@ -351,6 +351,20 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     # Consume labor from pool
     coop["labor_pool_hours"] -= recipe["labor_hours"] * runs
 
+    # Public capital, private use: society charges rent for machines
+    # consumed as inputs (depreciation of socially-owned capital flows to
+    # the surplus pool, which recycles it to citizens). Capped at treasury.
+    cr = params.get("capital_rent") or {}
+    machine_rent_rate = cr.get("per_machine_used", 0)
+    machines_used = recipe["inputs"].get("machines", 0) * runs
+    capital_rent = 0
+    if machine_rent_rate > 0 and machines_used > 0:
+        treasury = coop.get("treasury", 0)
+        capital_rent = min(machine_rent_rate * machines_used, treasury)
+        if capital_rent > 0:
+            coop["treasury"] = treasury - capital_rent
+            state.surplus_pool += capital_rent
+
     # Produce outputs
     outputs_produced: dict[str, int] = {}
     for good, qty in recipe["outputs"].items():
@@ -375,7 +389,7 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
             state.good_cost_baseline[good] = unit_baseline
             baselines_stamped[good] = unit_baseline
 
-    return {
+    result = {
         "tick": tx.tick,
         "sender": tx.sender,
         "action": "PRODUCE",
@@ -384,7 +398,10 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
         "runs": runs,
         "outputs": outputs_produced,
         "cost_baselines": baselines_stamped,
+        "capital_rent_paid": capital_rent,
+        "capital_rent_pool_after": state.surplus_pool if capital_rent else None,
     }
+    return result
 
 
 # ----------------------------------------------------------------- MARKETS
@@ -846,6 +863,186 @@ def _return_unsold(state: WorldState, good: str) -> int:
 
 
 # ------------------------------------------------------------- GOVERNANCE
+
+
+# ---------------------------------------------------- CIRCULAR FLOW
+
+
+def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Citizens use up goods to live (deterministic; spec: circular flow).
+
+    For every citizen and every needed good, consume min(held, quota).
+    Goods are destroyed — that is the point: demand is recurring.
+    Unmet needs are tracked publicly (welfare signal, God View alerts).
+    Inert when the ruleset has no `needs` param (replay compat).
+    """
+    needs = params.get("needs")
+    if not needs:
+        return []
+
+    events: list[dict[str, Any]] = []
+    for citizen in sorted(state.balances.keys()):
+        inv = state.citizen_inventory.setdefault(citizen, {})
+        consumed: dict[str, int] = {}
+        unmet: dict[str, bool] = {}
+        for good in sorted(needs.keys()):
+            quota = needs[good]
+            if quota <= 0:
+                continue
+            held = inv.get(good, 0)
+            take = min(held, quota)
+            if take > 0:
+                inv[good] = held - take
+                state.consumed_totals[good] = state.consumed_totals.get(good, 0) + take
+                consumed[good] = take
+            if take >= quota:
+                # fully met this tick — reset the streak
+                if citizen in state.unmet_needs and good in state.unmet_needs[citizen]:
+                    del state.unmet_needs[citizen][good]
+                    if not state.unmet_needs[citizen]:
+                        del state.unmet_needs[citizen]
+            else:
+                streaks = state.unmet_needs.setdefault(citizen, {})
+                streaks[good] = streaks.get(good, 0) + 1
+                unmet[good] = True
+        if consumed or unmet:
+            events.append({
+                "tick": tick,
+                "action": "CONSUMED",
+                "citizen": citizen,
+                "consumed": consumed,
+                "unmet": unmet,
+            })
+    return events
+
+
+def _surplus_spend_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Surplus returns to society (D11 spending half; circular flow).
+
+    1. Citizen dividend: pool -> every citizen, even integer split
+       (remainder stays in the pool; nothing is lost to rounding).
+    2. Public services: pool refunds citizens for essential units they
+       actually consumed this tick, at cost baseline — essentials are
+       funded by the social surplus. Budget-capped, sorted order.
+
+    Inert when the ruleset has no `surplus_spending` param (replay compat).
+    Retirement above `surplus_reserve_cap` still happens in clearing,
+    after spending — spending has priority over retirement.
+    """
+    ss = params.get("surplus_spending")
+    if not ss:
+        return []
+
+    n = len(state.balances)
+    if n == 0:
+        return []
+
+    buffer = ss.get("min_pool_buffer", 0)
+    spendable = max(0, state.surplus_pool - buffer)
+
+    events: list[dict[str, Any]] = []
+
+    # --- 1) citizen dividend
+    div_budget = min(spendable * ss.get("dividend_share_bp", 0) // 10_000,
+                     ss.get("max_dividend_per_tick", 0))
+    per_citizen = div_budget // n
+    div_paid = per_citizen * n
+    if div_paid > 0:
+        state.surplus_pool -= div_paid
+        state.dividends_paid += div_paid
+        for citizen in sorted(state.balances.keys()):
+            state.balances[citizen] += per_citizen
+        events.append({
+            "tick": tick,
+            "action": "SURPLUS_SPEND",
+            "kind": "dividend",
+            "per_citizen": per_citizen,
+            "total": div_paid,
+            "pool_after": state.surplus_pool,
+        })
+
+    # --- 2) public services: refund essential consumption at cost
+    remaining = max(0, state.surplus_pool - buffer)
+    serv_budget = min(remaining, spendable * ss.get("services_share_bp", 0) // 10_000)
+    if serv_budget > 0:
+        refunds: list[dict[str, Any]] = []
+        paid = 0
+        for e in state.applied:
+            if e.get("action") != "CONSUMED" or e.get("tick") != tick:
+                continue
+            citizen = e["citizen"]
+            for good, qty in sorted(e.get("consumed", {}).items()):
+                if paid >= serv_budget:
+                    break
+                if state.effective_triage(good) not in ("essential", "emergency"):
+                    continue  # services fund essentials only
+                rate = state.good_cost_baseline.get(good, 0)
+                if rate <= 0 or qty <= 0:
+                    continue
+                refund = min(qty * rate, serv_budget - paid)
+                state.surplus_pool -= refund
+                state.balances[citizen] += refund
+                state.services_paid += refund
+                paid += refund
+                refunds.append({"citizen": citizen, "good": good, "qty": qty, "refund": refund})
+            if paid >= serv_budget:
+                break
+        if paid > 0:
+            events.append({
+                "tick": tick,
+                "action": "SURPLUS_SPEND",
+                "kind": "services",
+                "total": paid,
+                "pool_after": state.surplus_pool,
+                "refunds": refunds,
+            })
+
+    return events
+
+
+def _coop_distribute_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Patronage dividends: co-op surplus returns to worker-members.
+
+    A co-op treasury with zero outflow hoards; the circular flow requires
+    surplus above an operating buffer to flow back to the members who
+    created it. Even integer split; remainder stays in the treasury.
+    Inert when the ruleset has no `coop_distribution` param.
+    """
+    cd = params.get("coop_distribution")
+    if not cd:
+        return []
+
+    buffer = cd.get("buffer", 0)
+    share_bp = cd.get("share_bp", 0)
+    events: list[dict[str, Any]] = []
+
+    for coop_id in sorted(state.coops.keys()):
+        coop = state.coops[coop_id]
+        treasury = coop.get("treasury", 0)
+        spendable = max(0, treasury - buffer)
+        if spendable <= 0:
+            continue
+        dist = spendable * share_bp // 10_000
+        members = [m for m in coop.get("members", []) if m in state.balances]
+        if dist <= 0 or not members:
+            continue
+        per = dist // len(members)
+        paid = per * len(members)
+        if paid <= 0:
+            continue
+        coop["treasury"] = treasury - paid
+        for m in sorted(members):
+            state.balances[m] += per
+        state.coop_dividends_paid += paid
+        events.append({
+            "tick": tick,
+            "action": "COOP_DISTRIBUTE",
+            "coop_id": coop_id,
+            "per_member": per,
+            "total": paid,
+            "treasury_after": coop["treasury"],
+        })
+    return events
 
 
 def _gov_params(params: dict[str, Any]) -> dict[str, Any]:
@@ -1413,6 +1610,17 @@ def apply_tick(
     # End-of-tick market clearing (deterministic) — spec §9
     market_events = _clear_markets(state, tick, params, ledger)
     state.applied.extend(market_events)
+
+    # Circular flow: consumption, capital rent, then surplus spending
+    # (deterministic). Inert phases when the ruleset lacks the params.
+    consume_events = _consume_phase(state, tick, params)
+    state.applied.extend(consume_events)
+    spend_events = _surplus_spend_phase(state, tick, params)
+    state.applied.extend(spend_events)
+
+    # Patronage: co-op surplus above a buffer returns to members.
+    coop_events = _coop_distribute_phase(state, tick, params)
+    state.applied.extend(coop_events)
 
     # End-of-tick governance settlement (deterministic) — spec §6
     gov_events = _settle_proposals(state, tick, params, ledger)

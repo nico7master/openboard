@@ -21,7 +21,7 @@ class TestRunLifecycle:
     def test_fresh_run_and_ticks(self):
         r = server.Run(seed=42)
         assert r.state.tick == 1  # founding applied
-        assert len(r.state.coops) == 3
+        assert len(r.state.coops) == 6
         for _ in range(10):
             r.tick()
         assert r.state.tick == 11
@@ -30,7 +30,7 @@ class TestRunLifecycle:
 
     def test_money_invariant_holds(self):
         r = server.Run(seed=42)
-        initial = 500 * 8 + 600 + 600  # citizens + seeded treasuries
+        initial = 500 * 14 + 600 * 4  # citizens + seeded treasuries (millers, bakers, power, water)
         for _ in range(20):
             r.tick()
         treasuries = sum(c.get("treasury", 0) for c in r.state.coops.values())
@@ -63,11 +63,11 @@ class TestAnalytics:
         produced_expected = 0
         bought_expected = 0
         for _ in range(10):
-            events = r.tick()
-            t = r.state.tick
-            # feed return is a sliding window; only count this tick's events
-            for e in events:
-                if e.get("tick") != t:
+            r.tick()
+            # _last_events is exactly this tick's applied events (the feed
+            # return is a 40-item sliding window and truncates busy ticks)
+            for e in r._last_events:
+                if e.get("tick") != r.state.tick:
                     continue
                 if e.get("action") == "PRODUCE":
                     produced_expected += sum(e.get("outputs", {}).values())
@@ -97,15 +97,19 @@ class TestAnalytics:
             server.RUN = old_run
 
     def test_alerts_fire_on_overproduction(self):
+        # Demand-driven production now prevents natural piles (that is the
+        # point), so inject a pile directly to verify the alert logic.
         r = server.Run(seed=42)
-        for _ in range(60):
+        for _ in range(10):
             r.tick()
+        with r.lock:
+            r.state.coops["farmers"]["inventory"]["grain"] = 500
         old_run, server.RUN = server.RUN, r
         try:
             client = server.app.test_client()
             data = client.get("/api/analytics").get_json()
             msgs = " | ".join(a["msg"] for a in data["alerts"])
-            assert "overproduction" in msgs or "pile" in msgs
+            assert "pile" in msgs
         finally:
             server.RUN = old_run
 
@@ -128,7 +132,7 @@ class TestSaveLoad:
         h1 = r.state.state_hash()
 
         save = r.to_save()
-        assert save["format"] == "openboard-run-v1"
+        assert save["format"] == "openboard-run-v2"
 
         r2 = server.Run.from_save(save)
         assert r2.state.state_hash() == h1

@@ -47,6 +47,12 @@ class WorldState:
     flags: list[dict[str, Any]] = field(default_factory=list)  # public anomaly flags (append-only)
     common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
     last_clearing: dict[str, int] = field(default_factory=dict)  # good -> last auction clearing price (public price signal)
+    # Circular flow (2026-08-21 milestone)
+    unmet_needs: dict[str, dict[str, int]] = field(default_factory=dict)  # citizen -> good -> ticks unmet
+    consumed_totals: dict[str, int] = field(default_factory=dict)  # good -> lifetime units consumed
+    dividends_paid: int = 0  # cumulative credits paid as citizen dividends
+    services_paid: int = 0  # cumulative credits refunded for essential consumption
+    coop_dividends_paid: int = 0  # cumulative patronage dividends coop -> members
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -75,6 +81,23 @@ class WorldState:
             "last_clearing": dict(sorted(self.last_clearing.items())),
         }
 
+        # Circular-flow fields: included ONLY when used. Hash-compat: old
+        # histories replayed under this engine must hash identically to
+        # their recorded hashes, so absent-when-default is load-bearing.
+        if self.unmet_needs:
+            snap["unmet_needs"] = {
+                c: dict(sorted(inv.items())) for c, inv in sorted(self.unmet_needs.items())
+            }
+        if self.consumed_totals:
+            snap["consumed_totals"] = dict(sorted(self.consumed_totals.items()))
+        if self.dividends_paid:
+            snap["dividends_paid"] = self.dividends_paid
+        if self.services_paid:
+            snap["services_paid"] = self.services_paid
+        if self.coop_dividends_paid:
+            snap["coop_dividends_paid"] = self.coop_dividends_paid
+        return snap
+
     def state_hash(self) -> str:
         return sha256_hex(canonical_json(self.snapshot_dict()))
 
@@ -102,6 +125,11 @@ class WorldState:
             flags=[dict(f) for f in self.flags],
             common_pool=dict(self.common_pool),
             last_clearing=dict(self.last_clearing),
+            unmet_needs={c: dict(inv) for c, inv in self.unmet_needs.items()},
+            consumed_totals=dict(self.consumed_totals),
+            dividends_paid=self.dividends_paid,
+            services_paid=self.services_paid,
+            coop_dividends_paid=self.coop_dividends_paid,
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:

@@ -30,12 +30,19 @@ from openboard.rules import DEFAULT_RULESET_PARAMS  # noqa: E402
 from openboard.sim import make_specialist  # noqa: E402
 from openboard.state import WorldState, genesis_state  # noqa: E402
 
-SAVE_FORMAT = "openboard-run-v1"
+SAVE_FORMAT = "openboard-run-v2"
 
+# stock_target = produce while stock+listed < target. Utilities serve the
+# WHOLE economy (14 citizens + industry), so their buffers must exceed any
+# single consumer's daily flow — under-sized targets starve downstream
+# coops (auction bidders lose to FCFS citizens every tick).
 SPECIALISTS = {
-    "farmer": make_specialist("grain_farming", "grain", {}),
-    "miller": make_specialist("grain_to_flour", "flour", {"grain": 10}),
-    "baker": make_specialist("flour_to_bread", "bread", {"flour": 5}),
+    "farmer": make_specialist("grain_farming", "grain", {"water": 5}, stock_target=100),
+    "miller": make_specialist("grain_to_flour", "flour", {"grain": 10}, stock_target=100),
+    "baker": make_specialist("flour_to_bread", "bread", {"flour": 5}, stock_target=100),
+    "miner": make_specialist("coal_mining", "coal", {}, stock_target=100),
+    "power_worker": make_specialist("electricity_coal", "electricity", {"coal": 4}, stock_target=250),
+    "water_worker": make_specialist("water_service", "water", {"electricity": 5}, stock_target=150),
 }
 
 BASELINE_BOTS: list[tuple[str, Any, str]] = [
@@ -46,6 +53,12 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
     ("miller_b", SPECIALISTS["miller"], "millers"),
     ("baker_a", SPECIALISTS["baker"], "bakers"),
     ("baker_b", SPECIALISTS["baker"], "bakers"),
+    ("miner_a", SPECIALISTS["miner"], "miners"),
+    ("miner_b", SPECIALISTS["miner"], "miners"),
+    ("power_a", SPECIALISTS["power_worker"], "power_plant"),
+    ("power_b", SPECIALISTS["power_worker"], "power_plant"),
+    ("water_a", SPECIALISTS["water_worker"], "water_works"),
+    ("water_b", SPECIALISTS["water_worker"], "water_works"),
     ("worker_a", ARCHETYPES["honest_worker"], "farmers"),
     ("worker_b", ARCHETYPES["honest_worker"], "farmers"),
 ]
@@ -54,9 +67,13 @@ BASELINE_COOPS = [
     {"coop_id": "farmers", "members": ["farmer_a", "farmer_b", "worker_a", "worker_b"]},
     {"coop_id": "millers", "members": ["miller_a", "miller_b"]},
     {"coop_id": "bakers", "members": ["baker_a", "baker_b"]},
+    {"coop_id": "miners", "members": ["miner_a", "miner_b"]},
+    {"coop_id": "power_plant", "members": ["power_a", "power_b"]},
+    {"coop_id": "water_works", "members": ["water_a", "water_b"]},
 ]
 
-BASELINE_TREASURIES = {"millers": 600, "bakers": 600}
+# Input-buying coops need starting treasuries to bootstrap their chains.
+BASELINE_TREASURIES = {"millers": 600, "bakers": 600, "power_plant": 600, "water_works": 600}
 
 
 class Run:
@@ -68,20 +85,9 @@ class Run:
         self.governance = governance
         self.autoplay = {"running": False, "interval": 0.75}
 
-        params = copy.deepcopy(DEFAULT_RULESET_PARAMS)
-        params["triage_overrides"] = {}
-        if governance:
-            params["governance"] = {
-                "enabled": True,
-                "vote_window_ticks": 3,
-                "quorum_bp": 5_000,
-                "trial_period_ticks": 10,
-            }
-            params["oversight"] = dict(params["oversight"])
-            params["oversight"]["council_members"] = ["worker_a", "worker_b"]
-
+        # circular-flow params + governance via one source of truth
         citizens = {name: 500 for name, _, _ in BASELINE_BOTS}
-        self.state: WorldState = genesis_state(citizens, ruleset_params=params)
+        self.state: WorldState = genesis_state(citizens, ruleset_params=self._params())
         self.ledger = Ledger()
         self.metrics = SimMetrics()
 
@@ -92,7 +98,8 @@ class Run:
 
         self.timeline = {"tick": [], "gini": [], "money": [], "surplus": [],
                          "produced": [], "bought": [],
-                         "produced_cat": {}, "bought_cat": {}}
+                         "produced_cat": {}, "bought_cat": {},
+                         "consumed": [], "dividends": [], "unmet": []}
         self.feed: list[dict[str, Any]] = []  # rolling events
         self.totals: dict[str, dict[str, int]] = {"produced": {}, "bought": {}}
         self._last_events: list[dict[str, Any]] = []
@@ -182,6 +189,21 @@ class Run:
                     cat = s.goods.get(good, {}).get("category", "other")
                     bought_by_cat[cat] = bought_by_cat.get(cat, 0) + qty
                     self.totals["bought"][good] = self.totals["bought"].get(good, 0) + qty
+        # --- circular-flow aggregates ---
+        consumed_units = 0
+        unmet_count = 0
+        dividend_paid = 0
+        for e in self._last_events:
+            act = e.get("action")
+            if act == "CONSUMED":
+                consumed_units += sum(e.get("consumed", {}).values())
+                unmet_count += len(e.get("unmet", {}))
+            elif act == "SURPLUS_SPEND" and e.get("kind") == "dividend":
+                dividend_paid += e.get("total", 0)
+        self.timeline["consumed"].append(consumed_units)
+        self.timeline["unmet"].append(unmet_count)
+        self.timeline["dividends"].append(dividend_paid)
+
         self.timeline["produced"].append(sum(produced_by_cat.values()))
         self.timeline["bought"].append(sum(bought_by_cat.values()))
         for key in ("produced_cat", "bought_cat"):
@@ -274,7 +296,8 @@ class Run:
             run.feed = []
             run.timeline = {"tick": [], "gini": [], "money": [], "surplus": [],
                              "produced": [], "bought": [],
-                             "produced_cat": {}, "bought_cat": {}}
+                             "produced_cat": {}, "bought_cat": {},
+                             "consumed": [], "dividends": [], "unmet": []}
             run.totals = {"produced": {}, "bought": {}}
             run.metrics = SimMetrics()
             run.state = genesis_state({n: 500 for n, _, _ in BASELINE_BOTS},
@@ -311,6 +334,31 @@ class Run:
     def _params(self) -> dict[str, Any]:
         params = copy.deepcopy(DEFAULT_RULESET_PARAMS)
         params["triage_overrides"] = {}
+        # Circular flow (2026-08-21): citizens need goods daily, surplus
+        # returns to society. Both votable rule params like everything else.
+        params["needs"] = {"bread": 1, "water": 1, "electricity": 1}
+        params["surplus_spending"] = {
+            "dividend_share_bp": 5_000,       # 50% of spendable pool
+            "services_share_bp": 5_000,        # 50% funds essential refunds
+            "min_pool_buffer": 500,            # never spend below this
+            "max_dividend_per_tick": 200,      # anti-flood cap
+        }
+        # Public capital, private use: co-ops consuming machines as inputs
+        # pay society the replacement cost into the surplus pool, which
+        # recycles it to citizens (dividends/services).
+        params["capital_rent"] = {"per_machine_used": 1_500}
+        # Patronage: co-op surplus above an operating buffer flows back to
+        # worker-members. The buffer (1,600) also reserves rent capacity:
+        # capital rent is charged from the treasury at use time, so a drained
+        # treasury would underpay society (observed: miners captured ~1,100/machine).
+        params["coop_distribution"] = {"buffer": 1_600, "share_bp": 5_000}
+        # Utilities bridge: coal_mining consumes hand_tools/machines per
+        # run and no toolsmith coop exists yet (capital goods = next
+        # milestone). Larger votable endowment keeps utilities alive.
+        params["bootstrap_endowment"] = {
+            "water": 200, "electricity": 500,
+            "hand_tools": 100, "machines": 25,
+        }
         if self.governance:
             params["governance"] = {"enabled": True, "vote_window_ticks": 3,
                                     "quorum_bp": 5_000, "trial_period_ticks": 10}
@@ -490,9 +538,12 @@ def api_analytics():
             good = f.get("good", "")
             alerts.append({"level": "flag",
                            "msg": f"Oversight {kind}: {target} {('(' + good + ')') if good else ''} t{f.get('tick', '?')}"})
-        if s.surplus_pool > 1000 and s.money_retired == 0:
-            alerts.append({"level": "info",
-                           "msg": f"Surplus pool ₡{s.surplus_pool} not circulating — no spending rules yet (circular-flow milestone)"})
+        # circular-flow welfare: persistent unmet needs are a policy signal
+        for citizen, streaks in sorted(s.unmet_needs.items()):
+            for good, streak in sorted(streaks.items()):
+                if streak >= 5:
+                    alerts.append({"level": "alert",
+                                   "msg": f"{citizen} unmet need {good} for {streak} ticks — supply or income failing"})
 
         return jsonify({
             "ok": True,
@@ -511,6 +562,15 @@ def api_analytics():
                 "bought": list(RUN.timeline["bought"]),
                 "produced_cat": {c: list(v) for c, v in RUN.timeline["produced_cat"].items()},
                 "bought_cat": {c: list(v) for c, v in RUN.timeline["bought_cat"].items()},
+                "consumed": list(RUN.timeline.get("consumed", [])),
+                "dividends": list(RUN.timeline.get("dividends", [])),
+                "unmet": list(RUN.timeline.get("unmet", [])),
+            },
+            "circular": {
+                "consumed_totals": dict(sorted(s.consumed_totals.items())),
+                "dividends_paid": s.dividends_paid,
+                "services_paid": s.services_paid,
+                "unmet_needs": {c: dict(sorted(v.items())) for c, v in sorted(s.unmet_needs.items())},
             },
         })
 

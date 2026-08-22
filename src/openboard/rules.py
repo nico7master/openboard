@@ -31,6 +31,12 @@ REQUIRED_PARAMS = (
 
 VALID_TRIAGE = ("market", "essential", "emergency")
 
+# Circular-flow milestone params (needs & surplus spending). OPTIONAL on
+# purpose: rules are hash-covered state — old histories replayed under the
+# new engine must resolve identical rulesets. Absent key = feature disabled;
+# present key = strictly validated below.
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent")
+
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "transfer_limit": 0,  # 0 = unlimited
     "max_coop_members": 12,
@@ -190,8 +196,56 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
     if not isinstance(council, list) or not all(isinstance(m, str) for m in council):
         return Reason.INVALID_RULESET
 
+    # Circular-flow params: optional; validated strictly when present.
+    # NOT in DEFAULT_RULESET_PARAMS — rulesets are hash-covered state, so
+    # changing defaults would break replay of every existing history.
+    # New runs opt in via explicit ruleset_params (dashboard does).
+    if "needs" in params:
+        needs = params["needs"]
+        if not isinstance(needs, dict):
+            return Reason.INVALID_RULESET
+        for good, quota in needs.items():
+            if not isinstance(good, str) or isinstance(quota, bool) or not isinstance(quota, int) or quota < 0 or quota > 1000:
+                return Reason.INVALID_RULESET
+            if known_goods is not None and good not in known_goods:
+                return Reason.INVALID_RULESET
+
+    if "surplus_spending" in params:
+        ss = params["surplus_spending"]
+        if not isinstance(ss, dict) or set(ss.keys()) != {
+            "dividend_share_bp", "services_share_bp", "min_pool_buffer", "max_dividend_per_tick"
+        }:
+            return Reason.INVALID_RULESET
+        for key in ("dividend_share_bp", "services_share_bp"):
+            v = ss[key]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 10_000:
+                return Reason.INVALID_RULESET
+        for key in ("min_pool_buffer", "max_dividend_per_tick"):
+            v = ss[key]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+                return Reason.INVALID_RULESET
+
+    if "coop_distribution" in params:
+        cd = params["coop_distribution"]
+        if not isinstance(cd, dict) or set(cd.keys()) != {"buffer", "share_bp"}:
+            return Reason.INVALID_RULESET
+        v = cd["buffer"]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            return Reason.INVALID_RULESET
+        v = cd["share_bp"]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 10_000:
+            return Reason.INVALID_RULESET
+
+    if "capital_rent" in params:
+        cr = params["capital_rent"]
+        if not isinstance(cr, dict) or set(cr.keys()) != {"per_machine_used"}:
+            return Reason.INVALID_RULESET
+        v = cr["per_machine_used"]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 5_000:
+            return Reason.INVALID_RULESET
+
     # unknown extra keys are rejected too: complete documents only
-    if set(params.keys()) != set(REQUIRED_PARAMS):
+    if set(params.keys()) - set(REQUIRED_PARAMS) - set(OPTIONAL_PARAMS):
         return Reason.INVALID_RULESET
 
     return None
