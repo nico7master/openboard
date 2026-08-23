@@ -21,7 +21,7 @@ class TestRunLifecycle:
     def test_fresh_run_and_ticks(self):
         r = server.Run(seed=42)
         assert r.state.tick == 1  # founding applied
-        assert len(r.state.coops) == 18  # Stage 3: extended cast with competition + capital chain
+        assert len(r.state.coops) == 42  # Stage 3/4: full cast with competition, capital chain, breadth
         for _ in range(10):
             r.tick()
         assert r.state.tick == 11

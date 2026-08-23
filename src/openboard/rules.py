@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "transfer_limit": 0,  # 0 = unlimited
@@ -69,6 +69,12 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
         "heating_fuel": 20,
         "water": 10,
         "healthcare": 2,
+        # Stage 4: every need-good must be purchasable via BUY_ESSENTIAL —
+        # a need-good missing here is silently unbought (observed:
+        # transport/books/clothing listed but zero citizen purchases)
+        "transport": 4, "clothing": 2, "education": 1,
+        "childcare": 2, "books": 2, "furniture": 1,
+        "household_goods": 2, "maintenance": 2, "medicine": 1,
     },
     "surplus_reserve_cap": 5_000,
     "governance": {
@@ -210,6 +216,20 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             if known_goods is not None and good not in known_goods:
                 return Reason.INVALID_RULESET
 
+    if "needs_cycle" in params:
+        nc = params["needs_cycle"]
+        if not isinstance(nc, dict):
+            return Reason.INVALID_RULESET
+        for good, n in nc.items():
+            if not isinstance(good, str) or isinstance(n, bool) or not isinstance(n, int) or n < 1 or n > 10_000:
+                return Reason.INVALID_RULESET
+            if known_goods is not None and good not in known_goods:
+                return Reason.INVALID_RULESET
+
+    if "fair_clearing" in params:
+        if not isinstance(params["fair_clearing"], bool):
+            return Reason.INVALID_RULESET
+
     if "surplus_spending" in params:
         ss = params["surplus_spending"]
         if not isinstance(ss, dict) or set(ss.keys()) != {
@@ -251,10 +271,23 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
 
     if "capital_backstop" in params:
         cb = params["capital_backstop"]
-        if not isinstance(cb, dict) or set(cb.keys()) != {"interval_ticks"}:
+        allowed = {"interval_ticks", "input_advance", "founding_equipment"}
+        if not isinstance(cb, dict) or not set(cb.keys()) <= allowed:
+            return Reason.INVALID_RULESET
+        if "interval_ticks" not in cb:
             return Reason.INVALID_RULESET
         iv = cb["interval_ticks"]
         if isinstance(iv, bool) or not isinstance(iv, int) or iv <= 0 or iv > 1_000:
+            return Reason.INVALID_RULESET
+        ia = cb.get("input_advance")
+        if ia is not None and (not isinstance(ia, dict) or set(ia.keys()) != {"max_per_coop"}):
+            return Reason.INVALID_RULESET
+        if ia is not None:
+            mx = ia["max_per_coop"]
+            if isinstance(mx, bool) or not isinstance(mx, int) or mx < 0:
+                return Reason.INVALID_RULESET
+        fe = cb.get("founding_equipment")
+        if fe is not None and not isinstance(fe, bool):
             return Reason.INVALID_RULESET
 
     if "cost_accounting" in params:

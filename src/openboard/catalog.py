@@ -165,6 +165,13 @@ EXTENDED_RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
     _r("machine_building_batch", {"steel": 20, "electronics": 6, "glass": 4}, 120, 60, {"machines": 8}),
     _r("steelmaking_batch", {"iron_ore": 20, "coal": 12}, 90, 80, {"steel": 20}),
     _r("wind_farm", {}, 25, 0, {"electricity": 100}),
+    # Stage 4 breadth: goods with no recipe + the bootstrap tool
+    _r("heating_fuel_refining", {"coal": 2, "water": 1}, 8, 4, {"heating_fuel": 10}),
+    _r("herbal_medicine", {"fruit": 5, "water": 2}, 10, 1, {"medicine": 3}),
+    # Labor-only toolmaking: society can bootstrap its first tools from
+    # bare labor when no endowments exist. Low yield on purpose — it is
+    # a bridge, not a competitor to the steel-based chain.
+    _r("primitive_toolmaking", {}, 25, 0, {"hand_tools": 1}),
 ]}
 
 

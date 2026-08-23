@@ -140,7 +140,10 @@ def _validate_found_coop(state: WorldState, tx: Transaction, params: dict[str, A
     if tx.sender not in state.balances:
         return Reason.UNKNOWN_SENDER
 
-    if not isinstance(payload, dict) or set(payload.keys()) != {"coop_id", "name", "members"}:
+    # Optional declared trade: the coop states which recipe it intends
+    # to run (used by the founding equipment grant). Absent = legacy.
+    allowed_keys = {"coop_id", "name", "members"} | {"recipe_id"}
+    if not isinstance(payload, dict) or not set(payload.keys()) <= allowed_keys or not {"coop_id", "name", "members"} <= set(payload.keys()):
         return Reason.INVALID_PAYLOAD
 
     coop_id = payload.get("coop_id")
@@ -182,6 +185,7 @@ def _apply_found_coop(state: WorldState, tx: Transaction, params: dict[str, Any]
         "inventory": {g: q for g, q in endowment.items()},  # socially granted means of production
         "labor_pool_hours": 0,
         "wage_remainder_bp": 0,
+        **({"recipe_intent": payload["recipe_id"]} if payload.get("recipe_id") else {}),
     }
     return {
         "tick": tx.tick,
@@ -436,7 +440,7 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
 
     baselines_stamped: dict[str, int] = {}
     if total_units > 0:
-        unit_baseline = -(-(labor_cost + energy_cost + input_cost) // total_units)
+        unit_baseline = max(1, -(-(labor_cost + energy_cost + input_cost) // total_units))
         for good in outputs_produced:
             state.good_cost_baseline[good] = unit_baseline
             baselines_stamped[good] = unit_baseline
@@ -707,11 +711,23 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
     # --- Pass 1: essentials FCFS at the cost floor (D8: need first)
     # Common-pool draw first: reclaimed hoard goods at cost (§6.4).
     # Buyers pay the pool; pool value later funds public purposes.
+    # Fair clearing (votable): rotate buyer service order each tick so
+    # scarce essentials don't permanently starve alphabetically-late
+    # citizens under deterministic FCFS. Off => legacy order (replay-safe).
+    fair = params.get("fair_clearing", False)
+
+    def _served(good: str) -> list[dict[str, Any]]:
+        buyers = essential_buyers[good]
+        if not fair or len(buyers) < 2:
+            return buyers
+        off = tick % len(buyers)
+        return buyers[off:] + buyers[:off]
+
     for good in sorted(essential_buyers.keys() & state.common_pool.keys()):
         pool_qty = state.common_pool[good]
         if pool_qty <= 0:
             continue
-        for buyer in essential_buyers[good]:
+        for buyer in _served(good):
             if pool_qty <= 0:
                 break
             take = min(buyer["qty"], pool_qty)
@@ -731,7 +747,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         total_sold = 0
         listed = sum(e["qty"] for e in state.listings[good])
 
-        for buyer in essential_buyers[good]:
+        for buyer in _served(good):
             need = buyer["qty"]
             got = 0
             paid = 0
@@ -845,7 +861,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             payment = w["take"] * clearing
             if bid["coop_id"] is not None:
                 coop = state.coops[bid["coop_id"]]
-                coop["treasury"] = coop.get("treasury", 0) - payment
+                coop["treasury"] = max(0, coop.get("treasury", 0) - payment)
                 inv = coop["inventory"]
                 if vwap_on:
                     _vwap_add(state, bid["coop_id"], good, inv.get(good, 0) - w["take"], w["take"], clearing)
@@ -934,6 +950,10 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
     needs = params.get("needs")
     if not needs:
         return []
+    # Optional per-good consumption cycles: quota is consumed every N ticks
+    # instead of every tick (integer-native fractional needs). Goods without
+    # an entry consume daily as before — old worlds replay identically.
+    cycles = params.get("needs_cycle") or {}
 
     events: list[dict[str, Any]] = []
     for citizen in sorted(state.balances.keys()):
@@ -944,6 +964,9 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
             quota = needs[good]
             if quota <= 0:
                 continue
+            cyc = cycles.get(good, 1)
+            if cyc > 1 and tick % cyc != 0:
+                continue  # not this good's consumption day
             held = inv.get(good, 0)
             take = min(held, quota)
             if take > 0:
@@ -1085,7 +1108,7 @@ def _coop_distribute_phase(state: WorldState, tick: int, params: dict[str, Any])
         paid = per * len(members)
         if paid <= 0:
             continue
-        coop["treasury"] = treasury - paid
+        coop["treasury"] = max(0, treasury - paid)
         for m in sorted(members):
             state.balances[m] += per
         state.coop_dividends_paid += paid
@@ -1389,7 +1412,107 @@ def _is_constitutional(proposal_params: dict[str, Any], active_params: dict[str,
     return False
 
 
-_BACKSTOP_CACHE: dict[int, list] = {}  # id(state) -> [scanned_len, {coop: set(recipe_ids)}]
+
+
+def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Emergency input advance (Stage 4 insolvency fix).
+
+    A PROVEN producer (has produced before) that cannot afford its
+    cheapest runnable recipe's inputs is deadlocked: no inputs -> no
+    output -> no income -> never able to buy inputs again (observed:
+    dairy/tailors/school frozen broke while citizens went unmet).
+    Society advances the shortfall from the surplus pool — social
+    investment in production capacity, the model's "surpluses return
+    to society" made executable.
+
+    Booked as a pool->treasury transfer: the money invariant stays
+    exact. Deterministic: sorted coop ids. Inert without the rule key
+    (replay compat).
+    """
+    cb = params.get("capital_backstop") or {}
+    ia = cb.get("input_advance")
+    interval = cb.get("interval_ticks", 0)
+    if not isinstance(ia, dict) or interval <= 0 or tick % interval != 0:
+        return []
+    max_per = ia.get("max_per_coop", 0)
+    if max_per <= 0:
+        return []
+
+    # shared PRODUCE-history cache with the capital backstop
+    cache = _state_cache(state)
+    scanned, recipe_map = cache[0], cache[1]
+    if len(state.applied) > scanned:
+        for e in state.applied[scanned:]:
+            if e.get("action") == "PRODUCE":
+                recipe_map.setdefault(e.get("coop_id"), set()).add(e.get("recipe_id"))
+        cache[0] = len(state.applied)
+
+    events: list[dict[str, Any]] = []
+    for coop_id in sorted(state.coops.keys()):
+        coop = state.coops[coop_id]
+        rids = sorted(recipe_map.get(coop_id, ()))
+        if not rids:
+            # First-run advance: an unproven coop with a DECLARED trade
+            # (recipe_intent at founding) gets its first run's inputs
+            # advanced — otherwise it deadlocks before its first harvest
+            # (no inputs -> no output -> no history -> never proven).
+            intent = coop.get("recipe_intent")
+            if isinstance(intent, str) and intent in state.recipes:
+                rids = [intent]
+            else:
+                continue
+        # cheapest runnable recipe's input cost at current baselines
+        best: int | None = None
+        for rid in rids:
+            recipe = state.recipes.get(rid)
+            if not recipe:
+                continue
+            # state.recipes entries are plain dicts
+            inputs = recipe.get("inputs") if isinstance(recipe, dict) else getattr(recipe, "inputs", None)
+            if not inputs:
+                continue
+            cost = sum(
+                state.good_cost_baseline.get(g, 1) * q
+                for g, q in sorted(inputs.items())
+            )
+            if best is None or cost < best:
+                best = cost
+        if best is None or best <= 0:
+            continue
+        treasury = coop.get("treasury", 0)
+        if treasury >= best:
+            continue
+        shortfall = min(best - treasury, max_per)
+        if shortfall <= 0 or state.surplus_pool < shortfall:
+            continue
+        state.surplus_pool -= shortfall
+        coop["treasury"] = treasury + shortfall
+        events.append({
+            "tick": tick,
+            "action": "INPUT_ADVANCE",
+            "coop_id": coop_id,
+            "amount": shortfall,
+            "run_cost": best,
+        })
+    return events
+
+
+def _state_cache(state: WorldState) -> list:
+    """Per-state PRODUCE-history cache: [scanned_len, {coop: rids}, equipped].
+
+    Attached to the state object itself — NOT keyed by id(state): CPython
+    reuses ids of garbage-collected states, which gave fresh loaded states
+    a stale scanned-count (save/load hash mismatch). Rebuilt lazily from
+    applied history after load; deterministic.
+    """
+    cache = getattr(state, "_backstop_cache", None)
+    if cache is None:
+        cache = [0, {}, set()]
+        try:
+            object.__setattr__(state, "_backstop_cache", cache)
+        except AttributeError:
+            state._backstop_cache = cache
+    return cache
 
 
 def _capital_backstop_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1415,18 +1538,74 @@ def _capital_backstop_phase(state: WorldState, tick: int, params: dict[str, Any]
     # history (deterministic), cached outside state so state hashes and
     # replays stay byte-identical. Only proven production counts: a coop
     # whose recipes never need machines must not receive them free.
-    cache = _BACKSTOP_CACHE.setdefault(id(state), [0, {}])
-    scanned, recipe_map = cache
+    cache = _state_cache(state)
+    scanned, recipe_map = cache[0], cache[1]
     if len(state.applied) > scanned:
         for e in state.applied[scanned:]:
             if e.get("action") == "PRODUCE":
                 recipe_map.setdefault(e.get("coop_id"), set()).add(e.get("recipe_id"))
         cache[0] = len(state.applied)
 
+    # Founding equipment grant: society owns the means of production,
+    # so a worker coop with ZERO production history is equipped ONCE
+    # with its trade's capital — otherwise it deadlocks before its
+    # first shift (no tools -> no output -> no history -> never proven).
+    # Recipe intent is inferred deterministically: the recipe whose
+    # NON-capital inputs intersect the coop's held stock (a founded
+    # quarry holds water+electricity -> matches sand_extraction).
+    # One-time per coop, booked as retirement from the capital fund.
+    fe_on = bool(cb.get("founding_equipment"))
+    while len(cache) < 3:
+        cache.append(set())
+    equipped: set[str] = cache[2]
+
     events: list[dict[str, Any]] = []
     for coop_id in sorted(state.coops.keys()):
         coop = state.coops[coop_id]
         inv = coop.get("inventory", {})
+        if fe_on and coop_id not in equipped and not recipe_map.get(coop_id):
+            held_goods = {g for g, q in inv.items() if q > 0}
+            # declared trade wins; heuristic fallback otherwise
+            intent = coop.get("recipe_intent")
+            target_rid = intent if intent in state.recipes else None
+            if target_rid is None:
+                for rid in sorted(state.recipes.keys()):
+                    recipe = state.recipes[rid]
+                    ins = recipe.get("inputs") if isinstance(recipe, dict) else getattr(recipe, "inputs", None)
+                    outs = recipe.get("outputs") if isinstance(recipe, dict) else getattr(recipe, "outputs", None)
+                    if not ins or not outs:
+                        continue
+                    non_capital = {g for g in ins if g not in ("hand_tools", "machines")}
+                    if non_capital & held_goods:
+                        target_rid = rid
+                        break
+            if target_rid:
+                recipe = state.recipes[target_rid]
+                ins = recipe.get("inputs") if isinstance(recipe, dict) else getattr(recipe, "inputs", None)
+                gave = False
+                for g in sorted(ins):
+                    if g not in ("hand_tools", "machines"):
+                        continue
+                    q = ins[g]
+                    book = {"hand_tools": 25, "machines": 150}.get(g, 1)
+                    total = book * q
+                    cf = getattr(state, "capital_fund", 0)
+                    if cf >= total:
+                        state.capital_fund -= total
+                        state.money_retired += total
+                        inv[g] = inv.get(g, 0) + q
+                        gave = True
+                        events.append({
+                            "tick": tick,
+                            "action": "FOUNDING_EQUIPMENT",
+                            "coop_id": coop_id,
+                            "good": g,
+                            "qty": q,
+                            "book_value": total,
+                        })
+                if gave:
+                    equipped.add(coop_id)
+                    continue
         # capital goods required by the recipes THIS coop actually runs
         required: dict[str, int] = {}
         for rid in sorted(recipe_map.get(coop_id, ())):
@@ -1903,6 +2082,14 @@ def apply_tick(
     # their last machine and can never afford another (deterministic).
     backstop_events = _capital_backstop_phase(state, tick, params)
     state.applied.extend(backstop_events)
+
+    # Emergency input advance: a PROVEN producer (has produced before)
+    # that cannot afford its next run's inputs is deadlocked — no inputs
+    # -> no output -> no income -> never able to buy inputs again.
+    # Society advances the shortfall from the surplus pool; the coop
+    # repays automatically as its sales flow back into the treasury
+    # (advance is booked as pool outflow + treasury inflow, exact).
+    state.applied.extend(_input_advance_phase(state, tick, params))
 
     # End-of-tick governance settlement (deterministic) — spec §6
     gov_events = _settle_proposals(state, tick, params, ledger)

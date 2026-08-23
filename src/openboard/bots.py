@@ -251,12 +251,16 @@ def personal_needs(who, state, params, tick):
     v = state.ruleset_version
     out = []
     needs = params.get("needs", {})
+    cycles = params.get("needs_cycle") or {}
     inv = state.citizen_inventory.get(who, {})
     balance = state.balances.get(who, 0)
     for good in sorted(needs.keys()):
         quota = needs[good]
         if quota <= 0:
             continue
+        # Top up BEFORE the consumption day: engine consumes quota every
+        # N ticks; buying ahead (bounded at 2x quota) smooths demand bursts
+        # so cycle-day spikes don't starve rotated-out buyers.
         held = inv.get(good, 0)
         if held >= 2 * quota:
             continue

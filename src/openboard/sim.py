@@ -104,7 +104,9 @@ def make_specialist(
         # 0 machines forever because coal stock stayed above target).
         for cap_good in ("hand_tools", "machines"):
             cap_need = recipe["inputs"].get(cap_good, 0)
-            if cap_need <= 0:
+            if cap_need <= 0 or want_produce:
+                # when producing, the input loop above already bids for
+                # recipe inputs — bidding again duplicates the tx
                 continue
             cap_have = c["inventory"].get(cap_good, 0)
             if cap_have < cap_need:
@@ -144,16 +146,23 @@ def make_specialist(
         # purpose is sale, and a fixed buffer deadlocked the toolsmith
         # chain (machine_works held 8 machines, could never list them,
         # buyers starved -> economy-wide capital freeze).
-        held = c["inventory"].get(output_good, 0)
-        buffer = 0 if output_good in ("hand_tools", "machines") else 10
-        if held > buffer:
-            out.append(_tx(tick, who, "LIST_GOOD", {
-                "coop_id": coop_id, "good": output_good, "qty": held - buffer,
-            }, v))
+        # list surplus of EVERY output (multi-output recipes like
+        # livestock yield meat+milk+eggs — all must reach the market).
+        # Insolvent coops list at ZERO buffer: selling existing stock is
+        # their only path out of the can't-buy-inputs deadlock.
+        insolvent = c.get("treasury", 0) < next_run_cost
+        for ogood in sorted(recipe["outputs"].keys()):
+            held = c["inventory"].get(ogood, 0)
+            buffer = 0 if ogood in ("hand_tools", "machines") or insolvent else 10
+            if held > buffer:
+                out.append(_tx(tick, who, "LIST_GOOD", {
+                    "coop_id": coop_id, "good": ogood, "qty": held - buffer,
+                }, v))
 
         out.extend(personal_needs(who, state, params, tick))
         return out
 
+    bot.recipe_id = recipe_id  # introspectable declared trade
     return bot
 
 

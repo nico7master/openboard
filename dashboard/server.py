@@ -37,6 +37,24 @@ SAVE_FORMAT = "openboard-run-v2"
 # WHOLE economy (14 citizens + industry), so their buffers must exceed any
 # single consumer's daily flow — under-sized targets starve downstream
 # coops (auction bidders lose to FCFS citizens every tick).
+def _coop_recipe_intent(plan: dict) -> str | None:
+    """Declared trade for a founded coop: the recipe its first specialist
+    member runs. Used by society's founding equipment grant."""
+    from openboard.catalog import RECIPES
+    # BASELINE_BOTS: (citizen, specialist_fn, coop) — the exact mapping
+    bot_of = {name: fn for name, fn, _ in BASELINE_BOTS}
+    for m in plan["members"]:
+        fn = bot_of.get(m)
+        if fn is None:
+            # fallback: role name = citizen minus trailing _<letter>
+            role = m.rsplit("_", 1)[0]
+            fn = SPECIALISTS.get(role)
+        rid = getattr(fn, "recipe_id", None)
+        if isinstance(rid, str) and rid in RECIPES:
+            return rid
+    return None
+
+
 SPECIALISTS = {
     "farmer": make_specialist("grain_farming", "grain", {"water": 5}, stock_target=100),
     "miller": make_specialist("grain_to_flour", "flour", {"grain": 10}, stock_target=100),
@@ -56,22 +74,65 @@ SPECIALISTS = {
     "machinist": make_specialist("machine_building_batch", "machines", {"steel": 20, "electronics": 6, "glass": 4}, stock_target=25),
     # Competition: second power producer
     "wind_worker": make_specialist("wind_farm", "electricity", {}, stock_target=250),
+    # Stage 4: breadth — every good has a producer
+    "fisher": make_specialist("fishing", "fish", {}, stock_target=60),
+    "orchardist": make_specialist("orchard", "fruit", {"water": 4}, stock_target=80),
+    "vegetable_farmer": make_specialist("vegetable_farming", "vegetables", {"water": 6}, stock_target=100),
+    "herder": make_specialist("livestock", "meat", {"grain": 20, "water": 10}, stock_target=40),
+    "dairy_worker": make_specialist("cheesemaking", "cheese", {"milk": 40}, stock_target=30),
+    "canner": make_specialist("canning", "canned_food", {"vegetables": 8, "fruit": 4}, stock_target=40),
+    "cook": make_specialist("meal_service", "meals", {"vegetables": 3, "meat": 2, "bread": 2}, stock_target=40),
+    "weaver": make_specialist("fabric_weaving", "fabric", {"grain": 2, "water": 3}, stock_target=40),
+    "tailor": make_specialist("clothing_sewing", "clothing", {"fabric": 10}, stock_target=20),
+    "printer": make_specialist("book_printing", "books", {"fabric": 1, "water": 1}, stock_target=20),
+    "carpenter": make_specialist("furniture_craft", "furniture", {"lumber": 3, "fabric": 2, "steel": 1}, stock_target=15),
+    "homewright": make_specialist("household_goods_craft", "household_goods", {"steel": 1, "glass": 1, "fabric": 1}, stock_target=25),
+    "brickmaker": make_specialist("brickmaking", "bricks", {"sand": 3, "water": 2}, stock_target=100),
+    "quarryman": make_specialist("quarrying", "stone", {}, stock_target=60),
+    "builder": make_specialist("housing_service", "housing", {"lumber": 2, "bricks": 50, "steel": 1}, stock_target=10),
+    "healer": make_specialist("healthcare_service", "healthcare", {}, stock_target=20),
+    "teacher": make_specialist("education_service", "education", {}, stock_target=10),
+    "carer": make_specialist("childcare_service", "childcare", {}, stock_target=20),
+    "driver": make_specialist("transport_service", "transport", {"electricity": 10}, stock_target=60),
+    "fixer": make_specialist("maintenance_service", "maintenance", {"hand_tools": 1}, stock_target=20),
+    "refiner": make_specialist("heating_fuel_refining", "heating_fuel", {"coal": 2, "water": 1}, stock_target=60),
+    "herbalist": make_specialist("herbal_medicine", "medicine", {"fruit": 5, "water": 2}, stock_target=20),
+    # Endowments-off bootstrap: labor-only toolmaking lets society make
+    # its first tools by hand when no capital seeds exist
+    "toolwright": make_specialist("primitive_toolmaking", "hand_tools", {}, stock_target=30),
 }
 
 BASELINE_BOTS: list[tuple[str, Any, str]] = [
     # (name, decision fn, coop)
     ("farmer_a", SPECIALISTS["farmer"], "farmers"),
     ("farmer_b", SPECIALISTS["farmer"], "farmers"),
+    ("farmer_e", SPECIALISTS["farmer"], "farmers"),
+    ("farmer_f", SPECIALISTS["farmer"], "farmers"),
     ("miller_a", SPECIALISTS["miller"], "millers"),
     ("miller_b", SPECIALISTS["miller"], "millers"),
+    ("miller_c", SPECIALISTS["miller"], "millers"),
     ("baker_a", SPECIALISTS["baker"], "bakers"),
     ("baker_b", SPECIALISTS["baker"], "bakers"),
+    ("baker_e", SPECIALISTS["baker"], "bakers"),
     ("miner_a", SPECIALISTS["miner"], "miners"),
     ("miner_b", SPECIALISTS["miner"], "miners"),
+    ("miner_c", SPECIALISTS["miner"], "miners"),
+    ("miner_d", SPECIALISTS["miner"], "miners"),
+    ("miner_e", SPECIALISTS["miner"], "miners"),
+    ("miner_f", SPECIALISTS["miner"], "miners"),
+    ("miner_g", SPECIALISTS["miner"], "miners"),
+    ("miner_h", SPECIALISTS["miner"], "miners"),
+    ("miner_i", SPECIALISTS["miner"], "miners"),
+    ("miner_j", SPECIALISTS["miner"], "miners"),
+    ("miner_k", SPECIALISTS["miner"], "miners"),
+    ("miner_l", SPECIALISTS["miner"], "miners"),
     ("power_a", SPECIALISTS["power_worker"], "power_plant"),
     ("power_b", SPECIALISTS["power_worker"], "power_plant"),
+    ("power_c", SPECIALISTS["power_worker"], "power_plant"),
     ("water_a", SPECIALISTS["water_worker"], "water_works"),
     ("water_b", SPECIALISTS["water_worker"], "water_works"),
+    ("water_e", SPECIALISTS["water_worker"], "water_works"),
+    ("water_f", SPECIALISTS["water_worker"], "water_works"),
     ("worker_a", ARCHETYPES["honest_worker"], "farmers"),
     ("worker_b", ARCHETYPES["honest_worker"], "farmers"),
     # Stage 3: capital chain
@@ -96,19 +157,128 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
     # Competition: second power, grain, bread
     ("wind_a", SPECIALISTS["wind_worker"], "wind_farm"),
     ("wind_b", SPECIALISTS["wind_worker"], "wind_farm"),
+    ("wind_c", SPECIALISTS["wind_worker"], "wind_farm"),
+    ("wind_d", SPECIALISTS["wind_worker"], "wind_farm"),
     ("farmer_c", SPECIALISTS["farmer"], "farmers_north"),
     ("farmer_d", SPECIALISTS["farmer"], "farmers_north"),
+    ("farmer_g", SPECIALISTS["farmer"], "farmers_north"),
+    ("farmer_h", SPECIALISTS["farmer"], "farmers_north"),
+    ("farmer_i", SPECIALISTS["farmer"], "farmers_north"),
     ("baker_c", SPECIALISTS["baker"], "city_bakers"),
     ("baker_d", SPECIALISTS["baker"], "city_bakers"),
+    ("baker_f", SPECIALISTS["baker"], "city_bakers"),
+    # Stage 4: breadth cast
+    ("water_c", SPECIALISTS["water_worker"], "water_works_north"),
+    ("water_d", SPECIALISTS["water_worker"], "water_works_north"),
+    ("water_g", SPECIALISTS["water_worker"], "water_works_north"),
+    ("water_h", SPECIALISTS["water_worker"], "water_works_north"),
+    ("fisher_a", SPECIALISTS["fisher"], "fishery"),
+    ("fisher_b", SPECIALISTS["fisher"], "fishery"),
+    ("fisher_c", SPECIALISTS["fisher"], "fishery"),
+    ("fisher_d", SPECIALISTS["fisher"], "fishery"),
+    ("orchard_a", SPECIALISTS["orchardist"], "orchard_co"),
+    ("orchard_b", SPECIALISTS["orchardist"], "orchard_co"),
+    ("orchard_c", SPECIALISTS["orchardist"], "orchard_co"),
+    ("orchard_d", SPECIALISTS["orchardist"], "orchard_co"),
+    ("orchard_e", SPECIALISTS["orchardist"], "orchard_co"),
+    ("veg_a", SPECIALISTS["vegetable_farmer"], "vegetable_farm"),
+    ("veg_b", SPECIALISTS["vegetable_farmer"], "vegetable_farm"),
+    ("veg_c", SPECIALISTS["vegetable_farmer"], "vegetable_farm"),
+    ("veg_d", SPECIALISTS["vegetable_farmer"], "vegetable_farm"),
+    ("veg_e", SPECIALISTS["vegetable_farmer"], "vegetable_farm"),
+    ("veg_f", SPECIALISTS["vegetable_farmer"], "vegetable_farm"),
+    ("veg_g", SPECIALISTS["vegetable_farmer"], "vegetable_farm"),
+    ("herder_a", SPECIALISTS["herder"], "livestock_co"),
+    ("herder_b", SPECIALISTS["herder"], "livestock_co"),
+    ("herder_c", SPECIALISTS["herder"], "livestock_co"),
+    ("herder_d", SPECIALISTS["herder"], "livestock_co"),
+    ("herder_e", SPECIALISTS["herder"], "livestock_co"),
+    ("herder_f", SPECIALISTS["herder"], "livestock_co"),
+    ("herder_g", SPECIALISTS["herder"], "livestock_co"),
+    ("herder_h", SPECIALISTS["herder"], "livestock_co"),
+    ("rancher_a", SPECIALISTS["herder"], "livestock_north"),
+    ("rancher_b", SPECIALISTS["herder"], "livestock_north"),
+    ("rancher_c", SPECIALISTS["herder"], "livestock_north"),
+    ("rancher_d", SPECIALISTS["herder"], "livestock_north"),
+    ("rancher_e", SPECIALISTS["herder"], "livestock_north"),
+    ("rancher_f", SPECIALISTS["herder"], "livestock_north"),
+    ("rancher_g", SPECIALISTS["herder"], "livestock_north"),
+    ("rancher_h", SPECIALISTS["herder"], "livestock_north"),
+    ("dairy_a", SPECIALISTS["dairy_worker"], "dairy"),
+    ("dairy_b", SPECIALISTS["dairy_worker"], "dairy"),
+    ("dairy_c", SPECIALISTS["dairy_worker"], "dairy"),
+    ("canner_a", SPECIALISTS["canner"], "cannery"),
+    ("canner_b", SPECIALISTS["canner"], "cannery"),
+    ("cook_a", SPECIALISTS["cook"], "kitchen"),
+    ("cook_b", SPECIALISTS["cook"], "kitchen"),
+    ("cook_c", SPECIALISTS["cook"], "kitchen"),
+    ("cook_c", SPECIALISTS["cook"], "kitchen"),
+    ("cook_d", SPECIALISTS["cook"], "kitchen"),
+    ("cook_e", SPECIALISTS["cook"], "kitchen"),
+    ("cook_f", SPECIALISTS["cook"], "kitchen"),
+    ("cook_g", SPECIALISTS["cook"], "kitchen"),
+    ("weaver_a", SPECIALISTS["weaver"], "weavers"),
+    ("weaver_b", SPECIALISTS["weaver"], "weavers"),
+    ("tailor_a", SPECIALISTS["tailor"], "tailors"),
+    ("tailor_b", SPECIALISTS["tailor"], "tailors"),
+    ("printer_a", SPECIALISTS["printer"], "printshop"),
+    ("printer_b", SPECIALISTS["printer"], "printshop"),
+    ("carpenter_a", SPECIALISTS["carpenter"], "furniture_shop"),
+    ("carpenter_b", SPECIALISTS["carpenter"], "furniture_shop"),
+    ("carpenter_c", SPECIALISTS["carpenter"], "furniture_shop"),
+    ("carpenter_d", SPECIALISTS["carpenter"], "furniture_shop"),
+    ("homewright_a", SPECIALISTS["homewright"], "household_co"),
+    ("homewright_b", SPECIALISTS["homewright"], "household_co"),
+    ("homewright_c", SPECIALISTS["homewright"], "household_co"),
+    ("homewright_c", SPECIALISTS["homewright"], "household_co"),
+    ("homewright_d", SPECIALISTS["homewright"], "household_co"),
+    ("homewright_e", SPECIALISTS["homewright"], "household_co"),
+    ("brickmaker_a", SPECIALISTS["brickmaker"], "brickworks"),
+    ("brickmaker_b", SPECIALISTS["brickmaker"], "brickworks"),
+    ("quarryman_a", SPECIALISTS["quarryman"], "quarry_co"),
+    ("quarryman_b", SPECIALISTS["quarryman"], "quarry_co"),
+    ("quarryman_c", SPECIALISTS["quarryman"], "quarry_co"),
+    ("quarryman_d", SPECIALISTS["quarryman"], "quarry_co"),
+    ("quarryman_e", SPECIALISTS["quarryman"], "quarry_co"),
+    ("builder_a", SPECIALISTS["builder"], "housing_guild"),
+    ("builder_b", SPECIALISTS["builder"], "housing_guild"),
+    ("healer_a", SPECIALISTS["healer"], "clinic"),
+    ("healer_b", SPECIALISTS["healer"], "clinic"),
+    ("teacher_a", SPECIALISTS["teacher"], "school"),
+    ("teacher_b", SPECIALISTS["teacher"], "school"),
+    ("teacher_c", SPECIALISTS["teacher"], "school"),
+    ("teacher_d", SPECIALISTS["teacher"], "school"),
+    ("teacher_e", SPECIALISTS["teacher"], "school"),
+    ("teacher_f", SPECIALISTS["teacher"], "school"),
+    ("carer_a", SPECIALISTS["carer"], "childcare_co"),
+    ("carer_b", SPECIALISTS["carer"], "childcare_co"),
+    ("driver_a", SPECIALISTS["driver"], "transport_co"),
+    ("driver_b", SPECIALISTS["driver"], "transport_co"),
+    ("fixer_a", SPECIALISTS["fixer"], "maintenance_co"),
+    ("fixer_b", SPECIALISTS["fixer"], "maintenance_co"),
+    ("fixer_c", SPECIALISTS["fixer"], "maintenance_co"),
+    ("fixer_d", SPECIALISTS["fixer"], "maintenance_co"),
+    ("fixer_e", SPECIALISTS["fixer"], "maintenance_co"),
+    ("fixer_f", SPECIALISTS["fixer"], "maintenance_co"),
+    ("refiner_a", SPECIALISTS["refiner"], "fuel_works"),
+    ("refiner_b", SPECIALISTS["refiner"], "fuel_works"),
+    ("refiner_c", SPECIALISTS["refiner"], "fuel_works"),
+    ("refiner_c", SPECIALISTS["refiner"], "fuel_works"),
+    ("refiner_d", SPECIALISTS["refiner"], "fuel_works"),
+    ("refiner_e", SPECIALISTS["refiner"], "fuel_works"),
+    ("refiner_f", SPECIALISTS["refiner"], "fuel_works"),
+    ("refiner_g", SPECIALISTS["refiner"], "fuel_works"),
+    ("herbalist_a", SPECIALISTS["herbalist"], "apothecary"),
+    ("herbalist_b", SPECIALISTS["herbalist"], "apothecary"),
 ]
 
 BASELINE_COOPS = [
-    {"coop_id": "farmers", "members": ["farmer_a", "farmer_b", "worker_a", "worker_b"]},
-    {"coop_id": "millers", "members": ["miller_a", "miller_b"]},
-    {"coop_id": "bakers", "members": ["baker_a", "baker_b"]},
-    {"coop_id": "miners", "members": ["miner_a", "miner_b"]},
-    {"coop_id": "power_plant", "members": ["power_a", "power_b"]},
-    {"coop_id": "water_works", "members": ["water_a", "water_b"]},
+    {"coop_id": "farmers", "members": ["farmer_a", "farmer_b", "farmer_e", "farmer_f", "worker_a", "worker_b"]},
+    {"coop_id": "millers", "members": ["miller_a", "miller_b", "miller_c"]},
+    {"coop_id": "bakers", "members": ["baker_a", "baker_b", "baker_e"]},
+    {"coop_id": "miners", "members": ["miner_a", "miner_b", "miner_c", "miner_d", "miner_e", "miner_f", "miner_g", "miner_h", "miner_i", "miner_j", "miner_k", "miner_l"]},
+    {"coop_id": "power_plant", "members": ["power_a", "power_b", "power_c"]},
+    {"coop_id": "water_works", "members": ["water_a", "water_b", "water_e", "water_f"]},
     {"coop_id": "loggers", "members": ["logger_a", "logger_b"]},
     {"coop_id": "sawmill_co", "members": ["sawyer_a", "sawyer_b"]},
     {"coop_id": "iron_miners", "members": ["iron_a", "iron_b"]},
@@ -118,9 +288,35 @@ BASELINE_COOPS = [
     {"coop_id": "electronics_co", "members": ["elec_a", "elec_b"]},
     {"coop_id": "toolworks", "members": ["tool_a", "tool_b"]},
     {"coop_id": "machine_works", "members": ["mach_a", "mach_b"]},
-    {"coop_id": "wind_farm", "members": ["wind_a", "wind_b"]},
-    {"coop_id": "farmers_north", "members": ["farmer_c", "farmer_d"]},
-    {"coop_id": "city_bakers", "members": ["baker_c", "baker_d"]},
+    {"coop_id": "wind_farm", "members": ["wind_a", "wind_b", "wind_c", "wind_d"]},
+    {"coop_id": "farmers_north", "members": ["farmer_c", "farmer_d", "farmer_g", "farmer_h", "farmer_i"]},
+    {"coop_id": "city_bakers", "members": ["baker_c", "baker_d", "baker_f"]},
+    # Stage 4: breadth — all remaining sectors
+    {"coop_id": "water_works_north", "members": ["water_c", "water_d", "water_g", "water_h"]},
+    {"coop_id": "toolwrights", "members": ["wright_a", "wright_b", "wright_c", "wright_d"]},
+    {"coop_id": "fishery", "members": ["fisher_a", "fisher_b", "fisher_c", "fisher_d"]},
+    {"coop_id": "orchard_co", "members": ["orchard_a", "orchard_b", "orchard_c", "orchard_d", "orchard_e"]},
+    {"coop_id": "vegetable_farm", "members": ["veg_a", "veg_b", "veg_c", "veg_d", "veg_e", "veg_f", "veg_g"]},
+    {"coop_id": "livestock_co", "members": ["herder_a", "herder_b", "herder_c", "herder_d", "herder_e", "herder_f", "herder_g", "herder_h"]},
+    {"coop_id": "livestock_north", "members": ["rancher_a", "rancher_b", "rancher_c", "rancher_d", "rancher_e", "rancher_f", "rancher_g", "rancher_h"]},
+    {"coop_id": "dairy", "members": ["dairy_a", "dairy_b", "dairy_c"]},
+    {"coop_id": "cannery", "members": ["canner_a", "canner_b"]},
+    {"coop_id": "kitchen", "members": ["cook_a", "cook_b", "cook_c", "cook_d", "cook_e", "cook_f", "cook_g"]},
+    {"coop_id": "weavers", "members": ["weaver_a", "weaver_b"]},
+    {"coop_id": "tailors", "members": ["tailor_a", "tailor_b"]},
+    {"coop_id": "printshop", "members": ["printer_a", "printer_b"]},
+    {"coop_id": "furniture_shop", "members": ["carpenter_a", "carpenter_b", "carpenter_c", "carpenter_d"]},
+    {"coop_id": "household_co", "members": ["homewright_a", "homewright_b", "homewright_c", "homewright_d", "homewright_e"]},
+    {"coop_id": "brickworks", "members": ["brickmaker_a", "brickmaker_b"]},
+    {"coop_id": "quarry_co", "members": ["quarryman_a", "quarryman_b", "quarryman_c", "quarryman_d", "quarryman_e"]},
+    {"coop_id": "housing_guild", "members": ["builder_a", "builder_b"]},
+    {"coop_id": "clinic", "members": ["healer_a", "healer_b"]},
+    {"coop_id": "school", "members": ["teacher_a", "teacher_b", "teacher_c", "teacher_d", "teacher_e", "teacher_f"]},
+    {"coop_id": "childcare_co", "members": ["carer_a", "carer_b"]},
+    {"coop_id": "transport_co", "members": ["driver_a", "driver_b"]},
+    {"coop_id": "maintenance_co", "members": ["fixer_a", "fixer_b", "fixer_c", "fixer_d", "fixer_e", "fixer_f"]},
+    {"coop_id": "fuel_works", "members": ["refiner_a", "refiner_b", "refiner_c", "refiner_d", "refiner_e", "refiner_f", "refiner_g"]},
+    {"coop_id": "apothecary", "members": ["herbalist_a", "herbalist_b"]},
 ]
 
 # Input-buying coops need starting treasuries to bootstrap their chains.
@@ -132,6 +328,14 @@ BASELINE_TREASURIES = {
     # chain's internal trade reaches steady state (a machine batch alone
     # costs ~2,200cr in inputs; too-small seeds froze the chain mid-flight)
     "steelworks": 2_600, "electronics_co": 1_600, "machine_works": 4_200,
+    # Stage 4: input-buying coops (600 covers several runs of their
+    # recipes; housing is the heavy one: 50 bricks + lumber + steel/run)
+    "orchard_co": 600, "vegetable_farm": 600, "livestock_co": 600,
+    "dairy": 600, "cannery": 600, "kitchen": 600, "weavers": 600,
+    "tailors": 600, "printshop": 600, "furniture_shop": 600,
+    "household_co": 600, "brickworks": 600, "housing_guild": 1_200,
+    "transport_co": 600, "maintenance_co": 600, "fuel_works": 600,
+    "apothecary": 600,
 }
 # Stage 3 one-time capital bootstrap: extraction coops get seed tools and
 # machines ONLY at founding; every replacement is bought on the market
@@ -214,11 +418,14 @@ class Run:
         self.totals: dict[str, dict[str, int]] = {"produced": {}, "bought": {}}
         self._last_events: list[dict[str, Any]] = []
 
-        # tick 1: founding
+        # tick 1: founding (each coop declares its trade so society can
+        # equip it before its first shift if it lacks capital seeds)
         founding = [
             Transaction(tick=1, sender=plan["members"][0], action="FOUND_COOP",
                         payload={"coop_id": plan["coop_id"], "name": plan["coop_id"],
-                                 "members": plan["members"]}, ruleset_version=1)
+                                 "members": plan["members"],
+                                 "recipe_id": _coop_recipe_intent(plan)},
+                        ruleset_version=1)
             for plan in BASELINE_COOPS
         ]
         self._apply_batch(1, founding)
@@ -459,10 +666,43 @@ class Run:
 
     def _params(self) -> dict[str, Any]:
         params = copy.deepcopy(DEFAULT_RULESET_PARAMS)
-        params["triage_overrides"] = {}
+        # Stage 4: society classifies need-goods as essential (votable,
+        # D8) so citizens can BUY_ESSENTIAL them at cost floors.
+        # Stage 4 finding: deterministic FCFS essential clearing starved
+        # alphabetically-late citizens forever even with surplus supply.
+        # Fair clearing rotates service order by tick (votable).
+        params["fair_clearing"] = True
+        params["triage_overrides"] = {
+            g: "essential" for g in (
+                "vegetables", "fruit", "meat", "milk", "eggs", "cheese",
+                "meals", "fish", "clothing", "healthcare", "education",
+                "childcare", "housing", "transport", "heating_fuel",
+                "medicine", "maintenance", "books", "furniture",
+                "household_goods",
+            )
+        }
         # Circular flow (2026-08-21): citizens need goods daily, surplus
         # returns to society. Both votable rule params like everything else.
-        params["needs"] = {"bread": 1, "water": 1, "electricity": 1}
+        # Stage 4 breadth: full-spectrum citizen needs. Fractional daily
+        # quotas are integer-native via needs_cycle (consume quota every
+        # N ticks). Triage overrides make need-goods essential so citizens
+        # can BUY_ESSENTIAL them at cost floors.
+        params["needs"] = {
+            "bread": 1, "water": 1, "electricity": 1,
+            "vegetables": 5, "fruit": 5, "meat": 4, "milk": 4, "eggs": 4,
+            "cheese": 1, "meals": 2, "fish": 3,
+            "clothing": 1, "healthcare": 1, "education": 1, "childcare": 1,
+            "housing": 1, "transport": 2, "heating_fuel": 2, "medicine": 1,
+            "maintenance": 1, "books": 1, "furniture": 1, "household_goods": 1,
+        }
+        params["needs_cycle"] = {
+            "vegetables": 20, "fruit": 20, "meat": 25, "milk": 25, "eggs": 25,
+            "cheese": 100, "meals": 50, "fish": 33,
+            "clothing": 100, "healthcare": 100, "education": 200,
+            "childcare": 100, "housing": 500, "transport": 50,
+            "heating_fuel": 50, "medicine": 200, "maintenance": 100,
+            "books": 100, "furniture": 500, "household_goods": 100,
+        }
         params["surplus_spending"] = {
             "dividend_share_bp": 5_000,       # 50% of spendable pool
             "services_share_bp": 5_000,        # 50% funds essential refunds
@@ -493,7 +733,7 @@ class Run:
         # Co-ops buy tools/machines on the market; the rule stays available
         # for adversarial what-if study but is OFF in the baseline.
         params["extended_catalog"] = True
-        params["capital_backstop"] = {"interval_ticks": 10}
+        params["capital_backstop"] = {"interval_ticks": 10, "input_advance": {"max_per_coop": 500}, "founding_equipment": True}
         # Patronage: co-op surplus above an operating buffer flows back to
         # worker-members. The buffer (1,600) also reserves rent capacity:
         # capital rent is charged from the treasury at use time, so a drained
