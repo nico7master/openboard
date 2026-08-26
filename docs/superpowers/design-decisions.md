@@ -192,3 +192,41 @@
   Guardrails: only proven production recipes count (no free capital for
   never-producers), booked as retirement so the money invariant stays exact,
   deterministic order, replay-safe via out-of-state cache.
+
+## Stage 4 — breadth & genesis seeding (2026-08-24)
+
+**Decision: society seeds founding values at genesis** (user-approved).
+The live world starts with founding capital, equipment, and a 3-day pantry;
+the stage-4 gate measures this REAL configuration (skip first 250t founding
+window). `ZERO_START=1` keeps the from-nothing variant for adversarial study.
+Rationale: the model's bootstrap-endowment rule already says society equips
+its members; measuring a stripped world measured the wrong claim.
+
+**Engine fixes landed during breadth:**
+- Multi-run PRODUCE: bots scale runs to labor/inputs/stock-gap (millers idled
+  19k labor-hours at 1 run/tick while the city starved)
+- Producer input pass rotates service order by tick (alphabetical FCFS
+  starved late names)
+- Input advance priced at bot-bid parity (baseline+2); printshop deadlock
+  broken — books now produce
+- Buffer must stay below stock_target (teachers/builders produced-to-target
+  and never listed)
+- Third water utility: 2 coops left ~9 water/tick for ALL producers after
+  citizen drinking — the master constraint behind bread/livestock/fabric
+  starvation
+- Cast rebalanced: 4 builders (housing oscillated 86 unmet), bricks target
+  400, maintenance treasury 1800 (tool-burning recipe), weavers 120
+
+**Known issue (documented, not blocking):** maintenance & meat oscillate
+(maintenance 147->68->133->35 across 2,000 ticks) because the recipe burns a
+hand_tool per unit and livestock shares grain with millers. Bounded, no
+runaway; revisit under shocks/growth tuning.
+
+
+## Stage 5 design decisions (2026-08-26)
+
+- D5.1 Real-world demographics: births always flow (children consume, mature at ~600 ticks); pandemics kill permanently. Death only from shocks, never market outcomes (dignity floor).
+- D5.2 Shock engine has intensity profiles (`peaceful`..`apocalyptic`) for future game difficulty; escalating battery is test-only instrumentation that reports the honest breaking tier.
+- D5.3 Research allocation = algorithmic proposal from transparent signals + delegative citizen vote (direct/delegate/abstain-default) + universal override. Everything votable, including the algorithm itself. Linear point-splitting chosen over quadratic for simplicity/exactness (user preference).
+- D5.4 Entities never fail; leadership is a replaceable role. Founders lead first; execution keeps them there. Means of production stay social.
+- D5.5 Backer-priority layer REJECTED by user as too complicated/rarely useful. Crisis overrides all advantages: distribution by need during declared emergencies.
