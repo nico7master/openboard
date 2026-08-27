@@ -15,6 +15,7 @@ real world will actually run: **1,000 citizens**. Success criteria:
 - **D6.1 Scale first** (A): the stability region is charted at 1k citizens; a 160-citizen chart would be a rough draft.
 - **D6.2 Two-tier performance budget** (C): science batch target + game watchable-speed target. The game is a **time machine** — the world auto-flows, the player controls playback speed and intervenes on alerts; not per-citizen control.
 - **D6.3 Staged sweeps** (C): coarse map first (wide & shallow), then fine passes around the map's edges (cliffs).
+- **D6.4 Cohort scaling in scope** (B): the strategic goal is country/world scale ("one country implements it, then the world adopts via public ledger receipts"). Full-fidelity 8B simulation is impossible; the aggregation ladder is: full fidelity (1k) → weighted cohorts (1k agents × K real people) → regional hierarchy → statistical emulator → **the real deployment IS the simulation** (no world sim needed; adoption scales by trust in the verifiable ledger). Rungs 3-4 (regional hierarchy, emulator) are planned as a later stage (user-approved).
 
 ## Work packages
 
@@ -44,8 +45,13 @@ real world will actually run: **1,000 citizens**. Success criteria:
 ### WP6 — Shock × scale interaction
 - Battery (peaceful→apocalyptic) at 1k citizens × 2 seeds. Question: does 'fatal' still hold at scale? Report honestly like Stage 5's battery.
 
+### WP7 — Cohort scaling (world-path bridge)
+- Each simulated agent optionally carries `cohort_k` (representing K real people); weights flow through needs, labor, consumption, surplus, and Gini as weighted quantities; money invariant checked on weighted totals.
+- Verification: 1,000 agents × K=100 (=100,000 "people") × 500 ticks × 2 seeds — stable essentials, exact weighted invariant, within science budget. Compare K=1 vs K=100 dynamics on one seed for divergence accounting (expected: identical per-agent decisions, scaled flows).
+
 ## Non-goals
 - No multiplayer/network code (Stage 7+).
+- No regional hierarchy or statistical emulator (rungs 3-4) — planned as a later stage per D6.4.
 - No new economic rules; Stage 6 measures the rule space, doesn't extend it.
 - No chain anchoring (Stage 7).
 
