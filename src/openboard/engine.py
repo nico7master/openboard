@@ -1162,8 +1162,16 @@ def _surplus_spend_phase(state: WorldState, tick: int, params: dict[str, Any]) -
     if serv_budget > 0:
         refunds: list[dict[str, Any]] = []
         paid = 0
-        for e in state.applied:
-            if e.get("action") != "CONSUMED" or e.get("tick") != tick:
+        # This tick's events are the tail of `applied` (events are appended
+        # in non-decreasing tick order). Locate the block boundary backward,
+        # then iterate forward — same events, same order, O(this tick)
+        # instead of O(whole ledger) per run of this loop.
+        i = len(state.applied) - 1
+        while i >= 0 and state.applied[i].get("tick") == tick:
+            i -= 1
+        start = i + 1
+        for e in state.applied[start:]:
+            if e.get("action") != "CONSUMED":
                 continue
             citizen = e["citizen"]
             for good, qty in sorted(e.get("consumed", {}).items()):
