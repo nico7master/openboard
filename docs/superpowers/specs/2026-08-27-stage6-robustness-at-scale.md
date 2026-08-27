@@ -25,7 +25,7 @@ real world will actually run: **1,000 citizens**. Success criteria:
 
 ### WP2 — Scale gate
 - `stage6_scale_gate.py`: 1,000 citizens × 2,000 ticks × 3 seeds, endowments ON (genesis-scaled), solo run.
-- Criteria: money invariant exact every tick; essentials streak ≤ gate bounds; wall-clock ≤2 h; peak RSS ≤8 GB.
+- Criteria: money invariant exact every tick; essentials streak ≤ 50 ticks post-genesis (matching the Stage 5 battery bound); wall-clock ≤2 h; peak RSS ≤8 GB.
 
 ### WP3 — Coarse sweep (the map)
 - Knobs (votable rules, coarse grid ×3 values): wealth_tax rate_bp, labor_pool_cap, surplus share-out %, capital backstop interval, birth interval.
