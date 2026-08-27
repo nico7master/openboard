@@ -138,6 +138,21 @@ def scale_world(run, target):
     return len(run.bots)
 
 
+def trim_retention(run, keep_records=5_000, keep_events=10_000):
+    """Gate-local memory hygiene (never replays): drop old history.
+    The hash chain is unaffected (chaining depends only on the head
+    hash) and WP1 made all engine phases O(current tick), so the
+    trimmed windows are functionally equivalent for this gate."""
+    if len(run.ledger.records) > keep_records:
+        del run.ledger.records[:-keep_records]
+    if len(run.state.applied) > keep_events:
+        del run.state.applied[:-keep_events]
+    run.batches.clear()
+    import gc
+
+    gc.collect()
+
+
 def main():
     ticks = int(sys.argv[1]) if len(sys.argv) > 1 else 2000
     seed = int(sys.argv[2]) if len(sys.argv) > 2 else 42
@@ -163,10 +178,12 @@ def main():
             worst_streak = max(worst_streak, streak)
         else:
             streak = 0
+        if t % 50 == 0:
+            trim_retention(run)
         if t % 250 == 0:
             el = time.perf_counter() - t_drive0
             rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024
-            print(f"  t={t} elapsed={el:.0f}s rss={rss}MB inv_bad={inv_bad} streak={streak}")
+            print(f"  t={t} elapsed={el:.0f}s rss={rss}MB inv_bad={inv_bad} streak={streak}", flush=True)
 
     wall = time.perf_counter() - t_start
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024

@@ -3,8 +3,10 @@
 Spec: docs/superpowers/specs/2026-08-27-stage6-robustness-at-scale.md (commits 86234fd, 5885ce0, d94fe3b)
 Mandate: user approved full autonomous execution of WPs 1-7 (2026-08-27 21:31 CEST).
 
-- [ ] WP1: profile 1k-citizen run; optimize proven hotspots only; byte-identical replay tripwire + suite green
-- [ ] WP2: stage6_scale_gate.py - 1k citizens x 2000 ticks x 3 seeds, invariant exact, streak <=50, <=2h, <=8GB, solo; PASS log committed
+- [x] WP1: profile 1k-citizen run; optimize proven hotspots only; byte-identical replay tripwire + suite green
+PASS 2026-08-28 00:07 CEST: 986 citizens x 2000 ticks, wall=1025s, rss=1334MB flat, inv_bad=0, worst_streak=30 <= 50. Log: docs/superpowers/logs/stage6-scale-gate-pass.log
+- [x] WP2: stage6_scale_gate.py - 1k citizens x 2000 ticks x 3 seeds, invariant exact, streak <=50, <=2h, <=8GB, solo; PASS log committed
+  - status 2026-08-27 23:34 CEST: shakedown PASS (986 citizens, 89s/120 ticks, 2.6GB RSS, invariant exact, streak 6); full 2,000-tick run in progress
 - [ ] WP3: coarse sweep harness (sweeps/ dir, 5 knobs x 3 values x 3 seeds x 500 ticks, resumable, sequential)
 - [ ] WP4: cliff zoom on 2 sharpest edges (7-10 values x 5 seeds x 1500 ticks) + failure-mode classification
 - [ ] WP5: dashboard stability heat-card (God View tab, sweeps/*.json source, click -> run summary)
