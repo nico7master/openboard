@@ -172,6 +172,16 @@ EXTENDED_RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
     # bare labor when no endowments exist. Low yield on purpose — it is
     # a bridge, not a competitor to the steel-based chain.
     _r("primitive_toolmaking", {}, 25, 0, {"hand_tools": 1}),
+    # Cold-start extraction bridges (Stage 4): machine mining deadlocks
+    # from zero endowment (machines need steel, steel needs ore, ore
+    # needs machines). These labor-only variants break the loop; their
+    # unit economics are deliberately ~5x worse than capital production
+    # so they retire naturally once real capital circulates.
+    _r("primitive_iron_mining", {}, 80, 0, {"iron_ore": 6}),
+    _r("primitive_coal_mining", {}, 80, 0, {"coal": 6}),
+    _r("primitive_logging", {}, 40, 0, {"timber": 6}),
+    _r("primitive_quarrying", {}, 50, 0, {"stone": 6}),
+    _r("primitive_sand_extraction", {}, 30, 0, {"sand": 8}),
 ]}
 
 

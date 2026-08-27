@@ -192,3 +192,152 @@ def test_treasuries_never_negative_and_baselines_positive():
         apply_tick(s, led, actions, current_tick=t)
         assert all(c.get('treasury', 0) >= 0 for c in s.coops.values()), f"t{t}: negative treasury"
         assert all(v >= 1 for v in s.good_cost_baseline.values()), f"t{t}: non-positive baseline"
+
+
+# --------------------------------------------- cold-start bridges (Stage 4)
+
+def test_primitive_extraction_bridges_exist_and_labor_only():
+    for rid, out in (
+        ("primitive_iron_mining", "iron_ore"),
+        ("primitive_coal_mining", "coal"),
+        ("primitive_logging", "timber"),
+        ("primitive_quarrying", "stone"),
+        ("primitive_sand_extraction", "sand"),
+    ):
+        assert rid in EXTENDED_RECIPES, rid
+        r = EXTENDED_RECIPES[rid]
+        assert not r.inputs, f"{rid} must be labor-only"
+        assert r.outputs == {out: r.outputs[out]}
+
+
+def test_primitive_bridges_are_worse_than_capital_production():
+    # per-unit labor must exceed the capital recipe's, so bridges retire
+    # naturally once real capital circulates
+    def labor_per_unit(r):
+        return r.labor_hours / sum(r.outputs.values())
+    assert labor_per_unit(EXTENDED_RECIPES["primitive_iron_mining"]) > labor_per_unit(RECIPES["iron_mining"])
+    assert labor_per_unit(EXTENDED_RECIPES["primitive_coal_mining"]) > labor_per_unit(RECIPES["coal_mining"])
+    assert labor_per_unit(EXTENDED_RECIPES["primitive_logging"]) > labor_per_unit(RECIPES["logging"])
+
+
+def test_specialist_falls_back_when_capital_missing():
+    # endowment-free world: the miner bot must PRODUCE via the primitive
+    # bridge when machines are absent and unlisted
+    from openboard.sim import make_specialist
+    import random
+    s = _state({"extended_catalog": True})
+    s.coops["c0coop"] = {
+        "members": ["c0"], "treasury": 0, "labor_pool_hours": 10_000,
+        "inventory": {}, "recipe_intent": None,
+    }
+    # map c0 into the coop
+    s.coops["c0coop"]["members"].append("c0")
+    bot = make_specialist("coal_mining", "coal", {}, stock_target=10,
+                          fallback_recipe_id="primitive_coal_mining")
+    txs = bot("c0", s, s.active_ruleset_params(), 2, random.Random(1))
+    produces = [t for t in txs if t.action == "PRODUCE"]
+    assert produces, "miner never produced"
+    assert produces[0].payload["recipe_id"] == "primitive_coal_mining"
+
+
+def test_specialist_uses_capital_recipe_when_listed():
+    # with machines listed and affordable, the same bot must use the REAL
+    # recipe (bridge must not fire while capital is buyable)
+    from openboard.sim import make_specialist
+    import random
+    s = _state({"extended_catalog": True})
+    s.coops["c0coop"] = {
+        "members": ["c0"], "treasury": 10_000, "labor_pool_hours": 10_000,
+        "inventory": {"hand_tools": 2, "machines": 1, "electricity": 500}, "recipe_intent": None,
+    }
+    bot = make_specialist("coal_mining", "coal", {}, stock_target=10,
+                          fallback_recipe_id="primitive_coal_mining")
+    txs = bot("c0", s, s.active_ruleset_params(), 2, random.Random(1))
+    produces = [t for t in txs if t.action == "PRODUCE"]
+    assert produces
+    assert produces[0].payload["recipe_id"] == "coal_mining"
+
+
+def test_coop_recipe_intent_includes_extended_recipes():
+    # steelworks/machine_works declare *_batch recipes from the extended
+    # catalog — intent=None froze them at treasury 0 (first-run advance
+    # skipped them). The lookup must accept extended recipes.
+    import sys
+    sys.path.insert(0, "dashboard")
+    from server import _coop_recipe_intent, SPECIALISTS
+    plan = {"members": ["steel_a"]}
+    assert _coop_recipe_intent(plan) == "steelmaking_batch"
+    plan = {"members": ["mach_a"]}
+    assert _coop_recipe_intent(plan) == "machine_building_batch"
+    plan = {"members": ["miner_a"]}
+    assert _coop_recipe_intent(plan) == "coal_mining"
+
+
+# --------------------------------------- producer input priority (Stage 4)
+
+def _mk_state_for_pip():
+    s = _state({"extended_catalog": True, "fair_clearing": True,
+                "producer_input_priority": {"enabled": True, "share_cap_bp": 5_000}})
+    s.coops["bakers"] = {
+        "members": ["c0"], "treasury": 1_000, "labor_pool_hours": 0,
+        "inventory": {"bread": 100}, "recipe_intent": "flour_to_bread",
+    }
+    s.coops["kitchen"] = {
+        "members": ["c1"], "treasury": 1_000, "labor_pool_hours": 0,
+        "inventory": {}, "recipe_intent": "meal_service",
+    }
+    s.balances["c0"] = 500
+    s.balances["c1"] = 500
+    s.good_cost_baseline["bread"] = 3
+    s.listings["bread"] = [{"coop_id": "bakers", "qty": 10, "floor": 3, "listed_tick": 2}]
+    return s
+
+
+def test_producer_input_priority_serves_producer_first():
+    from openboard.ledger import Ledger
+    from openboard.engine import Transaction
+    s = _mk_state_for_pip()
+    # kitchen bids 10 bread (coop), citizen bids 10 bread (essential)
+    txs = [
+        Transaction(2, "c1", "BID_FOR_COOP", {"coop_id": "kitchen", "good": "bread", "max_price": 3, "qty": 10}),
+        Transaction(2, "c0", "BUY_ESSENTIAL", {"good": "bread", "qty": 1}),
+    ]
+    led = Ledger()
+    apply_tick(s, led, txs, current_tick=2)
+    # producer claimed its share (5 of 10) at floor; citizen got the rest
+    assert s.coops["kitchen"]["inventory"].get("bread", 0) >= 5
+    assert s.coops["kitchen"]["treasury"] < 1_000
+
+
+def test_producer_input_priority_inert_without_rule():
+    from openboard.ledger import Ledger
+    from openboard.engine import Transaction
+    s = _mk_state_for_pip()
+    s.active_ruleset_params()["producer_input_priority"] = None
+    txs = [
+        Transaction(2, "c1", "BID_FOR_COOP", {"coop_id": "kitchen", "good": "bread", "max_price": 3, "qty": 10}),
+    ]
+    led = Ledger()
+    apply_tick(s, led, txs, current_tick=2)
+    # without the rule the producer claim pass never runs: essential/auction
+    # ordering is unchanged (replay-safe)
+    evs = [e for e in s.applied if e.get("action") == "PRODUCER_INPUT_CLEAR"]
+    assert not evs
+
+
+def test_producer_input_priority_no_self_dealing():
+    from openboard.ledger import Ledger
+    from openboard.engine import Transaction
+    s = _mk_state_for_pip()
+    # bakers bid on their OWN bread listing: must not buy from themselves
+    txs = [
+        Transaction(2, "c0", "BID_FOR_COOP", {"coop_id": "bakers", "good": "bread", "max_price": 3, "qty": 10}),
+    ]
+    led = Ledger()
+    apply_tick(s, led, txs, current_tick=2)
+    # self-bid bought nothing: treasury untouched, and the (synthetic)
+    # listing's 10 unsold units returned to inventory: 100 + 10
+    assert s.coops["bakers"]["treasury"] == 1_000
+    assert s.coops["bakers"]["inventory"].get("bread", 0) == 110
+    evs = [e for e in s.applied if e.get("action") == "PRODUCER_INPUT_CLEAR"]
+    assert not evs

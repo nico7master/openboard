@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "transfer_limit": 0,  # 0 = unlimited
@@ -267,6 +267,20 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
 
     if "extended_catalog" in params:
         if not isinstance(params["extended_catalog"], bool):
+            return Reason.INVALID_RULESET
+
+    if "producer_input_priority" in params:
+        pip = params["producer_input_priority"]
+        ok = (
+            pip is None
+            or (isinstance(pip, dict)
+                and set(pip.keys()) <= {"enabled", "share_cap_bp"}
+                and isinstance(pip.get("enabled", False), bool)
+                and (isinstance(pip.get("share_cap_bp", 5_000), bool) is False
+                     and isinstance(pip.get("share_cap_bp", 5_000), int)
+                     and 0 <= pip.get("share_cap_bp", 5_000) <= 10_000))
+        )
+        if not ok:
             return Reason.INVALID_RULESET
 
     if "capital_backstop" in params:

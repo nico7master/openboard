@@ -40,7 +40,7 @@ SAVE_FORMAT = "openboard-run-v2"
 def _coop_recipe_intent(plan: dict) -> str | None:
     """Declared trade for a founded coop: the recipe its first specialist
     member runs. Used by society's founding equipment grant."""
-    from openboard.catalog import RECIPES
+    from openboard.catalog import EXTENDED_RECIPES, RECIPES
     # BASELINE_BOTS: (citizen, specialist_fn, coop) — the exact mapping
     bot_of = {name: fn for name, fn, _ in BASELINE_BOTS}
     for m in plan["members"]:
@@ -50,24 +50,28 @@ def _coop_recipe_intent(plan: dict) -> str | None:
             role = m.rsplit("_", 1)[0]
             fn = SPECIALISTS.get(role)
         rid = getattr(fn, "recipe_id", None)
-        if isinstance(rid, str) and rid in RECIPES:
+        # extended recipes count too: steelworks/machine_works run *_batch
+        # recipes from EXTENDED_RECIPES — excluding them founded those
+        # coops with intent=None and the first-run advance skipped them
+        # (observed: steelworks/machine_works frozen at treasury 0 forever)
+        if isinstance(rid, str) and (rid in RECIPES or rid in EXTENDED_RECIPES):
             return rid
     return None
 
 
 SPECIALISTS = {
-    "farmer": make_specialist("grain_farming", "grain", {"water": 5}, stock_target=100),
-    "miller": make_specialist("grain_to_flour", "flour", {"grain": 10}, stock_target=100),
-    "baker": make_specialist("flour_to_bread", "bread", {"flour": 5}, stock_target=100),
-    "miner": make_specialist("coal_mining", "coal", {}, stock_target=120),
+    "farmer": make_specialist("grain_farming", "grain", {"water": 5}, stock_target=450),
+    "miller": make_specialist("grain_to_flour", "flour", {"grain": 10}, stock_target=260),
+    "baker": make_specialist("flour_to_bread", "bread", {"flour": 5}, stock_target=420),
+    "miner": make_specialist("coal_mining", "coal", {}, stock_target=120, fallback_recipe_id="primitive_coal_mining"),
     "power_worker": make_specialist("electricity_coal", "electricity", {"coal": 4}, stock_target=250),
     "water_worker": make_specialist("water_service", "water", {"electricity": 5}, stock_target=250),
     # Stage 3: toolsmith chain (recipes live in the extended catalog)
-    "logger": make_specialist("logging", "timber", {}, stock_target=40),
+    "logger": make_specialist("logging", "timber", {}, stock_target=40, fallback_recipe_id="primitive_logging"),
     "sawyer": make_specialist("sawmill", "lumber", {"timber": 5}, stock_target=40),
-    "iron_miner": make_specialist("iron_mining", "iron_ore", {}, stock_target=60),
+    "iron_miner": make_specialist("iron_mining", "iron_ore", {}, stock_target=60, fallback_recipe_id="primitive_iron_mining"),
     "steelworker": make_specialist("steelmaking_batch", "steel", {"iron_ore": 20, "coal": 12}, stock_target=60),
-    "sand_worker": make_specialist("sand_extraction", "sand", {}, stock_target=60),
+    "sand_worker": make_specialist("sand_extraction", "sand", {}, stock_target=60, fallback_recipe_id="primitive_sand_extraction"),
     "glassmaker": make_specialist("glassmaking", "glass", {"sand": 4}, stock_target=40),
     "electronics_worker": make_specialist("electronics_assembly", "electronics", {"steel": 1, "glass": 2, "coal": 1}, stock_target=30),
     "toolmaker": make_specialist("hand_tools_craft", "hand_tools", {"steel": 2, "lumber": 1}, stock_target=60),
@@ -82,13 +86,13 @@ SPECIALISTS = {
     "dairy_worker": make_specialist("cheesemaking", "cheese", {"milk": 40}, stock_target=30),
     "canner": make_specialist("canning", "canned_food", {"vegetables": 8, "fruit": 4}, stock_target=40),
     "cook": make_specialist("meal_service", "meals", {"vegetables": 3, "meat": 2, "bread": 2}, stock_target=40),
-    "weaver": make_specialist("fabric_weaving", "fabric", {"grain": 2, "water": 3}, stock_target=40),
+    "weaver": make_specialist("fabric_weaving", "fabric", {"grain": 2, "water": 3}, stock_target=120),
     "tailor": make_specialist("clothing_sewing", "clothing", {"fabric": 10}, stock_target=20),
     "printer": make_specialist("book_printing", "books", {"fabric": 1, "water": 1}, stock_target=20),
     "carpenter": make_specialist("furniture_craft", "furniture", {"lumber": 3, "fabric": 2, "steel": 1}, stock_target=15),
     "homewright": make_specialist("household_goods_craft", "household_goods", {"steel": 1, "glass": 1, "fabric": 1}, stock_target=25),
-    "brickmaker": make_specialist("brickmaking", "bricks", {"sand": 3, "water": 2}, stock_target=100),
-    "quarryman": make_specialist("quarrying", "stone", {}, stock_target=60),
+    "brickmaker": make_specialist("brickmaking", "bricks", {"sand": 3, "water": 2}, stock_target=400),
+    "quarryman": make_specialist("quarrying", "stone", {}, stock_target=60, fallback_recipe_id="primitive_quarrying"),
     "builder": make_specialist("housing_service", "housing", {"lumber": 2, "bricks": 50, "steel": 1}, stock_target=10),
     "healer": make_specialist("healthcare_service", "healthcare", {}, stock_target=20),
     "teacher": make_specialist("education_service", "education", {}, stock_target=10),
@@ -172,6 +176,13 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
     ("water_d", SPECIALISTS["water_worker"], "water_works_north"),
     ("water_g", SPECIALISTS["water_worker"], "water_works_north"),
     ("water_h", SPECIALISTS["water_worker"], "water_works_north"),
+    # third water utility: two coops (160 water/tick) left only ~9/tick
+    # for ALL producers after 161 citizens drank — the master constraint
+    # starved grain->flour->bread, livestock, fabric and books at once
+    ("water_i", SPECIALISTS["water_worker"], "water_works_east"),
+    ("water_j", SPECIALISTS["water_worker"], "water_works_east"),
+    ("water_k", SPECIALISTS["water_worker"], "water_works_east"),
+    ("water_l", SPECIALISTS["water_worker"], "water_works_east"),
     ("fisher_a", SPECIALISTS["fisher"], "fishery"),
     ("fisher_b", SPECIALISTS["fisher"], "fishery"),
     ("fisher_c", SPECIALISTS["fisher"], "fishery"),
@@ -242,6 +253,11 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
     ("quarryman_e", SPECIALISTS["quarryman"], "quarry_co"),
     ("builder_a", SPECIALISTS["builder"], "housing_guild"),
     ("builder_b", SPECIALISTS["builder"], "housing_guild"),
+    # housing was chronically underbuilt for 164 citizens: 2 builders
+    # could not absorb brickworks' output (30k idle hours there) —
+    # housing oscillated 86 unmet for 1,500 ticks
+    ("builder_c", SPECIALISTS["builder"], "housing_guild"),
+    ("builder_d", SPECIALISTS["builder"], "housing_guild"),
     ("healer_a", SPECIALISTS["healer"], "clinic"),
     ("healer_b", SPECIALISTS["healer"], "clinic"),
     ("teacher_a", SPECIALISTS["teacher"], "school"),
@@ -293,6 +309,7 @@ BASELINE_COOPS = [
     {"coop_id": "city_bakers", "members": ["baker_c", "baker_d", "baker_f"]},
     # Stage 4: breadth — all remaining sectors
     {"coop_id": "water_works_north", "members": ["water_c", "water_d", "water_g", "water_h"]},
+    {"coop_id": "water_works_east", "members": ["water_i", "water_j", "water_k", "water_l"]},
     {"coop_id": "toolwrights", "members": ["wright_a", "wright_b", "wright_c", "wright_d"]},
     {"coop_id": "fishery", "members": ["fisher_a", "fisher_b", "fisher_c", "fisher_d"]},
     {"coop_id": "orchard_co", "members": ["orchard_a", "orchard_b", "orchard_c", "orchard_d", "orchard_e"]},
@@ -309,7 +326,7 @@ BASELINE_COOPS = [
     {"coop_id": "household_co", "members": ["homewright_a", "homewright_b", "homewright_c", "homewright_d", "homewright_e"]},
     {"coop_id": "brickworks", "members": ["brickmaker_a", "brickmaker_b"]},
     {"coop_id": "quarry_co", "members": ["quarryman_a", "quarryman_b", "quarryman_c", "quarryman_d", "quarryman_e"]},
-    {"coop_id": "housing_guild", "members": ["builder_a", "builder_b"]},
+    {"coop_id": "housing_guild", "members": ["builder_a", "builder_b", "builder_c", "builder_d"]},
     {"coop_id": "clinic", "members": ["healer_a", "healer_b"]},
     {"coop_id": "school", "members": ["teacher_a", "teacher_b", "teacher_c", "teacher_d", "teacher_e", "teacher_f"]},
     {"coop_id": "childcare_co", "members": ["carer_a", "carer_b"]},
@@ -330,10 +347,10 @@ BASELINE_TREASURIES = {
     "steelworks": 2_600, "electronics_co": 1_600, "machine_works": 4_200,
     # Stage 4: input-buying coops (600 covers several runs of their
     # recipes; housing is the heavy one: 50 bricks + lumber + steel/run)
-    "orchard_co": 600, "vegetable_farm": 600, "livestock_co": 600,
-    "dairy": 600, "cannery": 600, "kitchen": 600, "weavers": 600,
+    "maintenance_co": 1_800, "orchard_co": 600, "vegetable_farm": 600, "livestock_co": 600,
+    "water_works_east": 600, "dairy": 600, "cannery": 600, "kitchen": 600, "weavers": 600,
     "tailors": 600, "printshop": 600, "furniture_shop": 600,
-    "household_co": 600, "brickworks": 600, "housing_guild": 1_200,
+    "household_co": 600, "brickworks": 600, "housing_guild": 2_400,
     "transport_co": 600, "maintenance_co": 600, "fuel_works": 600,
     "apothecary": 600,
 }
@@ -368,6 +385,10 @@ POLITICAL_ROLES = {
     "miner_a": "libertarian",
     "power_b": "libertarian",
     "water_b": "libertarian",
+    "water_j": "libertarian",
+    "water_k": "pragmatist",
+    "water_l": "egalitarian",
+    "water_i": "pragmatist",
     "iron_a": "libertarian",
     "sawyer_a": "libertarian",
     "mach_a": "libertarian",
@@ -672,6 +693,11 @@ class Run:
         # alphabetically-late citizens forever even with surplus supply.
         # Fair clearing rotates service order by tick (votable).
         params["fair_clearing"] = True
+        # Stage 4 fix: producer input priority — coops buy their inputs
+        # at cost BEFORE the citizen essential pass (share-capped), so
+        # downstream producers (kitchen/meals, household goods, capital
+        # maintenance) are not starved by citizen FCFS demand.
+        params["producer_input_priority"] = {"enabled": True, "share_cap_bp": 5_000}
         params["triage_overrides"] = {
             g: "essential" for g in (
                 "vegetables", "fruit", "meat", "milk", "eggs", "cheese",

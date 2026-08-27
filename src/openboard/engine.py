@@ -12,6 +12,7 @@ activate new versions at strictly future ticks.
 
 from __future__ import annotations
 
+import random
 from typing import Any
 
 from .errors import Reason
@@ -742,6 +743,95 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             pool_qty -= take
             buyer["qty"] -= take
 
+    # --- Producer input priority (Stage 4, votable; default OFF).
+    # Without it, citizens' essential FCFS stripped every unit of
+    # bread/vegetables/meat at the floor before producer auction bids
+    # filled: the kitchen bid 1,603 bread, received 0, and never
+    # produced a single meal in 1,000 ticks — producer input
+    # starvation. This pass lets coops buy the inputs of their trade
+    # at the seller's floor BEFORE the citizen pass, so production
+    # chains can run. share_cap_bp keeps citizens first-class:
+    # producers may claim at most that share of each good's listed
+    # units per tick. Money flow mirrors the essential pass exactly
+    # (buyer treasury -> seller treasury at floor, no pool cut).
+    pip = params.get("producer_input_priority") or {}
+    if pip.get("enabled"):
+        cap_bp = max(0, min(10_000, int(pip.get("share_cap_bp", 5_000))))
+        for good in sorted(state.listings.keys()):
+            entries = [e for e in state.listings[good] if e["qty"] > 0]
+            if not entries:
+                continue
+            pbids = [
+                b for b in auction_bids.get(good, [])
+                if b.get("coop_id") is not None and b["qty"] > 0
+            ]
+            if not pbids:
+                continue
+            total_qty = sum(e["qty"] for e in entries)
+            claimable = (total_qty * cap_bp) // 10_000
+            if claimable <= 0:
+                continue
+            pbids.sort(key=lambda b: (b["bidder"], b["qty"]))
+            # rotate service order by tick: alphabetical FCFS starved late
+            # names forever when supply is scarce (millers lost grain to
+            # livestock_co every tick; bread chain died) — mirrors the
+            # fair_clearing rotation citizens already have.
+            if len(pbids) > 1:
+                _off = tick % len(pbids)
+                pbids = pbids[_off:] + pbids[:_off]
+            served: list[dict[str, Any]] = []
+            for bid in pbids:
+                if claimable <= 0:
+                    break
+                coop = state.coops[bid["coop_id"]]
+                want = min(bid["qty"], claimable)
+                got = 0
+                paid = 0
+                for entry in entries:
+                    if want <= 0:
+                        break
+                    if entry["qty"] <= 0:
+                        continue
+                    if entry["coop_id"] == bid["coop_id"]:
+                        continue  # no self-dealing (wash guard)
+                    take = min(entry["qty"], want)
+                    price = entry["floor"]
+                    if coop.get("treasury", 0) < take * price:
+                        break
+                    coop["treasury"] -= take * price
+                    entry["qty"] -= take
+                    seller = state.coops[entry["coop_id"]]
+                    seller["treasury"] = seller.get("treasury", 0) + take * price
+                    state.treasury_in += take * price
+                    # per-fill integer VWAP: price is the entry floor (int).
+                    # A single float anywhere corrupts baselines -> _is_int
+                    # rejects every later bid for the good (observed: bread
+                    # chain died tick ~1 after a float slipped into vwap).
+                    inv = coop["inventory"]
+                    if (params.get("cost_accounting") or {}).get("method") == "vwap":
+                        _vwap_add(state, bid["coop_id"], good, inv.get(good, 0), take, price)
+                    inv[good] = inv.get(good, 0) + take
+                    want -= take
+                    got += take
+                    paid += take * price
+                    claimable -= take
+                if got > 0:
+                    bid["qty"] -= got
+                    served.append({"coop_id": bid["coop_id"], "qty": got, "paid": paid})
+            # fully-served producer bids leave the auction book
+            if good in auction_bids:
+                auction_bids[good] = [
+                    b for b in auction_bids[good]
+                    if not (b.get("coop_id") is not None and b["qty"] <= 0)
+                ]
+            if served:
+                events.append({
+                    "tick": tick,
+                    "action": "PRODUCER_INPUT_CLEAR",
+                    "good": good,
+                    "served": served,
+                })
+
     for good in sorted(essential_buyers.keys() & state.listings.keys()):
         sold_records: list[dict[str, Any]] = []
         total_sold = 0
@@ -1448,20 +1538,39 @@ def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -
         cache[0] = len(state.applied)
 
     events: list[dict[str, Any]] = []
-    for coop_id in sorted(state.coops.keys()):
+
+    def _advance_rank(cid: str) -> tuple[int, str]:
+        # Unproven coops with a DECLARED trade deadlock hardest (no inputs
+        # -> no output -> no history -> never proven): they go FIRST when
+        # the pool is scarce (bootstrap pool ~0 starved late-alphabet
+        # founders; observed: printshop treasury 5, fabric 14cr, zero bids
+        # in 300 ticks). Proven producers have income paths — they wait.
+        if cid not in recipe_map:
+            intent = state.coops[cid].get("recipe_intent")
+            if isinstance(intent, str) and intent in state.recipes:
+                return (0, cid)
+        return (1, cid)
+
+    for coop_id in sorted(state.coops.keys(), key=_advance_rank):
         coop = state.coops[coop_id]
         rids = sorted(recipe_map.get(coop_id, ()))
         if not rids:
             # First-run advance: an unproven coop with a DECLARED trade
             # (recipe_intent at founding) gets its first run's inputs
-            # advanced — otherwise it deadlocks before its first harvest
-            # (no inputs -> no output -> no history -> never proven).
+            # advanced — otherwise it deadlocks before its first harvest.
             intent = coop.get("recipe_intent")
             if isinstance(intent, str) and intent in state.recipes:
                 rids = [intent]
             else:
                 continue
-        # cheapest runnable recipe's input cost at current baselines
+        # cheapest runnable recipe's input cost. Cost is priced at the
+        # CURRENT LISTING FLOORS (what the coop would actually pay on the
+        # market), falling back to the book baseline when nothing is
+        # listed. A book-baseline-only estimate understated fabric at 4
+        # while real floors were 14 — the founder got a 5cr advance it
+        # could never spend, then `treasury >= best` skipped it forever
+        # (observed: printshop pinned at exactly 5 for 1,000 ticks,
+        # books never produced).
         best: int | None = None
         for rid in rids:
             recipe = state.recipes.get(rid)
@@ -1471,10 +1580,15 @@ def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -
             inputs = recipe.get("inputs") if isinstance(recipe, dict) else getattr(recipe, "inputs", None)
             if not inputs:
                 continue
-            cost = sum(
-                state.good_cost_baseline.get(g, 1) * q
-                for g, q in sorted(inputs.items())
-            )
+            cost = 0
+            for g, q in sorted(inputs.items()):
+                # The advance must cover the price the bot actually bids
+                # (sim.py: baseline + 2). This phase runs AFTER clearing,
+                # when listings are stripped, so floor lookups see nothing
+                # — pricing at baseline left printshop 5cr vs a 6cr bid,
+                # a permanent deadlock (books never produced, 1,000 ticks).
+                unit = state.good_cost_baseline.get(g, 1) + 2
+                cost += unit * q
             if best is None or cost < best:
                 best = cost
         if best is None or best <= 0:
@@ -1972,6 +2086,14 @@ def apply_tick(
     if params is None:  # pragma: no cover — defensive
         raise RuntimeError(f"ruleset v{version_for_tick} missing from state")
 
+    # Stage 5 · shock lifecycle (rule-gated; absent => inert, replay-safe)
+    from . import shocks as _shocks
+    if (params.get("shocks") or {}).get("enabled"):
+        seed_cfg = (params.get("shocks") or {}).get("rng_seed", 0)
+        _rng = random.Random(f"{seed_cfg}:{tick}")
+        _shocks.expire_finished(state, tick)
+        _shocks.roll_shock(state, tick, _rng)
+
     seen: set[str] = set()
     for tx in sorted(actions, key=Transaction.sort_key):
         if tx.tick != tick:
@@ -2056,6 +2178,14 @@ def apply_tick(
     market_events = _clear_markets(state, tick, params, ledger)
     state.applied.extend(market_events)
 
+    # Emergency input advance runs BEFORE dividends/services: a
+    # deadlocked producer (no inputs -> no output -> no income) gets
+    # first claim on the fresh pool, because restoring production
+    # capacity is what generates future surplus. Running it last let
+    # dividends drain the pool to zero first — founders starved on
+    # scraps (observed: printshop got one 5cr advance in 600 ticks).
+    state.applied.extend(_input_advance_phase(state, tick, params))
+
     # Circular flow: consumption, capital rent, then surplus spending
     # (deterministic). Inert phases when the ruleset lacks the params.
     consume_events = _consume_phase(state, tick, params)
@@ -2082,14 +2212,6 @@ def apply_tick(
     # their last machine and can never afford another (deterministic).
     backstop_events = _capital_backstop_phase(state, tick, params)
     state.applied.extend(backstop_events)
-
-    # Emergency input advance: a PROVEN producer (has produced before)
-    # that cannot afford its next run's inputs is deadlocked — no inputs
-    # -> no output -> no income -> never able to buy inputs again.
-    # Society advances the shortfall from the surplus pool; the coop
-    # repays automatically as its sales flow back into the treasury
-    # (advance is booked as pool outflow + treasury inflow, exact).
-    state.applied.extend(_input_advance_phase(state, tick, params))
 
     # End-of-tick governance settlement (deterministic) — spec §6
     gov_events = _settle_proposals(state, tick, params, ledger)

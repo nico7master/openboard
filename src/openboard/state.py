@@ -45,6 +45,11 @@ class WorldState:
     next_proposal_id: int = 1  # deterministic counter (p1, p2, ...)
     # Phase 6 oversight
     flags: list[dict[str, Any]] = field(default_factory=list)  # public anomaly flags (append-only)
+    # Stage 5 · shocks/demographics/research/crisis: rule-gated, absent-when-default
+    active_shocks: list[dict[str, Any]] = field(default_factory=list)
+    citizens_meta: dict[str, dict[str, Any]] = field(default_factory=dict)  # age, sick, alive
+    research: dict[str, Any] = field(default_factory=dict)
+    crisis: dict[str, Any] = field(default_factory=dict)
     common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
     last_clearing: dict[str, int] = field(default_factory=dict)  # good -> last auction clearing price (public price signal)
     # Circular flow (2026-08-21 milestone)
@@ -117,6 +122,14 @@ class WorldState:
             snap["capital_burned"] = dict(sorted(self.capital_burned.items()))
         if self.capital_fund:
             snap["capital_fund"] = self.capital_fund
+        if self.active_shocks:
+            snap["active_shocks"] = [dict(x) for x in self.active_shocks]
+        if self.citizens_meta:
+            snap["citizens_meta"] = {c: dict(m) for c, m in sorted(self.citizens_meta.items())}
+        if self.research:
+            snap["research"] = dict(self.research)
+        if self.crisis:
+            snap["crisis"] = dict(self.crisis)
         return snap
 
     def state_hash(self) -> str:
@@ -144,6 +157,10 @@ class WorldState:
             proposals={p: _clone_proposal(pr) for p, pr in self.proposals.items()},
             next_proposal_id=self.next_proposal_id,
             flags=[dict(f) for f in self.flags],
+            active_shocks=[dict(x) for x in self.active_shocks],
+            citizens_meta={c: dict(m) for c, m in self.citizens_meta.items()},
+            research=dict(self.research),
+            crisis=dict(self.crisis),
             common_pool=dict(self.common_pool),
             last_clearing=dict(self.last_clearing),
             unmet_needs={c: dict(inv) for c, inv in self.unmet_needs.items()},

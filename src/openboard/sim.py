@@ -303,13 +303,37 @@ def make_specialist(
         # Insolvent coops list at ZERO buffer: selling existing stock is
         # their only path out of the can't-buy-inputs deadlock.
         insolvent = c.get("treasury", 0) < next_run_cost
-        for ogood in sorted(recipe["outputs"].keys()):
+        # Stage 5 FIX: while bridging on a labor-only fallback, the ACTIVE
+        # recipe's outputs are the primitive's — the primary output (e.g.
+        # iron_ore) was never listed, starving the whole capital chain
+        # downstream (steelworks bid ore at rising prices for 50+ ticks
+        # against EMPTY ore listings). While bridging we cannot produce the
+        # primary output anyway (that is why we are bridging), so anything
+        # held is pure surplus the market needs: list it at zero buffer.
+        _bridge_outputs: dict[str, int] = {}
+        if active_id == fallback_recipe_id and _primary_recipe_id != active_id:
+            _prim = state.recipes.get(_primary_recipe_id)
+            if _prim:
+                _bridge_outputs = dict(_prim["outputs"])
+        for ogood in sorted({**recipe["outputs"], **_bridge_outputs}.keys()):
             held = c["inventory"].get(ogood, 0)
             # buffer must stay BELOW stock_target: a flat 10 with target 10
             # (teachers/builders) meant produce-to-target and never list —
             # goods produced but unreachable by citizens (observed:
             # education/housing unmet for everyone while held in stock).
-            buffer = 0 if ogood in ("hand_tools", "machines") or insolvent else min(10, max(0, stock_target - 2))
+            # Stage 5 FIX: a producer must never list the capital it needs
+            # to keep producing. machine_works builds machines WITH machines
+            # (recipe input) — after selling its whole stock it bridged to
+            # the fallback, listed nothing, and the machine market died
+            # (probe64: live through t302, zero events in the forced window).
+            # Self-reserve: hold back the active recipe's own input need.
+            _self_reserve = recipe["inputs"].get(ogood, 0)
+            if ogood in ("hand_tools", "machines"):
+                buffer = _self_reserve
+            elif insolvent or ogood in _bridge_outputs:
+                buffer = 0
+            else:
+                buffer = min(10, max(0, stock_target - 2))
             if held > buffer:
                 out.append(_tx(tick, who, "LIST_GOOD", {
                     "coop_id": coop_id, "good": ogood, "qty": held - buffer,
