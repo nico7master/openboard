@@ -19,9 +19,9 @@ Spec: `docs/superpowers/specs/2026-08-26-stage5-shocks-growth-research.md` · Co
 
 ### 2 · Demographics
 - [ ] Births every `birth_interval_ticks` (default 400): new citizen ₡500 minted, CITIZEN_BORN event
-- [ ] Childhood: consume scaled needs, no WORK until `adulthood_ticks` (default 600); CITIZEN_ADULT event
+- [x] Childhood: consume scaled needs, no WORK until `adulthood_ticks` (default 600); CITIZEN_ADULT event
 - [ ] Integration with shock deaths (population drift both ways)
-- [ ] Tests: birth minting invariant-exact, maturation, drift
+- [x] Tests: birth minting invariant-exact, maturation, drift
 
 ### 3 · Research system
 - [ ] Innovation pool: votable `research_share_bp` of surplus per tick
