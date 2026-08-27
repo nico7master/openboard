@@ -69,6 +69,7 @@ class WorldState:
     # refresh draws from it. Populated only when capital_rent is active
     # (replay compat: absent param -> 0 -> hash unchanged).
     capital_fund: int = 0
+    innovation_pool: int = 0  # Stage 5: research funding pool (surplus -> innovation)
     # Ephemeral per-tick WORK-hours counter (anti multi-tx mint exploit).
     # Cleared at tick boundaries before any snapshot -> state hashes are
     # unaffected; populated only while transactions are being applied.
@@ -122,6 +123,8 @@ class WorldState:
             snap["capital_burned"] = dict(sorted(self.capital_burned.items()))
         if self.capital_fund:
             snap["capital_fund"] = self.capital_fund
+        if self.innovation_pool:
+            snap["innovation_pool"] = self.innovation_pool
         if self.active_shocks:
             snap["active_shocks"] = [dict(x) for x in self.active_shocks]
         if self.citizens_meta:
@@ -171,6 +174,7 @@ class WorldState:
             coop_vwap={c: dict(g) for c, g in self.coop_vwap.items()},
             capital_burned=dict(self.capital_burned),
             capital_fund=self.capital_fund,
+            innovation_pool=getattr(d, "innovation_pool", 0),
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:

@@ -2071,6 +2071,12 @@ def _execute_intervention(state: WorldState, tick: int, params: dict[str, Any], 
     return {"type": itype, "error": "unknown"}
 
 
+def _research_phase_safe(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Research funding phase (Stage 5). Inert without params['research']."""
+    from .research import fund_pool_phase
+    return fund_pool_phase(state, tick, params)
+
+
 def apply_tick(
     state: WorldState,
     ledger: Ledger,
@@ -2219,6 +2225,12 @@ def apply_tick(
     state.applied.extend(consume_events)
     spend_events = _surplus_spend_phase(state, tick, params)
     state.applied.extend(spend_events)
+
+    # Stage 5 - research funding: society's innovation pool receives its
+    # votable share of surplus each tick (rule-gated; inert by default).
+    from . import research as _research
+    research_events = _research_phase_safe(state, tick, params)
+    state.applied.extend(research_events)
 
     # Patronage: co-op surplus above a buffer returns to members.
     coop_events = _coop_distribute_phase(state, tick, params)

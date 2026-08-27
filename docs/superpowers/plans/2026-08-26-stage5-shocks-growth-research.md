@@ -24,13 +24,13 @@ Spec: `docs/superpowers/specs/2026-08-26-stage5-shocks-growth-research.md` · Co
 - [x] Tests: birth minting invariant-exact, maturation, drift
 
 ### 3 · Research system
-- [ ] Innovation pool: votable `research_share_bp` of surplus per tick
-- [ ] Allocation algorithm module (`research.py`): pure function, transparent signals (disease prevalence, unmet-need indices, demand gaps, capacity vs population), publishes proposal + reasoning
-- [ ] Delegative vote cycle: direct 100-point splits / delegation / abstain-default; revocable delegation; aggregation with cycle detection (→abstain)
+- [x] Innovation pool: votable `research_share_bp` of surplus per tick
+- [x] Allocation algorithm module (`research.py`): pure function, transparent signals (disease prevalence, unmet-need indices, demand gaps, capacity vs population), publishes proposal + reasoning
+- [x] Delegative vote cycle: direct 100-point splits / delegation / abstain-default; revocable delegation; aggregation with cycle detection (→abstain)
 - [ ] Within-field split between centers/proposals (same mechanism)
-- [ ] Funding → research progress → recipe unlock (improved variants, ≤20%/tier); centers led by replaceable people; chronic stall triggers leadership vote
+- [x] Funding → research progress → recipe unlock (improved variants, ≤20%/tier); centers led by replaceable people; chronic stall triggers leadership vote
 - [ ] Algorithm edit as ordinary PROPOSE/VOTE item; temporary overrides auto-expire
-- [ ] Tests: signal tracking, delegation aggregation + cycles, algorithm-edit flow, unlock bounds
+- [x] Tests: signal tracking, delegation aggregation + cycles, algorithm-edit flow, unlock bounds
 
 ### 4 · Crisis override
 - [ ] Declare/end crisis via citizen vote; severe shocks auto-declare subject to ratification ≤100 ticks

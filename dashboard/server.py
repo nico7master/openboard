@@ -508,7 +508,7 @@ class Run:
     def _record_timeline(self) -> None:
         s = self.state
         treasuries = sum(c.get("treasury", 0) for c in s.coops.values())
-        money = sum(s.balances.values()) + s.surplus_pool + treasuries + s.capital_fund
+        money = sum(s.balances.values()) + s.surplus_pool + treasuries + s.capital_fund + getattr(s, "innovation_pool", 0)
         self.timeline["tick"].append(s.tick)
         wealth = (list(s.balances.values()) + [s.surplus_pool]
                   + [c.get("treasury", 0) for c in s.coops.values()])
@@ -993,7 +993,7 @@ def api_analytics():
             "tick": s.tick,
             "money_pie": money_pie,
             "money_total": (citizens_money + treasury_money
-                            + s.surplus_pool + s.capital_fund),
+                            + s.surplus_pool + s.capital_fund + getattr(s, "innovation_pool", 0)),
             "money_minted": s.money_minted,
             "money_retired": s.money_retired,
             "produced_pie": _by_cat("produced"),
