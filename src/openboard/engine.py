@@ -20,7 +20,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE"})
 
 
 def _is_int(v: Any) -> bool:
@@ -722,6 +722,10 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
     # scarce essentials don't permanently starve alphabetically-late
     # citizens under deterministic FCFS. Off => legacy order (replay-safe).
     fair = params.get("fair_clearing", False)
+    # Stage 5 - crisis override forces need-based rotation ON
+    from . import crisis as _crisis_fair
+    if _crisis_fair.crisis_active(state):
+        fair = True
 
     def _served(good: str) -> list[dict[str, Any]]:
         buyers = essential_buyers[good]
@@ -761,6 +765,11 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
     # units per tick. Money flow mirrors the essential pass exactly
     # (buyer treasury -> seller treasury at floor, no pool cut).
     pip = params.get("producer_input_priority") or {}
+    # Stage 5 - crisis override: advantages/priorities are suspended
+    # during an active crisis (need-first distribution, spec section 4).
+    from . import crisis as _crisis_mod
+    if _crisis_mod.crisis_active(state):
+        pip = {}
     if pip.get("enabled"):
         cap_bp = max(0, min(10_000, int(pip.get("share_cap_bp", 5_000))))
         for good in sorted(state.listings.keys()):
@@ -2071,10 +2080,34 @@ def _execute_intervention(state: WorldState, tick: int, params: dict[str, Any], 
     return {"type": itype, "error": "unknown"}
 
 
+def _validate_crisis_vote(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+    if not isinstance(payload, dict) or set(payload.keys()) != {"in_favor"}:
+        return Reason.INVALID_PAYLOAD
+    if not isinstance(payload["in_favor"], bool):
+        return Reason.INVALID_PAYLOAD
+    from . import crisis as _crisis
+    c = getattr(state, "crisis", None)
+    if not c or not c.get("active"):
+        return Reason.INVALID_PAYLOAD  # no crisis to vote on
+    return None
+
+
+def _apply_crisis_vote(state: WorldState, tx: Transaction) -> dict[str, Any]:
+    from . import crisis as _crisis
+    _crisis.tally_crisis_vote(state, tx.sender, bool(tx.payload["in_favor"]))
+    return {
+        "tick": tx.tick, "sender": tx.sender, "action": "CRISIS_VOTE",
+        "in_favor": bool(tx.payload["in_favor"]),
+    }
+
+
 def _research_phase_safe(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
     """Research funding phase (Stage 5). Inert without params['research']."""
     from .research import fund_pool_phase
-    return fund_pool_phase(state, tick, params)
+    return fund_pool_phase(state, tick, params)  # crisis redirection lives in the vote cycle, not the tap
 
 
 def apply_tick(
@@ -2168,6 +2201,7 @@ def apply_tick(
             "VOTE": lambda t: _validate_vote(state, t, params),
             "ROLLBACK": lambda t: _validate_rollback(state, t, params),
             "INTERVENE": lambda t: _validate_intervene(state, t, params),
+            "CRISIS_VOTE": lambda t: _validate_crisis_vote(state, t, params),
         }[tx.action]
 
         reason = validator(tx)
@@ -2191,6 +2225,8 @@ def apply_tick(
             entry = _apply_rollback(state, tx, params)
         elif tx.action == "INTERVENE":
             entry = _apply_intervene(state, tx, params)
+        elif tx.action == "CRISIS_VOTE":
+            entry = _apply_crisis_vote(state, tx)
         else:
             entry = {
                 "TRANSFER": _apply_transfer,
@@ -2255,6 +2291,12 @@ def apply_tick(
     # End-of-tick governance settlement (deterministic) — spec §6
     gov_events = _settle_proposals(state, tick, params, ledger)
     state.applied.extend(gov_events)
+
+    # Stage 5 - crisis lifecycle: auto-declare on severe shocks, tally
+    # ratification votes, enforce ratification window and max duration
+    # (rule-gated; inert without params['crisis']).
+    from . import crisis as _crisis_mod
+    _crisis_mod.crisis_phase(state, tick, params)
 
     # End-of-tick oversight detection (deterministic) — spec §6.4
     ov_events = _detect_anomalies(state, tick, params, listings_snapshot)

@@ -77,7 +77,7 @@ class WorldState:
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
-        return {
+        snap = {
             "tick": self.tick,
             "balances": dict(sorted(self.balances.items())),
             "applied": list(self.applied),
@@ -125,14 +125,14 @@ class WorldState:
             snap["capital_fund"] = self.capital_fund
         if self.innovation_pool:
             snap["innovation_pool"] = self.innovation_pool
+        if self.crisis:
+            snap["crisis"] = dict(self.crisis)
         if self.active_shocks:
             snap["active_shocks"] = [dict(x) for x in self.active_shocks]
         if self.citizens_meta:
             snap["citizens_meta"] = {c: dict(m) for c, m in sorted(self.citizens_meta.items())}
         if self.research:
             snap["research"] = dict(self.research)
-        if self.crisis:
-            snap["crisis"] = dict(self.crisis)
         return snap
 
     def state_hash(self) -> str:
@@ -174,7 +174,7 @@ class WorldState:
             coop_vwap={c: dict(g) for c, g in self.coop_vwap.items()},
             capital_burned=dict(self.capital_burned),
             capital_fund=self.capital_fund,
-            innovation_pool=getattr(d, "innovation_pool", 0),
+            innovation_pool=self.innovation_pool,
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
