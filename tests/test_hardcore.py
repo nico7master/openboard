@@ -56,8 +56,30 @@ class TestLongRunSurvival:
                 worst_breadth = max(worst_breadth, max(brd, default=0))
             assert worst_breadth <= BREADTH_BOUND, f"seed {seed}: breadth streak {worst_breadth} > {BREADTH_BOUND}"
 
-            # (b) utilities above floors: the circular chain stays fed
-            assert s.coops["miners"]["inventory"].get("machines", 0) >= 1, f"seed {seed}: miners out of machines"
+            # (b) capital cycle: the circular chain stays fed. Probes
+            # 60-65 proved a producing coop legitimately sits at 0 machines
+            # between wear cycles (one machine consumed per production
+            # run), so terminal inventory is NOT the survival signal. The
+            # honest assertion: miners produced with their PRIMARY recipe
+            # in the final window AND were re-supplied (held capital or
+            # received it via PRODUCER_INPUT_CLEAR).
+            prim = s.coops["miners"].get("recipe_intent") or s.coops["miners"].get("trade")
+            _produced = 0
+            _delivered = 0
+            for e in s.applied:
+                if e.get("tick", 0) < 1_500:
+                    continue
+                if (e.get("action") == "PRODUCE"
+                        and e.get("coop_id") == "miners"
+                        and e.get("recipe_id") == prim):
+                    _produced += 1
+                if (e.get("action") == "PRODUCER_INPUT_CLEAR"
+                        and e.get("good") == "machines"
+                        and any(x.get("coop_id") == "miners" for x in e.get("served", []))):
+                    _delivered += 1
+            assert _produced >= 1, f"seed {seed}: miners stopped primary production"
+            assert (_delivered >= 1
+                    or s.coops["miners"]["inventory"].get("machines", 0) >= 1), f"seed {seed}: miners never re-supplied"
             assert s.coops["power_plant"]["inventory"].get("electricity", 0) >= 50, f"seed {seed}: power stock low"
             assert s.coops["water_works"]["inventory"].get("water", 0) >= 50, f"seed {seed}: water stock low"
 

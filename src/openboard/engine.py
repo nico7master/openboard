@@ -244,6 +244,12 @@ def _validate_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     if tx.sender not in state.balances:
         return Reason.UNKNOWN_SENDER
 
+    # Stage 5 - demographics: children (age < adulthood_ticks) may not
+    # WORK. Real childhood (spec section 2): they consume and grow first.
+    from .demographics import is_child
+    if is_child(state, tx.sender, params):
+        return Reason.INVALID_HOURS  # child labor forbidden (dignity floor)
+
     if not isinstance(payload, dict) or set(payload.keys()) != {"coop_id", "hours"}:
         return Reason.INVALID_PAYLOAD
 
@@ -1050,10 +1056,22 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
         inv = state.citizen_inventory.setdefault(citizen, {})
         consumed: dict[str, int] = {}
         unmet: dict[str, bool] = {}
+        # Stage 5 - demographics: children consume a scaled integer share
+        # of each quota (child_need_pct). Inert without demographics.
+        from .demographics import is_child, child_need_pct
+        _scale_bp = 10_000
+        if is_child(state, citizen, params):
+            _scale_bp = child_need_pct(params) * 100
         for good in sorted(needs.keys()):
             quota = needs[good]
             if quota <= 0:
                 continue
+            if is_child(state, citizen, params):
+                # integer-native scaling: floor(scaled), min 1 when any
+                # need exists (children always need something to live).
+                # Base is 10_000 (bp), NOT _scale_bp (dividing by the
+                # scale itself is a silent no-op).
+                quota = max(1, (quota * _scale_bp) // 10_000)
             cyc = cycles.get(good, 1)
             if cyc > 1 and tick % cyc != 0:
                 continue  # not this good's consumption day
@@ -2093,6 +2111,15 @@ def apply_tick(
         _rng = random.Random(f"{seed_cfg}:{tick}")
         _shocks.expire_finished(state, tick)
         _shocks.roll_shock(state, tick, _rng)
+
+    # Stage 5 - demographics lifecycle (rule-gated; absent => inert,
+    # replay-safe). Births + aging run before bots validate actions so a
+    # newborn is never WORK-eligible in its birth tick, and before market
+    # phases so child citizens receive dividends/consume from tick one.
+    from . import demographics as _demog
+    if (params.get("demographics") or {}).get("enabled"):
+        demog_events = _demog.demographics_phase(state, tick, params)
+        state.applied.extend(demog_events)
 
     seen: set[str] = set()
     for tx in sorted(actions, key=Transaction.sort_key):
