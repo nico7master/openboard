@@ -45,7 +45,9 @@ def drive(run, seed, t0, t1):
 
 
 def money_delta(run):
-    """0 when money is conserved exactly (formula from the test suite)."""
+    """0 when money is conserved exactly. Captures the genesis total on
+    first call (world size must not be hardcoded - the founding world
+    has ~162 citizens) and checks total == genesis_total + minted - retired."""
     s = run.state
     total = (
         sum(s.balances.values())
@@ -54,7 +56,9 @@ def money_delta(run):
         + getattr(s, "innovation_pool", 0)
         + sum(c.get("treasury", 0) for c in s.coops.values())
     )
-    expected = 14 * 500 + s.money_minted - s.money_retired
+    if not hasattr(run, "_money0"):
+        run._money0 = total - s.money_minted + s.money_retired
+    expected = run._money0 + s.money_minted - s.money_retired
     return total - expected
 
 
