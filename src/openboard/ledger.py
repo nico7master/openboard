@@ -68,7 +68,12 @@ class Transaction:
         }
 
     def content_hash(self) -> str:
-        return sha256_hex(canonical_json(self.to_dict()))
+        # Memoized: frozen tx => hash is immutable. Pure dedup; identical bytes.
+        cached = self.__dict__.get("_content_hash")
+        if cached is None:
+            cached = sha256_hex(canonical_json(self.to_dict()))
+            object.__setattr__(self, "_content_hash", cached)
+        return cached
 
     def sort_key(self) -> tuple[str, str, str, int]:
         """Deterministic ordering inside a tick (plan T4)."""
@@ -99,8 +104,15 @@ class LedgerRecord:
         }
 
     def record_hash(self) -> str:
-        """Hash over the full record content — this is what chains."""
-        return sha256_hex(canonical_json(self.to_dict()))
+        """Hash over the full record content — this is what chains.
+
+        Memoized: records are immutable append-only entries; caching the
+        digest is pure dedup and produces byte-identical results."""
+        cached = self.__dict__.get("_record_hash")
+        if cached is None:
+            cached = sha256_hex(canonical_json(self.to_dict()))
+            object.__setattr__(self, "_record_hash", cached)
+        return cached
 
 
 class Ledger:
