@@ -1,0 +1,12 @@
+{
+  "agents": 986,
+  "cohort_k": 1,
+  "inv_bad": 0,
+  "represented_people": 986,
+  "rss_mb": 1334,
+  "seed": 42,
+  "ticks": 100,
+  "verdict": "stable",
+  "wall_s": 74.3,
+  "worst_streak": 6
+}
