@@ -31,7 +31,7 @@ KNOBS = {
     "wealth_tax.rate_bp": [200, 400, 800],
     "surplus_spending.dividend_share_bp": [3000, 5000, 7000],
     "surplus_spending.services_share_bp": [3000, 5000, 7000],
-    "labor_pool_cap": [0, 4, 8],
+    "labor_pool_cap": [2000, 4000, 8000],
     "capital_backstop.interval_ticks": [5, 10, 20],
 }
 

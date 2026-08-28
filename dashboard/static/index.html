@@ -92,6 +92,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   <div class="view-tabs">
     <button :class="view === 'dashboard' ? 'tab active' : 'tab'" @click="setView('dashboard')">🎛 Dashboard</button>
     <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 World</button>
+    <button :class="view === 'stability' ? 'tab active' : 'tab'" @click="setView('stability')">🗺 Stability</button>
   </div>
   <div class="controls">
     <button class="primary" @click="tick()" :disabled="busy">▶ Tick</button>
@@ -460,6 +461,35 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 
 </div><!-- /grid -->
 
+<!-- STABILITY VIEW (WP5 heat-card) -->
+<div class="grid" x-show="view === 'stability'">
+  <div class="panel col-12">
+    <h3>🗺 Stability map <span class="muted">— coarse sweep at ~1k citizens (3 seeds/combo)</span></h3>
+    <p class="muted">Green = stable in all seeds · yellow = partial · red = unstable. Source: <span class="mono">sweeps/*.json</span> via <span class="mono">/api/stability</span>.</p>
+    <template x-for="(cells, knob) in stabilityByKnob" :key="knob">
+      <div style="margin-bottom:14px">
+        <strong x-text="knob"></strong>
+        <table style="width:100%; margin-top:6px">
+          <thead><tr><th>value</th><th>stable</th><th>mean unmet (tail)</th><th>worst streak</th><th>invariant</th></tr></thead>
+          <tbody>
+            <template x-for="c in cells" :key="c.value">
+              <tr>
+                <td class="mono" x-text="c.value"></td>
+                <td><span class="badge" :class="c.stable === c.total ? 'green' : (c.stable > 0 ? 'yellow' : 'red')"
+                           x-text="c.stable + '/' + c.total"></span></td>
+                <td class="mono" x-text="c.mean_unmet_tail"></td>
+                <td class="mono" x-text="c.worst_streak"></td>
+                <td><span class="badge" :class="c.invariant_ok ? 'green' : 'red'" x-text="c.invariant_ok ? 'exact' : 'BROKEN'"></span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
+    <div x-show="!Object.keys(stabilityByKnob).length" class="muted">No sweep data yet — run scripts/stage6_sweeps.py run COARSE.</div>
+  </div>
+</div>
+
 <!-- WORLD VIEW -->
 <div class="grid" x-show="view === 'world'">
 
@@ -578,6 +608,7 @@ function dashboard() {
   return {
     state: {}, timeline: {}, autoplay: { running: false, interval: 0.75 },
     view: 'dashboard', analytics: {}, worldReady: false,
+    stabilityByKnob: {},
     busy: false, toast: '', resetModal: false, chartError: '', chartDebug: '',
     resetConfig: { seed: 42, governance: false },
     newBot: { name: '', archetype: 'honest_worker', coop: 'farmers' },
@@ -630,6 +661,23 @@ function dashboard() {
         this.$nextTick(() => this.initWorldCharts());
         this.api('/api/analytics').then(a => { this.analytics = a; this.updateWorldCharts(); });
       }
+      if (v === 'stability') {
+        this.loadStability();
+      }
+    },
+
+    async loadStability() {
+      try {
+        const d = await this.api('/api/stability');
+        const grouped = {};
+        for (const c of (d.combos ?? [])) {
+          (grouped[c.knob] ??= []).push(c);
+        }
+        for (const k of Object.keys(grouped)) {
+          grouped[k].sort((a, b) => a.value - b.value);
+        }
+        this.stabilityByKnob = grouped;
+      } catch (e) { /* server restarting */ }
     },
 
     async tick() {

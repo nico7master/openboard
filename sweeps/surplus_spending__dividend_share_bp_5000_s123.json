@@ -1,0 +1,13 @@
+{
+  "inv_bad": 0,
+  "knob": "surplus_spending.dividend_share_bp",
+  "mean_unmet_tail": 144.37,
+  "pop": 986,
+  "seed": 123,
+  "ticks": 500,
+  "trend": -1.312,
+  "value": 5000,
+  "verdict": "stable",
+  "wall_s": 290.3,
+  "worst_streak": 9
+}

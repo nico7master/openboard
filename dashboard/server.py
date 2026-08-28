@@ -1025,6 +1025,41 @@ def api_tick():
     return jsonify({"ok": True, "events": events})
 
 
+@app.get("/api/stability")
+def api_stability():
+    """WP5 heat-card source: aggregates sweeps/*.json into a stability
+    map keyed by (knob, value). Read-only; empty when no sweeps exist."""
+    import json
+    from collections import defaultdict
+
+    rows = defaultdict(list)
+    sweeps_dir = Path(__file__).resolve().parents[1] / "sweeps"
+    if sweeps_dir.is_dir():
+        for f in sorted(sweeps_dir.glob("*.json")):
+            try:
+                r = json.loads(f.read_text())
+            except (OSError, ValueError):
+                continue
+            if all(k in r for k in ("knob", "value", "verdict")):
+                rows[(r["knob"], r["value"])].append(r)
+    combos = []
+    for (knob, value), rs in sorted(rows.items()):
+        combos.append({
+            "knob": knob,
+            "value": value,
+            "stable": sum(1 for r in rs if r.get("verdict") == "stable"),
+            "total": len(rs),
+            "mean_unmet_tail": round(sum(r.get("mean_unmet_tail", 0) for r in rs) / len(rs), 1),
+            "worst_streak": max(r.get("worst_streak", 0) for r in rs),
+            "invariant_ok": all(r.get("inv_bad", 1) == 0 for r in rs),
+        })
+    return jsonify({"ok": True, "combos": combos})
+
+
+def sweeps_dir_exists(d: Path) -> bool:
+    return d.is_dir()
+
+
 @app.post("/api/autoplay")
 def api_autoplay():
     data = request.get_json(force=True, silent=True) or {}

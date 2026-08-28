@@ -1,0 +1,13 @@
+{
+  "inv_bad": 0,
+  "knob": "capital_backstop.interval_ticks",
+  "mean_unmet_tail": 194.94,
+  "pop": 986,
+  "seed": 42,
+  "ticks": 500,
+  "trend": -0.247,
+  "value": 5,
+  "verdict": "stable",
+  "wall_s": 287.6,
+  "worst_streak": 12
+}

@@ -1,0 +1,13 @@
+{
+  "inv_bad": 0,
+  "knob": "wealth_tax.rate_bp",
+  "mean_unmet_tail": 169.85,
+  "pop": 986,
+  "seed": 42,
+  "ticks": 500,
+  "trend": 0.153,
+  "value": 200,
+  "verdict": "unstable",
+  "wall_s": 305.5,
+  "worst_streak": 9
+}

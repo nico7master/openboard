@@ -1,0 +1,13 @@
+{
+  "inv_bad": 0,
+  "knob": "surplus_spending.services_share_bp",
+  "mean_unmet_tail": 187.53,
+  "pop": 986,
+  "seed": 7,
+  "ticks": 500,
+  "trend": 0.516,
+  "value": 7000,
+  "verdict": "unstable",
+  "wall_s": 292.2,
+  "worst_streak": 16
+}
