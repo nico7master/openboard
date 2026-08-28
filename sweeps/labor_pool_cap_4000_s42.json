@@ -1,0 +1,13 @@
+{
+  "inv_bad": 0,
+  "knob": "labor_pool_cap",
+  "mean_unmet_tail": 262.19,
+  "pop": 986,
+  "seed": 42,
+  "ticks": 500,
+  "trend": 0.465,
+  "value": 4000,
+  "verdict": "unstable",
+  "wall_s": 243.5,
+  "worst_streak": 412
+}
