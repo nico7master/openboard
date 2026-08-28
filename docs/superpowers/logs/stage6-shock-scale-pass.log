@@ -1,0 +1,4 @@
+Stage 6 shock battery at scale: 2 seeds, target 1000 citizens
+  seed 42: worst_streak=58 inv_bad=0 wall=1233s rss=6545MB (battery through tier 'fatal') -> OK
+  seed 7: worst_streak=54 inv_bad=0 wall=1236s rss=6590MB (battery through tier 'fatal') -> OK
+GATE: PASS
