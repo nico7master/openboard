@@ -23,6 +23,7 @@ from flask import Flask, jsonify, request, send_from_directory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from openboard.bots import ARCHETYPES  # noqa: E402
+from openboard.breaksystem import PLAYBOOKS, attack_score, attack_tick, capture_baseline, invariants_ok  # noqa: E402
 from openboard.engine import apply_tick  # noqa: E402
 from openboard.ledger import Ledger, Transaction  # noqa: E402
 from openboard.metrics import SimMetrics, gini  # noqa: E402
@@ -1266,6 +1267,63 @@ def api_action():
         return jsonify({"ok": False, "error": "sender, action, payload(dict) required"}), 400
     tx = RUN.queue_action(sender, action, payload)
     return jsonify({"ok": True, "queued": tx.to_dict()})
+
+
+# ---- B2: Break the System (playable attack mode) -------------------
+
+
+def _attack_game() -> "Run | None":
+    return getattr(app, "attack_game", None)
+
+
+@app.post("/api/attack/start")
+def api_attack_start():
+    """Fresh governance-live world; you are the attacker."""
+    data = request.get_json(force=True, silent=True) or {}
+    playbook = data.get("playbook", "hoarder")
+    if playbook not in PLAYBOOKS:
+        return jsonify({"ok": False, "error": f"unknown playbook; choose from {sorted(PLAYBOOKS)}"}), 400
+    game = Run(seed=99, governance=True)
+    app.attack_game = game
+    return jsonify({"ok": True, "playbook": playbook,
+                    "attacker": sorted(game.state.balances.keys())[0],
+                    "score": attack_score(game.state)})
+
+
+@app.post("/api/attack/act")
+def api_attack_act():
+    """Advance one tick of the attack game: your playbook acts, the world
+    (bots + democracy) responds, invariants are asserted."""
+    import random
+
+    game = _attack_game()
+    if game is None:
+        return jsonify({"ok": False, "error": "no attack game; POST /api/attack/start first"}), 400
+    data = request.get_json(force=True, silent=True) or {}
+    playbook = data.get("playbook", "hoarder")
+    if playbook not in PLAYBOOKS:
+        return jsonify({"ok": False, "error": "unknown playbook"}), 400
+    with game.lock:
+        s = game.state
+        t = s.tick + 1
+        atxs = attack_tick(s, sorted(s.balances.keys())[0], t, playbook, random.Random(t))
+        for atx in atxs:
+            game.queue_action(atx.sender, atx.action, atx.payload)
+        game.tick()  # attacker acts AND the world (bots, democracy, oversight) responds in one advance
+        score = attack_score(s)
+        over = score["flags"] >= 8 or score["worst_unmet_streak"] >= 30
+    return jsonify({"ok": True, "tick": score["tick"], "score": score,
+                    "system_response": "flagged" if score["flags"] > 0 else "none",
+                    "over": bool(over)})
+
+
+@app.get("/api/attack/score")
+def api_attack_score():
+    game = _attack_game()
+    if game is None:
+        return jsonify({"ok": False, "error": "no attack game"}), 400
+    with game.lock:
+        return jsonify({"ok": True, "score": attack_score(game.state)})
 
 
 @app.post("/api/bots")
