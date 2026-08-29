@@ -49,6 +49,9 @@ class WorldState:
     active_shocks: list[dict[str, Any]] = field(default_factory=list)
     citizens_meta: dict[str, dict[str, Any]] = field(default_factory=dict)  # age, sick, alive
     research: dict[str, Any] = field(default_factory=dict)
+    # A1 financial depth: credit union. citizen -> {principal, repaid,
+    # due_tick, defaulted}. Present only when the ruleset enables `credit`.
+    loans: dict[str, dict[str, Any]] = field(default_factory=dict)
     crisis: dict[str, Any] = field(default_factory=dict)
     common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
     last_clearing: dict[str, int] = field(default_factory=dict)  # good -> last auction clearing price (public price signal)
@@ -133,6 +136,8 @@ class WorldState:
             snap["citizens_meta"] = {c: dict(m) for c, m in sorted(self.citizens_meta.items())}
         if self.research:
             snap["research"] = dict(self.research)
+        if self.loans:
+            snap["loans"] = {c: dict(l) for c, l in sorted(self.loans.items())}
         return snap
 
     def state_hash(self) -> str:

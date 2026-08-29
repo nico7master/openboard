@@ -20,7 +20,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY"})
 
 
 def _is_int(v: Any) -> bool:
@@ -70,6 +70,147 @@ def _apply_transfer(state: WorldState, tx: Transaction) -> dict[str, Any]:
         "to": to,
         "amount": amount,
     }
+
+
+# ---------------------------------------------------------------- CREDIT
+# A1 financial depth: the credit union. Society lends from the surplus pool
+# (society's savings = the credit fund). Loans MOVE credits, never mint them
+# (same invariant class as dividends). Gated by the optional `credit` rule
+# param; absent key = feature off = old worlds replay byte-identically.
+
+
+def _credit_params(params: dict[str, Any]) -> dict[str, Any] | None:
+    cp = params.get("credit")
+    if not isinstance(cp, dict) or not cp.get("enabled"):
+        return None
+    return cp
+
+
+def _loan_owed(loan: dict[str, Any]) -> int:
+    principal_left = loan["principal"] - loan.get("repaid_principal", 0)
+    fee_total = loan["principal"] * loan.get("fee_bp", 0) // 10_000
+    fee_left = fee_total - loan.get("repaid_fees", 0)
+    return principal_left + max(0, fee_left)
+
+
+def _validate_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    cp = _credit_params(params)
+    if cp is None:
+        return Reason.CREDIT_DISABLED
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+    payload: dict[str, Any] = tx.payload
+    if not isinstance(payload, dict) or set(payload.keys()) != {"amount"}:
+        return Reason.INVALID_PAYLOAD
+    amount = payload.get("amount")
+    if not _is_int(amount) or amount <= 0:
+        return Reason.RULE_VIOLATION
+    existing = state.loans.get(tx.sender)
+    if existing is not None and not existing.get("defaulted"):
+        return Reason.LOAN_ACTIVE
+    cap = cp.get("max_per_citizen", 0)
+    if not _is_int(cap) or cap <= 0 or amount > cap:
+        return Reason.RULE_VIOLATION
+    if state.surplus_pool < amount:
+        return Reason.INSUFFICIENT_CREDITS
+    return None
+
+
+def _apply_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
+    amount = tx.payload["amount"]
+    cp = params["credit"]
+    due = tx.tick + int(cp.get("term_ticks", 100))
+    state.surplus_pool -= amount
+    state.balances[tx.sender] += amount
+    state.loans[tx.sender] = {
+        "principal": amount,
+        "repaid_principal": 0,
+        "repaid_fees": 0,
+        "opened_tick": tx.tick,
+        "due_tick": due,
+        "fee_bp": int(cp.get("fee_bp", 0)),
+        "defaulted": False,
+    }
+    return {
+        "tick": tx.tick,
+        "action": "LOAN",
+        "citizen": tx.sender,
+        "principal": amount,
+        "due_tick": due,
+        "pool_after": state.surplus_pool,
+    }
+
+
+def _validate_repay(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+    if not isinstance(tx.payload, dict) or set(tx.payload.keys()) != {"amount"}:
+        return Reason.INVALID_PAYLOAD
+    if not _is_int(tx.payload.get("amount")) or tx.payload["amount"] <= 0:
+        return Reason.RULE_VIOLATION
+    loan = state.loans.get(tx.sender)
+    if loan is None or loan.get("defaulted"):
+        return Reason.NO_ACTIVE_LOAN
+    if tx.payload["amount"] > _loan_owed(loan):
+        return Reason.RULE_VIOLATION
+    if state.balances[tx.sender] < tx.payload["amount"]:
+        return Reason.INSUFFICIENT_CREDITS
+    return None
+
+
+def _apply_repay(state: WorldState, tx: Transaction) -> dict[str, Any]:
+    loan = state.loans[tx.sender]
+    pay = min(tx.payload["amount"], _loan_owed(loan))
+    principal_left = loan["principal"] - loan.get("repaid_principal", 0)
+    principal_pay = min(pay, principal_left)
+    fee_pay = pay - principal_pay
+    state.balances[tx.sender] -= pay
+    state.surplus_pool += pay
+    loan["repaid_principal"] = loan.get("repaid_principal", 0) + principal_pay
+    loan["repaid_fees"] = loan.get("repaid_fees", 0) + fee_pay
+    closed = loan.get("repaid_principal", 0) >= loan["principal"]
+    entry = {
+        "tick": tx.tick,
+        "action": "REPAY",
+        "citizen": tx.sender,
+        "amount": pay,
+        "principal_part": principal_pay,
+        "fee_part": fee_pay,
+        "closed": closed,
+        "pool_after": state.surplus_pool,
+    }
+    if closed:
+        del state.loans[tx.sender]
+        entry["status"] = "repaid"
+    return entry
+
+
+def credit_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Mark overdue loans defaulted (socialized risk, ledger-visible)."""
+    cp = _credit_params(params)
+    if cp is None:
+        return []
+    events: list[dict[str, Any]] = []
+    for citizen in sorted(state.loans.keys()):
+        loan = state.loans[citizen]
+        if not loan.get("defaulted") and tick > loan["due_tick"]:
+            loan["defaulted"] = True
+            events.append({
+                "tick": tick,
+                "action": "LOAN_DEFAULT",
+                "citizen": citizen,
+                "principal": loan["principal"],
+                "owed": _loan_owed(loan),
+            })
+            state.flags.append({
+                "tick": tick,
+                "kind": "LOAN_DEFAULT",
+                "target": citizen,
+                "citizen": citizen,
+                "principal": loan["principal"],
+            })
+    return events
+
 
 
 # ------------------------------------------------------------- RULE_CHANGE
@@ -2180,6 +2321,9 @@ def apply_tick(
         demog_events = _demog.demographics_phase(state, tick, params)
         state.applied.extend(demog_events)
 
+        credit_events = credit_phase(state, tick, params)
+        state.applied.extend(credit_events)
+
     seen: set[str] = set()
     for tx in sorted(actions, key=Transaction.sort_key):
         if tx.tick != tick:
@@ -2222,6 +2366,8 @@ def apply_tick(
             "ROLLBACK": lambda t: _validate_rollback(state, t, params),
             "INTERVENE": lambda t: _validate_intervene(state, t, params),
             "CRISIS_VOTE": lambda t: _validate_crisis_vote(state, t, params),
+            "LOAN": lambda t: _validate_loan(state, t, params),
+            "REPAY": lambda t: _validate_repay(state, t, params),
         }[tx.action]
 
         reason = validator(tx)
@@ -2247,6 +2393,8 @@ def apply_tick(
             entry = _apply_intervene(state, tx, params)
         elif tx.action == "CRISIS_VOTE":
             entry = _apply_crisis_vote(state, tx)
+        elif tx.action == "LOAN":
+            entry = _apply_loan(state, tx, params)
         else:
             entry = {
                 "TRANSFER": _apply_transfer,
@@ -2256,6 +2404,7 @@ def apply_tick(
                 "BID_FOR_COOP": _apply_bid_for_coop,
                 "BUY_ESSENTIAL": _apply_buy_essential,
                 "VOTE": _apply_vote,
+                "REPAY": _apply_repay,
             }[tx.action](state, tx)
         state.applied.append(entry)
 

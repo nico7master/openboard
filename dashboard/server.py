@@ -1200,6 +1200,40 @@ def api_seat():
                 })
                 break
 
+        # A1 financial depth: credit union affordances (only when enabled)
+        loan_info = None
+        cp = params.get("credit") or {}
+        if cp.get("enabled"):
+            loan = s.loans.get(who)
+            if loan and not loan.get("defaulted"):
+                principal_left = int(loan["principal"]) - int(loan.get("repaid_principal", 0))
+                fee_total = int(loan["principal"]) * int(loan.get("fee_bp", 0)) // 10_000
+                fee_left = fee_total - int(loan.get("repaid_fees", 0))
+                owed = principal_left + max(0, fee_left)
+                loan_info = {"principal": int(loan["principal"]), "owed": owed,
+                             "due_tick": int(loan["due_tick"]), "defaulted": False}
+                if balance > 0:
+                    pay = min(balance, owed)
+                    actions.append({
+                        "type": "REPAY",
+                        "label": f"Repay loan ({pay} of {owed} cr owed)",
+                        "payload": {"amount": pay},
+                        "why": f"due tick {loan['due_tick']}, fee {loan.get('fee_bp', 0)}/10000",
+                    })
+            elif loan:
+                loan_info = {"principal": int(loan["principal"]), "owed": None,
+                             "due_tick": int(loan["due_tick"]), "defaulted": True}
+            else:
+                cap = int(cp.get("max_per_citizen", 0) or 0)
+                if cap > 0 and s.surplus_pool > 0:
+                    amt = min(cap, s.surplus_pool)
+                    actions.append({
+                        "type": "LOAN",
+                        "label": f"Borrow {amt} cr from the credit union",
+                        "payload": {"amount": amt},
+                        "why": f"cap {cp.get('max_per_citizen')}, fee {cp.get('fee_bp', 0)}/10000, term {cp.get('term_ticks', 100)} ticks",
+                    })
+
         my_events = [e for e in s.applied
                      if isinstance(e, dict) and (e.get("citizen") == who or e.get("sender") == who)][-40:]
 
@@ -1216,6 +1250,7 @@ def api_seat():
             "my_coops": my_coops,
             "open_proposals": open_proposals,
             "actions": actions,
+            "loan": loan_info,
             "my_events": my_events,
             "crisis": bool(getattr(s, "crisis_active", False)),
         })
