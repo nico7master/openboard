@@ -20,7 +20,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE"})
 
 
 def _is_int(v: Any) -> bool:
@@ -141,6 +141,22 @@ def _apply_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
     }
 
 
+def _validate_delegate(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    if not _delegation_enabled(params):
+        return Reason.RULE_VIOLATION
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+    if not isinstance(tx.payload, dict) or set(tx.payload.keys()) != {"to"}:
+        return Reason.INVALID_PAYLOAD
+    to = tx.payload["to"]
+    if to is not None:
+        if not isinstance(to, str) or to not in state.balances:
+            return Reason.UNKNOWN_CITIZEN
+        if to == tx.sender:
+            return Reason.RULE_VIOLATION
+    return None
+
+
 def _validate_repay(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
     if tx.sender not in state.balances:
         return Reason.UNKNOWN_SENDER
@@ -210,6 +226,91 @@ def credit_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[d
                 "principal": loan["principal"],
             })
     return events
+
+
+
+# ---------------------------------------------------------------- DELEGATION
+# A3 delegative democracy: a citizen may hand their vote to another citizen
+# (revocable anytime). Uninformed citizens get expert-quality default votes;
+# the informed can steer; direct votes always override the delegate.
+# Gated by the optional `delegation` rule param; absent = off = old worlds
+# replay byte-identically.
+
+
+def _delegation_enabled(params: dict[str, Any]) -> bool:
+    d = params.get("delegation")
+    return isinstance(d, dict) and bool(d.get("enabled"))
+
+
+def resolve_delegation(state: WorldState, citizen: str, max_hops: int = 16) -> str | None:
+    """Resolve a delegation chain transitively; broken chains or cycles
+    contribute nothing (the abstention stands)."""
+    seen = {citizen}
+    current = citizen
+    for _ in range(max_hops):
+        nxt = state.delegations.get(current)
+        if nxt is None or nxt not in state.balances:
+            return None
+        if nxt in seen:
+            return None  # cycle: no vote
+        seen.add(nxt)
+        current = nxt
+    return None  # chain too long: treat as broken
+
+
+def _validate_delegate(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    if not _delegation_enabled(params):
+        return Reason.CREDIT_DISABLED  # reuse: feature-disabled family
+    payload: dict[str, Any] = tx.payload
+    if not isinstance(payload, dict) or set(payload.keys()) != {"to"}:
+        return Reason.INVALID_PAYLOAD
+    to = payload.get("to")
+    if to is not None and (not isinstance(to, str) or to not in state.balances):
+        return Reason.UNKNOWN_CITIZEN
+    if to == tx.sender:
+        return Reason.RULE_VIOLATION  # no self-delegation
+    return None
+
+
+def _apply_delegate(state: WorldState, tx: Transaction) -> dict[str, Any]:
+    to = tx.payload["to"]
+    entry: dict[str, Any] = {
+        "tick": tx.tick,
+        "action": "DELEGATE",
+        "citizen": tx.sender,
+        "to": to,
+    }
+    if to is None:
+        state.delegations.pop(tx.sender, None)
+        entry["status"] = "revoked"
+    else:
+        state.delegations[tx.sender] = to
+    return entry
+
+
+def expand_ballots(state: WorldState, ballots: dict[str, str]) -> dict[str, str]:
+    """Expand raw ballots with delegated votes. A citizen who did not vote
+    directly contributes their delegate's (resolved) choice. Direct votes
+    always win over delegation. Cycle-safe, deterministic."""
+    expanded = dict(ballots)
+    for citizen in sorted(state.balances.keys()):
+        if citizen in ballots:
+            continue  # direct vote stands
+        choice = None
+        current = citizen
+        seen = {citizen}
+        for _ in range(16):
+            nxt = state.delegations.get(current)
+            if nxt is None or nxt in seen or nxt not in state.balances:
+                break
+            seen.add(nxt)
+            if nxt in ballots:
+                choice = ballots[nxt]
+                break
+            current = nxt
+        if choice is not None:
+            expanded[citizen] = choice
+    return expanded
 
 
 
@@ -1968,6 +2069,9 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
             continue
 
         ballots = proposal["ballots"]
+        if _delegation_enabled(params):
+            # A3: delegated citizens vote through their (resolvable) delegate
+            ballots = expand_ballots(state, ballots)
         cast = len(ballots)
         votes_for = sum(1 for c in ballots.values() if c == "for")
         votes_against = cast - votes_for
@@ -2366,8 +2470,10 @@ def apply_tick(
             "ROLLBACK": lambda t: _validate_rollback(state, t, params),
             "INTERVENE": lambda t: _validate_intervene(state, t, params),
             "CRISIS_VOTE": lambda t: _validate_crisis_vote(state, t, params),
+            "CRISIS_VOTE": lambda t: _validate_crisis_vote(state, t, params),
             "LOAN": lambda t: _validate_loan(state, t, params),
             "REPAY": lambda t: _validate_repay(state, t, params),
+            "DELEGATE": lambda t: _validate_delegate(state, t, params),
         }[tx.action]
 
         reason = validator(tx)
@@ -2405,6 +2511,7 @@ def apply_tick(
                 "BUY_ESSENTIAL": _apply_buy_essential,
                 "VOTE": _apply_vote,
                 "REPAY": _apply_repay,
+                "DELEGATE": _apply_delegate,
             }[tx.action](state, tx)
         state.applied.append(entry)
 

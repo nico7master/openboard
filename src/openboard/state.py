@@ -52,6 +52,9 @@ class WorldState:
     # A1 financial depth: credit union. citizen -> {principal, repaid,
     # due_tick, defaulted}. Present only when the ruleset enables `credit`.
     loans: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # A3 delegative democracy: citizen -> delegate. Present only when the
+    # ruleset enables `delegation` (replay compat: absent = off).
+    delegations: dict[str, str] = field(default_factory=dict)
     crisis: dict[str, Any] = field(default_factory=dict)
     common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
     last_clearing: dict[str, int] = field(default_factory=dict)  # good -> last auction clearing price (public price signal)
@@ -138,6 +141,8 @@ class WorldState:
             snap["research"] = dict(self.research)
         if self.loans:
             snap["loans"] = {c: dict(l) for c, l in sorted(self.loans.items())}
+        if self.delegations:
+            snap["delegations"] = dict(sorted(self.delegations.items()))
         return snap
 
     def state_hash(self) -> str:
