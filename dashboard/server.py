@@ -1086,6 +1086,140 @@ def api_reset():
     return jsonify({"ok": True, "tick": RUN.state.tick})
 
 
+@app.get("/api/seat")
+def api_seat():
+    """Citizen Seat: personalized cockpit for one citizen.
+    Wallet, needs bar, my co-ops, open votes (flagging ones waiting on me),
+    computed one-click affordances, and my recent event feed."""
+    with RUN.lock:
+        s = RUN.state
+        params = s.active_ruleset_params()
+        citizens = sorted(s.balances.keys())
+        if not citizens:
+            return jsonify({"who": None})
+        humans = [c for c in citizens if c not in RUN.bots]
+        who = request.args.get("citizen") or ""
+        if who not in s.balances:
+            who = (humans or citizens)[0]
+
+        needs_cfg = params.get("needs") or {}
+        cycles = params.get("needs_cycle") or {}
+        inv = s.citizen_inventory.get(who, {})
+        unmet = s.unmet_needs.get(who, {})
+        balance = int(s.balances.get(who, 0))
+
+        # needs bar: quota vs held, cycle, price
+        needs_rows = []
+        for good in sorted(needs_cfg.keys()):
+            quota = int(needs_cfg[good])
+            if quota <= 0:
+                continue
+            cyc = int(cycles.get(good, 1))
+            needs_rows.append({
+                "good": good,
+                "quota": quota,
+                "held": int(inv.get(good, 0)),
+                "unmet": int(unmet.get(good, 0) or 0),
+                "price": s.good_cost_baseline.get(good),
+                "due_today": cyc <= 1 or s.tick % cyc == 0,
+            })
+
+        my_coops = []
+        for cid, c in sorted(s.coops.items()):
+            if who in c.get("members", ()):
+                my_coops.append({
+                    "id": cid,
+                    "name": c.get("name", cid),
+                    "treasury": int(c.get("treasury", 0)),
+                    "recipe_intent": c.get("recipe_intent"),
+                    "members": len(c.get("members", [])),
+                    "inventory": c.get("inventory", {}),
+                })
+
+        open_proposals = []
+        for pid, pr in sorted(s.proposals.items()):
+            if pr.get("status") != "open":
+                continue
+            open_proposals.append({
+                "proposal_id": pid,
+                "proposer": pr.get("proposer"),
+                "params": pr.get("params", {}),
+                "opened_tick": pr.get("opened_tick"),
+                "closes_tick": pr.get("closes_tick"),
+                "ballots": len(pr.get("ballots", {})),
+                "my_vote": (pr.get("ballots") or {}).get(who),
+                "needs_my_vote": who not in (pr.get("ballots") or {}),
+            })
+
+        # what can I do right now
+        max_hours = int(params.get("max_work_hours_cumulative", 8) or 8)
+        hours_done = int(s.labor_hours.get(who, 0))
+        hours_left = max(0, max_hours - hours_done)
+        actions = []
+        if hours_left > 0:
+            for cid, c in sorted(s.coops.items()):
+                if who in c.get("members", ()):
+                    h = min(hours_left, 8)
+                    actions.append({
+                        "type": "WORK",
+                        "label": f"Work {h}h at {c.get('name', cid)}",
+                        "payload": {"coop_id": cid, "hours": h},
+                        "why": f"labor today {hours_done}/{max_hours}h",
+                    })
+        for good in sorted((unmet or {}).keys()):
+            ls = [l for l in s.listings.get(good, []) if (l.get("qty") or 0) > 0]
+            floors = [int(l["floor"]) for l in ls if l.get("floor") is not None]
+            price = min(floors) if floors else int(s.good_cost_baseline.get(good, 1))
+            want = int(unmet.get(good) or 1)
+            afford = max(1, balance // max(1, price))
+            qty = max(1, min(want, afford))
+            actions.append({
+                "type": "BUY_ESSENTIAL" if floors else "BID",
+                "label": f"Buy {good} x{qty} (~{price} cr)",
+                "payload": {"good": good, "qty": qty},
+                "affordable": balance >= price,
+                "listed": bool(floors),
+            })
+        for pr in open_proposals:
+            if pr["needs_my_vote"]:
+                actions.append({
+                    "type": "VOTE",
+                    "label": f"Vote on {pr['proposal_id']}",
+                    "payload": {"proposal_id": pr["proposal_id"], "choice": "for"},
+                    "proposal_id": pr["proposal_id"],
+                    "why": f"closes tick {pr['closes_tick']}",
+                    "summary": json.dumps(pr.get("params") or {}, sort_keys=True)[:100],
+                })
+        for cid, c in sorted(s.coops.items()):
+            if who not in c.get("members", ()):
+                actions.append({
+                    "type": "JOIN_COOP",
+                    "payload": {"coop_id": cid},
+                    "why": f"join {c.get('name', cid)} ({len(c.get('members', []))} members)",
+                })
+                break
+
+        my_events = [e for e in s.applied
+                     if isinstance(e, dict) and (e.get("citizen") == who or e.get("sender") == who)][-40:]
+
+        return jsonify({
+            "who": who,
+            "citizens": citizens,
+            "humans": humans,
+            "is_bot": who in RUN.bots,
+            "tick": s.tick,
+            "balance": balance,
+            "hours": {"done": hours_done, "max": max_hours, "left": hours_left},
+            "needs_rows": needs_rows,
+            "unmet": unmet or {},
+            "my_coops": my_coops,
+            "open_proposals": open_proposals,
+            "actions": actions,
+            "my_events": my_events,
+            "crisis": bool(getattr(s, "crisis_active", False)),
+        })
+
+
 @app.post("/api/action")
 def api_action():
     data = request.get_json(force=True, silent=True) or {}

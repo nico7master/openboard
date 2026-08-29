@@ -93,6 +93,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <button :class="view === 'dashboard' ? 'tab active' : 'tab'" @click="setView('dashboard')">🎛 Dashboard</button>
     <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 World</button>
     <button :class="view === 'stability' ? 'tab active' : 'tab'" @click="setView('stability')">🗺 Stability</button>
+    <button :class="view === 'seat' ? 'tab active' : 'tab'" @click="setView('seat')">🏠 My Seat</button>
   </div>
   <div class="controls">
     <button class="primary" @click="tick()" :disabled="busy">▶ Tick</button>
@@ -228,8 +229,8 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
             <span x-show="p.is_intervention" class="badge purple" style="margin-left:4px" x-text="'intervention: ' + (p.intervention?.type ?? '')"></span>
           </div>
           <div class="vote-btns" x-show="p.status === 'open' && state.governance_enabled">
-            <button class="small" @click="act(state.citizens?.[0] ?? 'worker_a', 'VOTE', {proposal_id: pid, choice: 'for'})" :disabled="busy">Vote ✓</button>
-            <button class="small" @click="act(state.citizens?.[0] ?? 'worker_a', 'VOTE', {proposal_id: pid, choice: 'against'})" :disabled="busy">Vote ✗</button>
+            <button class="small" @click="act((seat.who ?? state.citizens?.[0] ?? 'worker_a'), 'VOTE', {proposal_id: pid, choice: 'for'})" :disabled="busy">Vote ✓</button>
+            <button class="small" @click="act((seat.who ?? state.citizens?.[0] ?? 'worker_a'), 'VOTE', {proposal_id: pid, choice: 'against'})" :disabled="busy">Vote ✗</button>
           </div>
         </div>
         <details x-show="p.params">
@@ -461,6 +462,113 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 
 </div><!-- /grid -->
 
+<!-- CITIZEN SEAT VIEW -->
+<div class="grid" x-show="view === 'seat'">
+
+<!-- IDENTITY + NEEDS -->
+<div class="panel col-6">
+  <h3>🪑 My seat <span class="muted" x-text="seat.who ? (seat.who + (seat.is_bot ? ' (bot)' : ' 👤')) : ''"></span></h3>
+  <div class="form-row" style="margin-bottom:8px">
+    <label>Sit as</label>
+    <select x-model="seatWho" @change="loadSeat()">
+      <template x-for="c in seat.citizens ?? []" :key="c"><option :value="c" x-text="c + ((seat.humans ?? []).includes(c) ? ' 👤' : '')"></option></template>
+    </select>
+    <span class="badge" x-show="seat.crisis" style="background:#d29922">🚨 CRISIS — advantages suspended</span>
+  </div>
+  <div class="form-row" style="justify-content:space-between; font-size:14px">
+    <span>💰 Balance <strong class="mono" x-text="seat.balance ?? '—'"></strong> cr</span>
+    <span>🛠 Labor today <strong class="mono" x-text="seat.hours ? (seat.hours.done + '/' + seat.hours.max + 'h') : '—'"></strong></span>
+  </div>
+  <div class="scroll-y" style="max-height:260px; margin-top:8px">
+    <table>
+      <thead><tr><th>Need</th><th>Held/Quota</th><th>Due</th><th>Status</th><th>~Price</th></tr></thead>
+      <tbody>
+        <template x-for="r in seat.needs_rows ?? []" :key="r.good">
+          <tr :style="r.unmet ? 'background:#f8514918' : ''">
+            <td x-text="r.good"></td>
+            <td class="mono" x-text="r.held + ' / ' + r.quota"></td>
+            <td class="muted" x-text="r.due_today ? 'today' : 'cycled'"></td>
+            <td><span class="badge" :class="r.unmet ? 'red' : 'green'" x-text="r.unmet ? 'unmet ×' + r.unmet : 'ok'"></span></td>
+            <td class="muted mono" x-text="r.price != null ? '₡' + r.price : '—'"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- WHAT CAN I DO RIGHT NOW -->
+<div class="panel col-6">
+  <h3>⚡ What can I do right now <span class="muted" x-text="(seat.actions ?? []).length + ' options'"></span></h3>
+  <div class="scroll-y" style="max-height:340px">
+    <template x-for="(a, i) in seat.actions ?? []" :key="seat.who + '-a-' + i">
+      <div class="form-row" style="justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border)">
+        <span style="flex:1">
+          <strong x-text="a.label ?? a.type"></strong>
+          <span class="muted" style="font-size:11px; display:block" x-text="a.why || a.summary || ''"></span>
+        </span>
+        <span style="display:flex; gap:4px">
+          <template x-if="a.type === 'VOTE'">
+            <span class="vote-btns">
+              <button class="small" @click="seatAct(a, 'for')">✓ for</button>
+              <button class="small danger" @click="seatAct(a, 'against')">✗ against</button>
+            </span>
+          </template>
+          <template x-if="a.type !== 'VOTE'">
+            <button class="small primary" @click="seatAct(a)" :disabled="busy || a.affordable === false" x-text="a.affordable === false ? 'can't afford' : 'Do it'"></button>
+          </template>
+        </span>
+      </div>
+    </template>
+    <p class="muted" x-show="!(seat.actions ?? []).length">Nothing available right now — wait for the next tick.</p>
+  </div>
+</div>
+
+<!-- MY CO-OPS + VOTES -->
+<div class="panel col-6">
+  <h3>🏭 My co-ops</h3>
+  <template x-for="c in seat.my_coops ?? []" :key="c.id">
+    <div class="form-row" style="justify-content:space-between; padding:3px 0">
+      <span><strong x-text="c.name"></strong> <span class="muted" x-text="c.members + ' members · ' + (c.recipe_intent ?? '?')"></span></span>
+      <span class="mono muted" x-text="'₡' + c.treasury + ' · ' + invSummary(c.inventory)"></span>
+    </div>
+  </template>
+  <p class="muted" x-show="!(seat.my_coops ?? []).length">Not a member of any co-op yet.</p>
+  <h3 style="margin-top:12px">🗳 Open votes <span class="muted" x-text="(seat.open_proposals ?? []).filter(p => p.needs_my_vote).length + ' waiting on me'"></span></h3>
+  <template x-for="p in seat.open_proposals ?? []" :key="p.proposal_id">
+    <div class="form-row" style="justify-content:space-between; padding:4px 0">
+      <span class="mono" style="font-size:11px" x-text="p.proposal_id + ' by ' + p.proposer + ' · closes t' + p.closes_tick + ' · ' + JSON.stringify(p.params).slice(0, 80)"></span>
+      <span style="display:flex; gap:4px; align-items:center">
+        <span class="badge" :class="p.my_vote ? 'green' : 'red'" x-text="p.my_vote ? 'voted ' + p.my_vote : 'waiting on YOU'"></span>
+        <button class="small" @click="seatAct({type:'VOTE', label:'Vote on ' + p.proposal_id, payload:{proposal_id: p.proposal_id}}, 'for')" :disabled="busy || p.my_vote">✓</button>
+        <button class="small danger" @click="seatAct({type:'VOTE', payload:{proposal_id: p.proposal_id}, label:'Vote on ' + p.proposal_id}, 'against')" :disabled="busy || p.my_vote">✗</button>
+      </span>
+    </div>
+  </template>
+  <p class="muted" x-show="!(seat.open_proposals ?? []).length">No open proposals.</p>
+</div>
+
+<!-- MY FEED + BALANCE CHART -->
+<div class="panel col-6">
+  <h3>📡 My feed <span class="muted">events about me</span></h3>
+  <div class="feed scroll-y">
+    <template x-for="(e, i) in (seat.my_events ?? []).slice().reverse()" :key="seat.tick + '-' + i">
+      <div class="feed-item" :class="feedClass(e)">
+        <span class="t" x-text="'t' + e.tick"></span>
+        <span x-text="feedText(e)"></span>
+      </div>
+    </template>
+    <p class="muted" x-show="!(seat.my_events ?? []).length">Nothing yet — work, buy, vote and it shows here.</p>
+  </div>
+</div>
+<div class="panel col-6">
+  <h3>📈 My balance <span class="muted">live while seated</span></h3>
+  <canvas id="seatChart" height="120"></canvas>
+  <div class="muted" style="font-size:11px" x-show="chartError" x-text="chartError"></div>
+</div>
+
+</div><!-- /seat grid -->
+
 <!-- STABILITY VIEW (WP5 heat-card) -->
 <div class="grid" x-show="view === 'stability'">
   <div class="panel col-12">
@@ -613,6 +721,7 @@ function dashboard() {
     resetConfig: { seed: 42, governance: false },
     newBot: { name: '', archetype: 'honest_worker', coop: 'farmers' },
     action: { sender: '', type: 'WORK', payload: {}, json: '{}' },
+    seat: {}, seatWho: '', seatHist: { t: [], v: [] },
     pollTimer: null,
 
     get jsonHint() {
@@ -652,6 +761,9 @@ function dashboard() {
           this.analytics = a;
           this.updateWorldCharts();
         }
+        if (this.view === 'seat') {
+          await this.loadSeat();
+        }
       } catch (e) { /* server restarting */ }
     },
 
@@ -663,6 +775,10 @@ function dashboard() {
       }
       if (v === 'stability') {
         this.loadStability();
+      }
+      if (v === 'seat') {
+        this.$nextTick(() => this.initSeatChart());
+        this.loadSeat();
       }
     },
 
@@ -678,6 +794,58 @@ function dashboard() {
         }
         this.stabilityByKnob = grouped;
       } catch (e) { /* server restarting */ }
+    },
+
+    async loadSeat() {
+      try {
+        const d = await this.api('/api/seat' + (this.seatWho ? ('?citizen=' + encodeURIComponent(this.seatWho)) : ''));
+        const prevTick = this.seatHist.t[this.seatHist.t.length - 1];
+        this.seat = d;
+        this.seatWho = d.who ?? '';
+        if (d.who && d.tick !== prevTick) {
+          this.seatHist.t.push(d.tick);
+          this.seatHist.v.push(d.balance);
+          if (this.seatHist.t.length > 120) { this.seatHist.t.shift(); this.seatHist.v.shift(); }
+          this.updateSeatChart();
+        }
+      } catch (e) { /* server restarting */ }
+    },
+
+    async seatAct(a, choice) {
+      const payload = { ...(a.payload ?? {}) };
+      if (a.type === 'VOTE') payload.choice = choice ?? 'for';
+      try {
+        const r = await this.act(this.seat.who, a.type, payload);
+        this.showToast(r && r.ok === false ? ('Rejected: ' + (r.error || 'unknown')) : ((a.label ?? a.type) + ' queued'));
+        await this.loadSeat();
+      } catch (e) { this.showToast('Action failed: ' + e); }
+    },
+
+    initSeatChart() {
+      try {
+        const el = document.getElementById('seatChart');
+        if (!el || chartStore.seat) return;
+        chartStore.seat = new Chart(el.getContext('2d'), {
+          type: 'line',
+          data: { labels: [], datasets: [{ label: 'My balance (cr)', data: [], borderColor: '#58a6ff', tension: 0.25, pointRadius: 0, fill: false }] },
+          options: { animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false } } },
+        });
+      } catch (e) { this.chartError = String(e); }
+    },
+
+    updateSeatChart() {
+      try {
+        if (!chartStore.seat) this.initSeatChart();
+        const ch = chartStore.seat;
+        if (!ch) return;
+        ch.data.labels = this.seatHist.t;
+        ch.data.datasets[0].data = this.seatHist.v;
+        ch.update();
+      } catch (e) { this.chartError = String(e); }
+    },
+
+    seatVote(pid, choice) {
+      return this.seatAct({ type: 'VOTE', payload: { proposal_id: pid } }, choice);
     },
 
     async tick() {
