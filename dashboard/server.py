@@ -25,6 +25,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from openboard.bots import ARCHETYPES  # noqa: E402
 from openboard.breaksystem import PLAYBOOKS, attack_score, attack_tick, capture_baseline, invariants_ok  # noqa: E402
 from openboard.accounts import Accounts  # noqa: E402
+from openboard.story import build_story  # noqa: E402
+from openboard.flows import build_flows  # noqa: E402
 from openboard.engine import apply_tick  # noqa: E402
 from openboard.ledger import Ledger, Transaction  # noqa: E402
 from openboard.metrics import SimMetrics, gini  # noqa: E402
@@ -879,6 +881,23 @@ def _autoplay_loop() -> None:
 @app.get("/")
 def index():
     return send_from_directory(str(Path(__file__).parent / "static"), "index.html")
+
+
+# ---- D9: story + flows (game-style dashboard) ----------------------
+
+
+@app.get("/api/story")
+def api_story():
+    """The front page: plain-language story cards with chart series."""
+    with RUN.lock:
+        return jsonify(build_story(RUN.state, RUN.timeline))
+
+
+@app.get("/api/flows")
+def api_flows():
+    """Node/edge/pool flow data for the living map and circular stage."""
+    with RUN.lock:
+        return jsonify(build_flows(RUN))
 
 
 @app.get("/api/state")
