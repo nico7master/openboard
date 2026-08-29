@@ -230,3 +230,27 @@ runaway; revisit under shocks/growth tuning.
 - D5.3 Research allocation = algorithmic proposal from transparent signals + delegative citizen vote (direct/delegate/abstain-default) + universal override. Everything votable, including the algorithm itself. Linear point-splitting chosen over quadratic for simplicity/exactness (user preference).
 - D5.4 Entities never fail; leadership is a replaceable role. Founders lead first; execution keeps them there. Means of production stay social.
 - D5.5 Backer-priority layer REJECTED by user as too complicated/rarely useful. Crisis overrides all advantages: distribution by need during declared emergencies.
+
+## D8 · Gaps-plan packages (2026-08-29, built autonomously)
+
+- **D8.1 Credit union**: society lends from the surplus pool (society's
+  savings = the credit fund). Loans MOVE credits, never mint (same
+  invariant class as dividends); fees flow back to the pool; defaults are
+  flagged on the ledger (socialized risk, visible). Optional `credit`
+  rule param; absent = off.
+- **D8.2 Emergent entrepreneurship**: chronic-shortage detection (unmet
+  streak >= 5 ticks, zero active listings) triggers FOUND_COOP with a
+  declared recipe_id — democratic market entry, no capitalists.
+- **D8.3 Delegative democracy everywhere**: DELEGATE (assign/revoke,
+  cycle-safe), tally expansion counts delegated citizens, direct votes
+  always win over delegates. Optional `delegation` param.
+- **D8.4 Per-capita dividend cap**: absolute-denominator params are a bug
+  class at scale; the dividend cap is per-head (`max_dividend_per_citizen_tick`)
+  and the legacy TOTAL cap remains for replay compatibility.
+- **D8.5 Break the System**: the Stage-2 adversary toolkit is the game —
+  playbooks map to attack archetypes; the scoreboard exposes flags, Gini
+  (integer bp), and invariant status; the attacker acts through the real
+  action queue (same validation as everyone).
+- **D8.6 Accounts**: PBKDF2-salted credentials, token sessions,
+  one-citizen-one-seat; concurrency proven by two humans acting in one
+  tick. Engine never sees credentials — accounts are a dashboard layer.
