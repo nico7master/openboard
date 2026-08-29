@@ -230,6 +230,53 @@ def innovator(who, state, params, tick, rng) -> list[Transaction]:
     return out
 
 
+def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
+    """A2 emergent entrepreneurship: detects a chronic shortage (a good
+    unmet for >= 5 ticks with zero active listings) and founds a co-op to
+    produce it, declaring the recipe_id (founding equipment grant applies).
+    Society's answer to market entry: citizens with free hands fill gaps
+    the seeded cast misses."""
+    v = state.ruleset_version
+    out: list[Transaction] = []
+    if _my_coop(state, who) is not None:
+        return out  # already seated in a co-op
+
+    # aggregate the worst unmet streak per good across all citizens
+    worst: dict[str, int] = {}
+    for _cit, streaks in state.unmet_needs.items():
+        for good, t in streaks.items():
+            worst[good] = max(worst.get(good, 0), int(t or 0))
+    covered = {g for g, ls in state.listings.items()
+               if any((l.get("qty") or 0) > 0 for l in ls)}
+    candidates = [(g, t) for g, t in sorted(worst.items())
+                  if g not in covered and t >= 5]
+    if not candidates:
+        return out
+    candidates.sort(key=lambda gt: (-gt[1], gt[0]))
+
+    free = [c for c in sorted(state.balances.keys())
+            if c != who and _my_coop(state, c) is None]
+    if not free:
+        return out
+
+    for good, _streak in candidates:
+        recipes = sorted(rid for rid, rec in state.recipes.items()
+                         if good in (rec.get("outputs") or {}))
+        if not recipes:
+            continue
+        coop_id = f"ent_{good}_{tick}"
+        if coop_id in state.coops:
+            continue
+        out.append(_tx(tick, who, "FOUND_COOP", {
+            "coop_id": coop_id,
+            "name": f"{good.title()} Makers",
+            "members": [who, free[0]],
+            "recipe_id": recipes[0],
+        }, v))
+        break
+    return out
+
+
 ARCHETYPES: dict[str, DecisionFn] = {
     "honest_worker": honest_worker,
     "strategic_producer": strategic_producer,
@@ -241,6 +288,7 @@ ARCHETYPES: dict[str, DecisionFn] = {
     "collusive_faction": collusive_faction,
     "gray_market_smuggler": gray_market_smuggler,
     "innovator": innovator,
+    "entrepreneur": entrepreneur,
 }
 
 
