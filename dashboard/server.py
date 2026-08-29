@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from openboard.bots import ARCHETYPES  # noqa: E402
 from openboard.breaksystem import PLAYBOOKS, attack_score, attack_tick, capture_baseline, invariants_ok  # noqa: E402
+from openboard.accounts import Accounts  # noqa: E402
 from openboard.engine import apply_tick  # noqa: E402
 from openboard.ledger import Ledger, Transaction  # noqa: E402
 from openboard.metrics import SimMetrics, gini  # noqa: E402
@@ -1274,6 +1275,53 @@ def api_action():
 
 def _attack_game() -> "Run | None":
     return getattr(app, "attack_game", None)
+
+
+# ---- B1: accounts (multiplayer foundation) -------------------------
+
+app.accounts = Accounts()
+
+
+def _citizen_from_token() -> str | None:
+    """Resolve the session token (X-Auth-Token header) to a citizen."""
+    token = request.headers.get("X-Auth-Token", "")
+    return app.accounts.citizen_for_token(token) if token else None
+
+
+@app.post("/api/account/register")
+def api_account_register():
+    data = request.get_json(force=True, silent=True) or {}
+    name = data.get("name")
+    password = data.get("password")
+    citizen = data.get("citizen")
+    if not (isinstance(name, str) and isinstance(password, str) and isinstance(citizen, str)):
+        return jsonify({"ok": False, "error": "name, password, citizen required"}), 400
+    with RUN.lock:
+        if citizen not in RUN.state.balances:
+            return jsonify({"ok": False, "error": "unknown citizen"}), 400
+        if citizen in RUN.bots:
+            return jsonify({"ok": False, "error": "citizen is a bot"}), 400
+    token = app.accounts.register(name, password, citizen)
+    if token is None:
+        return jsonify({"ok": False, "error": "account exists, citizen taken, or weak password"}), 400
+    return jsonify({"ok": True, "token": token, "citizen": citizen})
+
+
+@app.post("/api/account/login")
+def api_account_login():
+    data = request.get_json(force=True, silent=True) or {}
+    token = app.accounts.login(data.get("name"), data.get("password"))
+    if token is None:
+        return jsonify({"ok": False, "error": "bad credentials"}), 401
+    return jsonify({"ok": True, "token": token, "citizen": app.accounts.citizen_for_token(token)})
+
+
+@app.get("/api/account/me")
+def api_account_me():
+    who = _citizen_from_token()
+    if who is None:
+        return jsonify({"ok": False, "error": "not logged in"}), 401
+    return jsonify({"ok": True, "citizen": who})
 
 
 @app.post("/api/attack/start")
