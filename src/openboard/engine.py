@@ -1138,8 +1138,20 @@ def _surplus_spend_phase(state: WorldState, tick: int, params: dict[str, Any]) -
     events: list[dict[str, Any]] = []
 
     # --- 1) citizen dividend
-    div_budget = min(spendable * ss.get("dividend_share_bp", 0) // 10_000,
-                     ss.get("max_dividend_per_tick", 0))
+    # Per-tick dividend cap: the legacy `max_dividend_per_tick` is a TOTAL
+    # shared by all citizens (mis-scaled at large populations: 200 cr across
+    # 986 citizens ~ 0.2 cr each). The optional per-capita key
+    # `max_dividend_per_citizen_tick` caps per head instead and takes
+    # precedence when present — old worlds without the key replay exactly.
+    div_budget = spendable * ss.get("dividend_share_bp", 0) // 10_000
+    per_citizen_cap = ss.get("max_dividend_per_citizen_tick")
+    if per_citizen_cap is not None:
+        # per-capita cap (scales with population) takes precedence
+        div_budget = min(div_budget, int(per_citizen_cap) * n)
+    else:
+        # legacy TOTAL cap — old worlds without the new key replay exactly
+        div_budget = min(div_budget, ss.get("max_dividend_per_tick", 0))
+    div_budget = max(0, div_budget)
     per_citizen = div_budget // n
     div_paid = per_citizen * n
     if div_paid > 0:

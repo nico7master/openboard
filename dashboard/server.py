@@ -733,7 +733,8 @@ class Run:
             "dividend_share_bp": 5_000,       # 50% of spendable pool
             "services_share_bp": 5_000,        # 50% funds essential refunds
             "min_pool_buffer": 500,            # never spend below this
-            "max_dividend_per_tick": 200,      # anti-flood cap
+            "max_dividend_per_tick": 200,      # anti-flood cap (TOTAL, legacy)
+            "max_dividend_per_citizen_tick": 2,  # per-capita cap, scales with population
         }
         # Public capital, private use: co-ops consuming machines as inputs
         # pay society the replacement cost into the surplus pool, which
