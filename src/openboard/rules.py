@@ -232,18 +232,23 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
 
     if "surplus_spending" in params:
         ss = params["surplus_spending"]
-        if not isinstance(ss, dict) or set(ss.keys()) != {
+        required_ss = {
             "dividend_share_bp", "services_share_bp", "min_pool_buffer", "max_dividend_per_tick"
-        }:
+        }
+        # Optional per-capita cap (C2): present = scales with population;
+        # absent = legacy TOTAL cap semantics (old worlds unchanged).
+        optional_ss = {"max_dividend_per_citizen_tick"}
+        if not isinstance(ss, dict) or not required_ss <= set(ss.keys()) or not set(ss.keys()) <= required_ss | optional_ss:
             return Reason.INVALID_RULESET
         for key in ("dividend_share_bp", "services_share_bp"):
             v = ss[key]
             if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 10_000:
                 return Reason.INVALID_RULESET
-        for key in ("min_pool_buffer", "max_dividend_per_tick"):
-            v = ss[key]
-            if isinstance(v, bool) or not isinstance(v, int) or v < 0:
-                return Reason.INVALID_RULESET
+        for key in tuple(required_ss) + tuple(optional_ss):
+            if key in ss:
+                v = ss[key]
+                if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+                    return Reason.INVALID_RULESET
 
     if "coop_distribution" in params:
         cd = params["coop_distribution"]
