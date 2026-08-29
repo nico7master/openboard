@@ -79,6 +79,17 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 .view-tabs { display: flex; gap: 4px; margin: 0 12px; }
 .view-tabs .tab { padding: 6px 14px; font-size: 13px; }
 .view-tabs .tab.active { background: #58a6ff22; border-color: var(--accent); color: var(--accent); }
+.sev-good { border-left: 3px solid var(--green, #3fb950); }
+.sev-watch { border-left: 3px solid #d29922; }
+.sev-bad { border-left: 3px solid var(--red, #f85149); }
+.sev-info { border-left: 3px solid var(--accent, #58a6ff); }
+.story-card { display: flex; gap: 14px; align-items: center; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; }
+.story-card .icon { font-size: 26px; }
+.story-card .sentence { font-size: 15px; line-height: 1.45; }
+.story-card .spark { color: var(--accent, #58a6ff); opacity: .9; }
+.canvas-wrap { width: 100%; overflow: hidden; }
+.map-story { padding: 8px 12px; color: var(--accent); min-height: 22px; font-size: 13px; }
+
 .muted { color: var(--dim); }
 .mono { font-family: var(--mono); }
 </style>
@@ -90,7 +101,10 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 <div class="header">
   <div class="logo">⬢ OpenBoard <span>economy dashboard</span></div>
   <div class="view-tabs">
-    <button :class="view === 'dashboard' ? 'tab active' : 'tab'" @click="setView('dashboard')">🎛 Dashboard</button>
+    <button :class="view === 'story' ? 'tab active' : 'tab'" @click="setView('story')">✨ At a Glance</button>
+    <button :class="view === 'map' ? 'tab active' : 'tab'" @click="setView('map')">🗺️ Living Map</button>
+    <button :class="view === 'stage' ? 'tab active' : 'tab'" @click="setView('stage')">🔄 Flow Stage</button>
+    <button :class="view === 'dashboard' ? 'tab active' : 'tab'" @click="setView('dashboard')">🎛 Engineer</button>
     <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 World</button>
     <button :class="view === 'stability' ? 'tab active' : 'tab'" @click="setView('stability')">🗺 Stability</button>
     <button :class="view === 'seat' ? 'tab active' : 'tab'" @click="setView('seat')">🏠 My Seat</button>
@@ -115,6 +129,39 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <div class="stat"><div class="label">Surplus</div><div class="value" x-text="fmt(state.surplus_pool)"></div></div>
     <div class="stat"><div class="label">Ledger</div><div class="value"><span x-text="state.ledger_counts?.accepted ?? 0" style="color:var(--green)"></span>/<span x-text="state.ledger_counts?.rejected ?? 0" style="color:var(--red)"></span></div></div>
   </div>
+</div>
+
+<!-- WORLD AT A GLANCE -->
+<div x-show="view === 'story'" style="max-width: 860px; margin: 0 auto; padding: 0 12px">
+  <template x-for="card in story.cards" :key="card.id">
+    <div class="panel story-card" :class="sevClass(card.severity)">
+      <div style="font-size:30px" x-text="card.icon"></div>
+      <div style="flex:1">
+        <div class="sentence" x-text="card.sentence"></div>
+        <div style="color:var(--muted,#8b949e); font-size:11px; margin-top:4px" x-text="card.series_label || ''"></div>
+      </div>
+      <div style="color:#58a6ff" x-html="spark(card)"></div>
+    </div>
+  </template>
+  <div class="muted" style="text-align:center; padding:10px" x-text="'tick ' + story.tick"></div>
+</div>
+
+<!-- LIVING MAP -->
+<div class="panel" x-show="view === 'map'" style="width:100%">
+  <h3>🗺️ The living economy <span class=muted>— goods flow along real supply chains; click a workshop</span></h3>
+  <canvas id="flowMap" style="width:100%; height:520px; cursor:pointer"
+          @click="const r = $el.getBoundingClientRect(); const cv = $el; [...($refs.mapNodes?.children || [])]">
+  </canvas>
+  <div class="mapStory" x-text="mapStory"></div>
+  <div class="muted" style="font-size:11px; padding:0 12px 8px">
+    🟢 producing · 🔴 waiting on inputs · ⚪ no trade yet — node size = recent production
+  </div>
+</div>
+
+<!-- CIRCULAR FLOW STAGE -->
+<div class="panel" x-show="view === 'stage'" style="width:100%">
+  <h3>🔄 The economy as a machine</h3>
+  <canvas id="flowStage" style="width:100%; height:420px"></canvas>
 </div>
 
 <div class="grid" x-show="view === 'dashboard'">
@@ -715,7 +762,10 @@ const chartStore = {};  // Chart.js instances live OUTSIDE Alpine's reactive pro
 function dashboard() {
   return {
     state: {}, timeline: {}, autoplay: { running: false, interval: 0.75 },
-    view: 'dashboard', analytics: {}, worldReady: false,
+    view: 'story', analytics: {}, worldReady: false,
+    story: { cards: [], tick: 0 },
+    flows: { nodes: [], edges: [], pools: {}, population: { met_share: 100 }, weather: [] },
+    mapStory: '',
     stabilityByKnob: {},
     busy: false, toast: '', resetModal: false, chartError: '', chartDebug: '',
     resetConfig: { seed: 42, governance: false },
@@ -737,7 +787,150 @@ function dashboard() {
       await this.refresh();
       this.action.sender = this.state.citizens?.[0] ?? '';
       this.initCharts();
+      this.loadStory();
       this.pollTimer = setInterval(() => this.refresh(), 1000);
+    },
+
+    async loadStory() {
+      try { this.story = await this.api('/api/story'); } catch (e) { /* restarting */ }
+    },
+
+    async loadFlows() {
+      try { this.flows = await this.api('/api/flows'); } catch (e) { /* restarting */ }
+    },
+
+    sevClass(sev) {
+      return { good: 'sev-good', watch: 'sev-watch', bad: 'sev-bad', info: 'sev-info' }[sev] || 'sev-info';
+    },
+
+    spark(card) {
+      const data = (card.series || []).slice(-40);
+      if (data.length < 2) return '';
+      const w = 220, h = 34;
+      const min = Math.min(...data), max = Math.max(...data);
+      const rng = (max - min) || 1;
+      const pts = data.map((v, i) =>
+        `${(i / Math.max(data.length - 1, 1)) * w},${h - 3 - ((v - min) / rng) * (h - 6)}`
+      ).join(' ');
+      return `<svg width="${w}" height="${h}" class="spark"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="${pts}"/></svg>`;
+    },
+
+    startCanvas() {
+      if (this._raf) cancelAnimationFrame(this._raf);
+      const loop = () => {
+        if (this.view === 'map') this.drawMap();
+        else if (this.view === 'stage') this.drawStage();
+        else return; // left the canvas view: loop stops
+        this._raf = requestAnimationFrame(loop);
+      };
+      this._raf = requestAnimationFrame(loop);
+      if (!this._flowsTimer) {
+        this._flowsTimer = setInterval(() => {
+          if (this.view === 'map' || this.view === 'stage') this.loadFlows();
+        }, 1500);
+      }
+    },
+
+    nodeColor(h) { return { ok: '#238636', starved: '#da3633', off: '#6e7681' }[h] || '#6e7681'; },
+
+    drawMap() {
+      const cv = document.getElementById('flowMap');
+      if (!cv) return;
+      const ctx = cv.getContext('2d');
+      const W = cv.width = cv.clientWidth, H = cv.height = 520;
+      const f = this.flows || {};
+      const nodes = f.nodes || [];
+      const pos = {};
+      nodes.forEach((nd, i) => {
+        const ang = (i / Math.max(nodes.length, 1)) * 2 * Math.PI - Math.PI / 2;
+        pos[nd.id] = {
+          x: W / 2 + Math.cos(ang) * (W * 0.36),
+          y: H / 2 + Math.sin(ang) * (H * 0.36),
+          r: 10 + Math.min((nd.produced || 0) / 40, 26),
+        };
+      });
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+      (f.edges || []).forEach(e => {
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b) return;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      });
+      const t = performance.now() / 1000;
+      (f.edges || []).forEach((e, ei) => {
+        const a = pos[e.from], b = pos[e.to];
+        if (!a || !b) return;
+        for (let k = 0; k < 3; k++) {
+          const u = (t * 0.4 + ei * 0.13 + k / 3) % 1;
+          ctx.fillStyle = '#58a6ff';
+          ctx.beginPath(); ctx.arc(a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u, 2.2, 0, 7); ctx.fill();
+        }
+      });
+      const ring = f.population || {};
+      const met = ring.met_share ?? 100;
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, 46, 0, 7);
+      ctx.fillStyle = met >= 95 ? '#23863655' : met >= 80 ? '#9e6a0355' : '#da363355';
+      ctx.fill();
+      ctx.fillStyle = '#e6edf3'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(`👥 ${met}% needs met`, W / 2, H / 2 + 4);
+      nodes.forEach(nd => {
+        const p = pos[nd.id]; if (!p) return;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7);
+        ctx.fillStyle = this.nodeColor(nd.health); ctx.fill();
+      });
+      if ((f.weather || []).length) {
+        ctx.fillStyle = 'rgba(218,54,51,0.06)'; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#f85149'; ctx.textAlign = 'left';
+        ctx.fillText('🌩️ ' + f.weather.map(w => String(w.kind).replace('_',' ')).join(', '), 12, 20);
+      }
+    },
+
+    nodeStory(id) {
+      const nd = (this.flows.nodes || []).find(n => n.id === id);
+      if (!nd) return '';
+      const word = { ok: 'is producing', starved: 'is waiting on inputs', off: 'has no trade yet' }[nd.health] || '?';
+      return `${nd.industry} ${word} — made ${nd.produced} units recently, ${nd.members} members.`;
+    },
+
+    drawStage() {
+      const cv = document.getElementById('flowStage');
+      if (!cv) return;
+      const ctx = cv.getContext('2d');
+      const W = cv.width = cv.clientWidth; const H = cv.height = 420;
+      const p = this.flows.pools || {};
+      const chans = ['wages', 'production_value', 'market_sales', 'dividends'];
+      const stages = [
+        { x: W * 0.15, y: H * 0.5, label: '👥 Citizens', v: p.wages || 0 },
+        { x: W * 0.40, y: H * 0.22, label: '🏭 Co-ops', v: p.production_value || 0 },
+        { x: W * 0.62, y: H * 0.5, label: '🛒 Markets', v: p.market_sales || 0 },
+        { x: W * 0.85, y: H * 0.5, label: '🏦 Pools', v: p.dividends || 0 },
+      ];
+      ctx.font = '14px sans-serif';
+      stages.forEach(s => {
+        ctx.beginPath(); ctx.arc(s.x, s.y, 42, 0, 7);
+        ctx.fillStyle = '#161b22'; ctx.fill();
+        ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#e6edf3'; ctx.textAlign = 'center';
+        ctx.fillText(s.label, s.x, s.y + 4);
+      });
+      const t = performance.now() / 1000;
+      for (let i = 0; i < stages.length; i++) {
+        const a = stages[i], b = stages[(i + 1) % stages.length];
+        const flow = p[['wages', 'production_value', 'market_sales', 'dividends'][i]] || 0;
+        const active = flow > 0;
+        ctx.strokeStyle = active ? '#3fb950' : '#6e7681';
+        ctx.lineWidth = 2 + Math.min(flow / 5000, 6);
+        ctx.beginPath(); ctx.moveTo(a.x + 44, a.y); ctx.lineTo(b.x - 44, b.y); ctx.stroke();
+        if (active) {
+          for (let k = 0; k < 4; k++) {
+            const u = (t * 0.5 + k / 4 + i * 0.2) % 1;
+            ctx.fillStyle = '#3fb950';
+            ctx.beginPath(); ctx.arc(a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u, 3, 0, 7); ctx.fill();
+          }
+        }
+      }
+      ctx.fillStyle = '#8b949e'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('flow thickness = money moved in the last 5 ticks', W / 2, H - 12);
     },
 
     async api(path, opts = {}) {
@@ -769,6 +962,12 @@ function dashboard() {
 
     setView(v) {
       this.view = v;
+      if (v === 'story') {
+        this.loadStory();
+      }
+      if (v === 'map' || v === 'stage') {
+        this.$nextTick(() => { this.loadFlows(); this.startCanvas(); });
+      }
       if (v === 'world') {
         this.$nextTick(() => this.initWorldCharts());
         this.api('/api/analytics').then(a => { this.analytics = a; this.updateWorldCharts(); });
