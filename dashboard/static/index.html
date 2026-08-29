@@ -89,6 +89,17 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 .story-card .spark { color: var(--accent, #58a6ff); opacity: .9; }
 .canvas-wrap { width: 100%; overflow: hidden; }
 .map-story { padding: 8px 12px; color: var(--accent); min-height: 22px; font-size: 13px; }
+.vbar { height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+.vbar-fill { height: 100%; border-radius: 4px; background: #58a6ff; }
+.vbar-fill.blue { background: #58a6ff; } .vbar-fill.green { background: #3fb950; }
+.vbar-fill.yellow { background: #d29922; } .vbar-fill.red { background: #f85149; }
+.vbar-fill.purple { background: #a371f7; }
+.cit-row { padding: 7px 9px; border-bottom: 1px solid var(--border); border-radius: 6px; }
+.needbar { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.needbar .lbl { width: 110px; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.needbar .vbar { flex: 1; margin-top: 0; }
+.goodrow { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+
 
 .muted { color: var(--dim); }
 .mono { font-family: var(--mono); }
@@ -181,22 +192,22 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 <div class="panel col-4">
   <h3>👥 Citizens <span class="muted" x-text="(state.citizens?.length ?? 0) + ' active'"></span></h3>
   <div class="scroll-y">
-  <table>
-    <thead><tr><th>Name</th><th>₡ Balance</th><th>Hrs</th><th>Needs</th><th>Goods</th></tr></thead>
-    <tbody>
-      <template x-for="(name, i) in state.citizens ?? []" :key="name">
-        <tr :style="isBot(name) ? '' : 'color: var(--yellow)'">
-          <td><span x-text="name"></span> <span x-show="!isBot(name)" title="human">👤</span></td>
-          <td x-text="fmt(state.balances?.[name])"></td>
-          <td x-text="state.labor_hours?.[name] ?? 0"></td>
-          <td><template x-for="(streak, good) in (analytics.circular?.unmet_needs?.[name] ?? {})" :key="good">
-            <span class="badge red" style="margin-right:3px" :title="streak + ' ticks unmet'" x-text="good + ' ✗' + streak"></span>
-          </template><span x-show="!Object.keys(analytics.circular?.unmet_needs?.[name] ?? {}).length" class="badge green">✓ fed</span></td>
-          <td class="muted" x-text="invSummary(state.citizen_inventory?.[name])"></td>
-        </tr>
-      </template>
-    </tbody>
-  </table>
+  <div class="scroll-y">
+    <template x-for="(name, i) in state.citizens ?? []" :key="name">
+      <div class="cit-row" :style="isBot(name) ? '' : 'border-left:3px solid var(--yellow)'">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <span><strong x-text="name"></strong> <span x-show="!isBot(name)" title="human seat">👤</span></span>
+          <span>
+            <template x-for="(streak, good) in (analytics.circular?.unmet_needs?.[name] ?? {})" :key="good">
+              <span class="badge red" style="margin-left:3px" :title="good + ' missing ' + streak + ' ticks'" x-text="good"></span>
+            </template>
+            <span x-show="!Object.keys(analytics.circular?.unmet_needs?.[name] ?? {}).length" class="badge green">✓ provided for</span>
+          </span>
+        </div>
+        <div class="vbar" :title="'savings ' + fmt(state.balances?.[name]) + ' cr · ' + (state.labor_hours?.[name] ?? 0) + 'h worked today'"><div class="vbar-fill blue" :style="wealthBar(name)"></div></div>
+      </div>
+    </template>
+  </div>
   </div>
 </div>
 
@@ -208,11 +219,12 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border)">
       <div style="display:flex; justify-content:space-between; margin-bottom:4px">
         <strong x-text="id"></strong>
-        <span class="mono">₡<span x-text="fmt(coop.treasury)"></span></span>
+        <span class="badge" :class="coop.labor_pool_hours > 0 ? 'green' : 'red'" x-text="coop.labor_pool_hours > 0 ? 'working' : 'idle'"></span>
       </div>
       <div class="muted" style="font-size:12px" x-text="coop.members.join(', ')"></div>
-      <div class="mono" style="font-size:11.5px; margin-top:4px" x-text="invSummary(coop.inventory)"></div>
-      <div class="muted" style="font-size:11px">labor pool: <span x-text="coop.labor_pool_hours"></span>h</div>
+      <div class="vbar" :title="'treasury ' + fmt(coop.treasury) + ' cr'"><div class="vbar-fill purple" :style="coopBar(id, 'treasury', maxTreasury(), 'purple')"></div></div>
+      <div class="vbar" :title="'labor pool ' + (coop.labor_pool_hours || 0) + 'h'"><div class="vbar-fill green" :style="coopBar(id, 'labor_pool_hours', 60, 'green')"></div></div>
+      <div class="muted" style="font-size:11px; margin-top:3px" x-text="invSummary(coop.inventory)"></div>
     </div>
   </template>
   </div>
@@ -224,12 +236,9 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   <div style="margin-bottom: 12px">
     <div class="muted" style="font-size:11px; margin-bottom:6px">LAST CLEARING PRICES</div>
     <template x-for="(good, price) in state.last_clearing ?? {}" :key="good">
-      <div class="form-row" style="justify-content:space-between; padding: 2px 0">
-        <span x-text="good"></span>
-        <span class="mono">
-          <span x-text="price"></span>
-          <span class="muted" style="font-size:11px" x-text="' / floor ' + (state.good_cost_baseline?.[good] ?? '?')"></span>
-        </span>
+      <div class="needbar" :title="good + ' sells for ' + price + ' cr (fair cost ' + (state.good_cost_baseline?.[good] ?? '?') + ')'">
+        <span class="lbl" x-text="good"></span>
+        <div class="vbar"><div class="vbar-fill" :style="priceBar(good, price)"></div></div>
       </div>
     </template>
     <div x-show="!Object.keys(state.last_clearing ?? {}).length" class="muted">No trades yet</div>
@@ -489,22 +498,16 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 <!-- LEDGER -->
 <div class="panel col-12">
   <h3>📜 Ledger (recent) <span class="muted">immutable · hash-chained</span></h3>
-  <table>
-    <thead><tr><th>Seq</th><th>Tick</th><th>Action</th><th>Sender</th><th>Result</th></tr></thead>
-    <tbody>
+    <div class="scroll-y" style="max-height:300px">
       <template x-for="r in (state.ledger_recent ?? []).slice().reverse()" :key="r.seq">
-        <tr>
-          <td class="muted" x-text="r.seq"></td>
-          <td x-text="r.tick"></td>
-          <td x-text="r.action"></td>
-          <td x-text="r.sender"></td>
-          <td>
-            <span class="badge" :class="r.accepted ? 'green' : 'red'" x-text="r.accepted ? '✓ accepted' : r.reason"></span>
-          </td>
-        </tr>
+        <div class="cit-row" style="display:flex; justify-content:space-between; align-items:center; padding:5px 9px"
+             :title="'entry #' + r.seq + ' · tick ' + r.tick + ' · ' + r.sender + ' · ' + (r.accepted ? 'accepted' : 'rejected: ' + r.reason)">
+          <span><span class="badge" :class="r.accepted ? 'green' : 'red'" x-text="r.accepted ? '✓' : '✗'"></span>
+          <strong style="margin-left:6px" x-text="String(r.action).replace(/_/g, ' ').toLowerCase()"></strong></span>
+          <span class="muted" style="font-size:11.5px" x-text="r.sender"></span>
+        </div>
       </template>
-    </tbody>
-  </table>
+    </div>
 </div>
 
 </div><!-- /grid -->
@@ -527,20 +530,15 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <span>🛠 Labor today <strong class="mono" x-text="seat.hours ? (seat.hours.done + '/' + seat.hours.max + 'h') : '—'"></strong></span>
   </div>
   <div class="scroll-y" style="max-height:260px; margin-top:8px">
-    <table>
-      <thead><tr><th>Need</th><th>Held/Quota</th><th>Due</th><th>Status</th><th>~Price</th></tr></thead>
-      <tbody>
-        <template x-for="r in seat.needs_rows ?? []" :key="r.good">
-          <tr :style="r.unmet ? 'background:#f8514918' : ''">
-            <td x-text="r.good"></td>
-            <td class="mono" x-text="r.held + ' / ' + r.quota"></td>
-            <td class="muted" x-text="r.due_today ? 'today' : 'cycled'"></td>
-            <td><span class="badge" :class="r.unmet ? 'red' : 'green'" x-text="r.unmet ? 'unmet ×' + r.unmet : 'ok'"></span></td>
-            <td class="muted mono" x-text="r.price != null ? '₡' + r.price : '—'"></td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+    <div>
+      <template x-for="r in seat.needs_rows ?? []" :key="r.good">
+        <div class="needbar" :style="r.unmet ? 'background:#f8514918' : ''">
+          <span class="lbl" :title="r.good + ' — have ' + r.held + ' of ' + r.quota + ' needed' + (r.due_today ? ', needed today' : '') + (r.price != null ? ', costs about ' + r.price + ' cr' : '')" x-text="r.good"></span>
+          <div class="vbar"><div class="vbar-fill" :style="'width:' + Math.max(needPct(r), 2) + '%; ' + needBarColor(r)"></div></div>
+          <span class="badge" :class="r.unmet ? 'red' : (needPct(r) >= 100 ? 'green' : 'yellow')" x-text="r.unmet ? 'missing' : (needPct(r) >= 100 ? 'ready' : 'buying')"></span>
+        </div>
+      </template>
+    </div>
   </div>
 </div>
 
@@ -624,21 +622,14 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <template x-for="(cells, knob) in stabilityByKnob" :key="knob">
       <div style="margin-bottom:14px">
         <strong x-text="knob"></strong>
-        <table style="width:100%; margin-top:6px">
-          <thead><tr><th>value</th><th>stable</th><th>mean unmet (tail)</th><th>worst streak</th><th>invariant</th></tr></thead>
-          <tbody>
-            <template x-for="c in cells" :key="c.value">
-              <tr>
-                <td class="mono" x-text="c.value"></td>
-                <td><span class="badge" :class="c.stable === c.total ? 'green' : (c.stable > 0 ? 'yellow' : 'red')"
-                           x-text="c.stable + '/' + c.total"></span></td>
-                <td class="mono" x-text="c.mean_unmet_tail"></td>
-                <td class="mono" x-text="c.worst_streak"></td>
-                <td><span class="badge" :class="c.invariant_ok ? 'green' : 'red'" x-text="c.invariant_ok ? 'exact' : 'BROKEN'"></span></td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+        <template x-for="c in cells" :key="c.value">
+          <div class="needbar" :title="'value ' + c.value + ' — stable in ' + c.stable + '/' + c.total + ' seeds · avg unmet ' + c.mean_unmet_tail + ' · worst shortage streak ' + c.worst_streak + ' ticks · money invariant ' + (c.invariant_ok ? 'exact' : 'BROKEN')">
+            <span class="lbl mono" x-text="c.value"></span>
+            <div class="vbar"><div class="vbar-fill" :class="c.stable === c.total ? 'green' : (c.stable > 0 ? 'yellow' : 'red')" :style="'width:' + Math.round(100 * c.stable / Math.max(c.total,1)) + '%'"></div></div>
+            <span class="badge" :class="c.stable === c.total ? 'green' : (c.stable > 0 ? 'yellow' : 'red')" x-text="c.stable === c.total ? 'stable' : (c.stable > 0 ? 'shaky' : 'collapses')"></span>
+            <span class="badge" :class="c.invariant_ok ? 'green' : 'red'" x-text="c.invariant_ok ? 'ledger ✓' : 'BROKEN'"></span>
+          </div>
+        </template>
       </div>
     </template>
     <div x-show="!Object.keys(stabilityByKnob).length" class="muted">No sweep data yet — run scripts/stage6_sweeps.py run COARSE.</div>
@@ -703,25 +694,17 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <h3>📦 All goods <span class="muted">flows, stocks, price vs cost</span></h3>
     <div class="scroll-y" style="max-height:260px">
     <table>
-      <thead><tr><th>Good</th><th>Sector</th><th>Triage</th><th>Prod</th><th>Bought</th><th>Listed</th><th>Coop</th><th>Citiz</th><th>Pool</th><th>Price</th><th>Floor</th></tr></thead>
-      <tbody>
-        <template x-for="g in analytics.goods_table ?? []" :key="g.good">
-          <tr>
-            <td x-text="g.good"></td>
-            <td class="muted" x-text="g.category"></td>
-            <td><span class="badge" :class="g.triage === 'essential' ? 'green' : g.triage === 'emergency' ? 'red' : 'gray'" x-text="g.triage"></span></td>
-            <td class="mono" x-text="fmt(g.produced_total)"></td>
-            <td class="mono" x-text="fmt(g.bought_total)"></td>
-            <td class="mono" x-text="g.listed_now || '—'"></td>
-            <td class="mono" x-text="g.coop_stock || '—'"></td>
-            <td class="mono" x-text="g.citizen_stock || '—'"></td>
-            <td class="mono" x-text="g.common_pool || '—'"></td>
-            <td class="mono" x-text="g.last_price ?? '—'"></td>
-            <td class="mono muted" x-text="g.cost_baseline ?? '—'"></td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+      <template x-for="g in analytics.goods_table ?? []" :key="g.good">
+        <div class="goodrow">
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <span><strong x-text="String(g.good).replace(/_/g,' ')"></strong>
+              <span class="badge" :class="g.triage === 'essential' ? 'green' : g.triage === 'emergency' ? 'red' : 'gray'" style="margin-left:6px" x-text="g.triage"></span></span>
+            <span class="muted" style="font-size:11px" x-text="g.category"></span>
+          </div>
+          <div class="vbar" :title="'produced ' + fmt(g.produced_total) + ' · bought ' + fmt(g.bought_total) + ' · listed now ' + (g.listed_now || 0) + ' · coop stock ' + (g.coop_stock || 0) + ' · citizen stock ' + (g.citizen_stock || 0) + ' · common pool ' + (g.common_pool || 0)"><div class="vbar-fill blue" :style="'width:' + Math.min(100, Math.round(100 * (g.bought_total || 0) / Math.max(1, g.produced_total || 1))) + '%'"></div></div>
+          <div class="vbar" :title="'price ' + (g.last_price ?? '—') + ' vs fair cost ' + (g.cost_baseline ?? '—')"><div class="vbar-fill" :style="priceBar(g.good, g.last_price ?? g.cost_baseline ?? 0)"></div></div>
+        </div>
+      </template>
     </div>
   </div>
 
@@ -831,23 +814,69 @@ function dashboard() {
       }
     },
 
+    maxBal() { return Math.max(1, ...Object.values(this.state.balances ?? { 0: 1 })); },
+
+    wealthBar(name) {
+      const v = this.state.balances?.[name] ?? 0;
+      const pct = Math.min(100, Math.round(100 * v / this.maxBal()));
+      const cls = pct > 66 ? 'yellow' : pct > 33 ? 'blue' : 'blue';
+      return `width:${Math.max(pct, 2)}%` + (cls !== 'blue' ? `;background:var(--${cls === 'yellow' ? 'yellow' : 'accent'})` : '');
+    },
+
+    maxTreasury() { return Math.max(1, ...Object.values(this.state.coops ?? {}).map(c => c.treasury || 0)); },
+
+    coopBar(id, field, max, color) {
+      const v = (this.state.coops?.[id]?.[field]) || 0;
+      const pct = Math.min(100, Math.round(100 * v / Math.max(1, max)));
+      return `width:${Math.max(pct, 2)}%;background:var(--${color})`;
+    },
+
+    priceBar(good, price) {
+      const floor = this.state.good_cost_baseline?.[good] ?? price;
+      const ratio = floor > 0 ? price / floor : 1;
+      const pct = Math.min(100, Math.round(100 * Math.min(ratio, 2) / 2));
+      const cls = ratio > 1.5 ? 'red' : ratio > 1.1 ? 'yellow' : 'green';
+      return `width:${Math.max(pct, 3)}%;background:var(--${cls})`;
+    },
+
+    needPct(r) {
+      const q = Math.max(r.quota || 1, 1);
+      return Math.min(100, Math.round(100 * (r.held || 0) / q));
+    },
+
+    needBarColor(r) {
+      if (r.unmet) return 'background:var(--red)';
+      return this.needPct(r) >= 100 ? 'background:var(--green)' : 'background:var(--yellow)';
+    },
+
     nodeColor(h) { return { ok: '#238636', starved: '#da3633', off: '#6e7681' }[h] || '#6e7681'; },
 
     drawMap() {
       const cv = document.getElementById('flowMap');
       if (!cv) return;
       const ctx = cv.getContext('2d');
-      const W = cv.width = cv.clientWidth, H = cv.height = 520;
+      const W = cv.width = cv.clientWidth, H = cv.height = 560;
       const f = this.flows || {};
       const nodes = f.nodes || [];
+      // cluster coops by industry: one labeled bubble per industry
+      const byInd = {};
+      nodes.forEach(nd => {
+        const key = nd.industry || 'unassigned';
+        (byInd[key] = byInd[key] || []).push(nd);
+      });
+      const inds = Object.keys(byInd);
       const pos = {};
-      nodes.forEach((nd, i) => {
-        const ang = (i / Math.max(nodes.length, 1)) * 2 * Math.PI - Math.PI / 2;
-        pos[nd.id] = {
-          x: W / 2 + Math.cos(ang) * (W * 0.36),
-          y: H / 2 + Math.sin(ang) * (H * 0.36),
-          r: 10 + Math.min((nd.produced || 0) / 40, 26),
-        };
+      const cluster = {};
+      inds.forEach((ind, i) => {
+        const ang = (i / Math.max(inds.length, 1)) * 2 * Math.PI - Math.PI / 2;
+        cluster[ind] = { x: W / 2 + Math.cos(ang) * (W * 0.36), y: H / 2 + Math.sin(ang) * (H * 0.36), prod: 0, starved: 0, ok: 0 };
+        byInd[ind].forEach((nd, j) => {
+          const a2 = (j / Math.max(byInd[ind].length, 1)) * 2 * Math.PI;
+          pos[nd.id] = { x: cluster[ind].x + Math.cos(a2) * 15, y: cluster[ind].y + Math.sin(a2) * 15, r: 5 + Math.min((nd.produced || 0) / 40, 14) };
+          cluster[ind].prod += nd.produced || 0;
+          if (nd.health === 'starved') cluster[ind].starved++;
+          else if (nd.health === 'ok') cluster[ind].ok++;
+        });
       });
       ctx.clearRect(0, 0, W, H);
       ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
@@ -868,15 +897,25 @@ function dashboard() {
       });
       const ring = f.population || {};
       const met = ring.met_share ?? 100;
-      ctx.beginPath(); ctx.arc(W / 2, H / 2, 46, 0, 7);
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, 52, 0, 7);
       ctx.fillStyle = met >= 95 ? '#23863655' : met >= 80 ? '#9e6a0355' : '#da363355';
       ctx.fill();
-      ctx.fillStyle = '#e6edf3'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(`👥 ${met}% needs met`, W / 2, H / 2 + 4);
+      // small coop dots + labeled industry bubbles on top
       nodes.forEach(nd => {
         const p = pos[nd.id]; if (!p) return;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7);
         ctx.fillStyle = this.nodeColor(nd.health); ctx.fill();
+      });
+      Object.keys(cluster).forEach(ind => {
+        const c = cluster[ind];
+        const healthCol = c.starved > c.ok ? '#da3633' : (c.ok > 0 ? '#238636' : '#6e7681');
+        const r = 16 + Math.min(Math.sqrt(c.prod) * 0.6, 20);
+        ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, 7);
+        ctx.strokeStyle = healthCol; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.fillStyle = '#e6edf3'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(ind.replace(/_/g, ' '), c.x, c.y + r + 13);
       });
       if ((f.weather || []).length) {
         ctx.fillStyle = 'rgba(218,54,51,0.06)'; ctx.fillRect(0, 0, W, H);
