@@ -250,6 +250,26 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
                if any((l.get("qty") or 0) > 0 for l in ls)}
     candidates = [(g, t) for g, t in sorted(worst.items())
                   if g not in covered and t >= 5]
+    # 2026-09-01: producer-input demand is invisible to citizen unmet
+    # streaks — the capital chain (hand_tools 7,741 coop bids vs 6 clears,
+    # machines 4,447 vs 2, steel 5,499 vs 28) starved for 400 ticks while
+    # 43 founders all targeted consumer goods. Producer-input pressure:
+    # goods with heavy outstanding coop bids, no active listings, and a
+    # non-primitive recipe. Threshold scales with output size so a single
+    # small bid can't trigger founding.
+    bid_pressure: dict[str, int] = {}
+    for b in state.bids:
+        g = b.get("good")
+        if g and g not in covered:
+            bid_pressure[g] = bid_pressure.get(g, 0) + int(b.get("qty") or 0)
+    for g, qty in sorted(bid_pressure.items()):
+        # only goods a non-primitive recipe can produce are actionable
+        has_recipe = any(
+            g in (rec.get("outputs") or {}) and not rid.startswith("primitive")
+            for rid, rec in state.recipes.items()
+        )
+        if has_recipe and qty >= 20:
+            candidates.append((g, qty))
     if not candidates:
         return out
     candidates.sort(key=lambda gt: (-gt[1], gt[0]))

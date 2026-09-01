@@ -95,7 +95,11 @@ def make_specialist(
             _input_loop_covers_power = "electricity" in (_maint_recipe.get("inputs") or {})
             if e_short > 0 and not (want_produce and _input_loop_covers_power):
                 floors = [e["floor"] for e in state.listings.get("electricity", ()) if e["qty"] > 0]
-                e_price = (min(floors) if floors else state.good_cost_baseline.get("electricity", 1))
+                # 2026-09-01: bid at floor+2 like every other buyer —
+                # bidding the raw floor loses every tie-break to floor+2
+                # bidders (observed: livestock priced power at 1 vs floor 2,
+                # 1,192 bids, chronically starved -> meat shortage)
+                e_price = (min(floors) + 2 if floors else state.good_cost_baseline.get("electricity", 1))
                 e_qty = min(e_short, c.get("treasury", 0) // e_price) if e_price > 0 else e_short
                 if e_qty > 0:
                     out.append(_tx(tick, who, "BID_FOR_COOP", {
@@ -286,9 +290,14 @@ def make_specialist(
                 runs = min(runs, energy_runs)
             if input_runs is not None:
                 runs = min(runs, input_runs)
-            if members > 1:
-                runs = max(1, runs // members)
-            runs = max(1, runs)
+            # 2026-09-01: REMOVED the per-member division (runs // members).
+            # It double-throttled: pooled labor already caps runs via
+            # labor_runs, so dividing again meant big coops produced ~1
+            # run/tick no matter the demand — livestock (8 members) made
+            # 15 meat/tick vs 330/tick citizen demand, maintenance (6
+            # members) made 1/tick vs 82 needed. Members coordinate via
+            # the engine's pooled-labor accounting; the bot need not
+            # pre-ration.
             out.append(_tx(tick, who, "PRODUCE", {
                 "coop_id": coop_id, "recipe_id": active_id, "runs": runs,
             }, v))

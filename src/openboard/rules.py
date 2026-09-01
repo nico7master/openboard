@@ -85,7 +85,7 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     },
     "constitution_phase": "bootstrap",  # "hardened" -> 2/3 majority required
     "oversight": {
-        "hoard_multiplier": 3,  # essentials held > multiplier x quota = hoard
+        "hoard_multiplier": 8,  # essentials held > multiplier x quota = hoard (2026-09-01 recalibration: multiplier 3 flagged 166/166 citizens — a signal firing on 100% of the population carries zero information)
         "market_power_share_bp": 7_000,  # >70% listed share of one good
         "free_rider_min_hours": 5,  # lifetime labor below this = free rider
         "council_members": [],  # elected council (votable param, D9)

@@ -747,9 +747,12 @@ class Run:
         # True-cost accounting: baselines stamp from realized purchase
         # costs (VWAP), not book values (hard core A1).
         params["cost_accounting"] = {"method": "vwap"}
-        # Progressive wealth tax: savings above 5,000 pay 2%/tick into the
+        # Progressive wealth tax: savings above 5,000 pay 4%/tick into the
         # pool (recycled via dividends) — caps savings concentration.
-        params["wealth_tax"] = {"threshold": 5_000, "rate_bp": 200}
+        # Stage 6 sweep evidence (2026-09-01): 200bp is UNSTABLE (Gini trend
+        # +0.153, drifts 1.5k->3k unchecked); 400-600bp is the stable region
+        # (trend -0.24). Default moved to the proven-stable 400bp.
+        params["wealth_tax"] = {"threshold": 5_000, "rate_bp": 400}
         # Anti multi-tx mint exploit: cumulative WORK hours per citizen per
         # tick are capped (per-tx cap alone allowed 10 txs = 10x mint).
         params["max_work_hours_cumulative"] = 8
