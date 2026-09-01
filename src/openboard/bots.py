@@ -238,6 +238,11 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     the seeded cast misses."""
     v = state.ruleset_version
     out: list[Transaction] = []
+    # founders are citizens too: buy essentials like every specialist bot
+    # (2026-09-01: wired live without this, the 3 founders starved from
+    # tick 2 — unmet streak 1,999 each — and the hardcore gate read it as
+    # a total essential collapse)
+    out.extend(personal_needs(who, state, params, tick))
     if _my_coop(state, who) is not None:
         return out  # already seated in a co-op
 
@@ -254,14 +259,18 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     # streaks — the capital chain (hand_tools 7,741 coop bids vs 6 clears,
     # machines 4,447 vs 2, steel 5,499 vs 28) starved for 400 ticks while
     # 43 founders all targeted consumer goods. Producer-input pressure:
-    # goods with heavy outstanding coop bids, no active listings, and a
-    # non-primitive recipe. Threshold scales with output size so a single
-    # small bid can't trigger founding.
+    # goods with heavy RECENT coop bids, no active listings, and a
+    # non-primitive recipe. Read from the LEDGER (state.bids is emptied
+    # by clearing each tick — engine.py:1266): count coop bids from the
+    # last 20 ticks. Threshold 20 units so a single small bid can't fire.
     bid_pressure: dict[str, int] = {}
-    for b in state.bids:
-        g = b.get("good")
+    recent_from = max(0, tick - 20)
+    for e in state.applied:
+        if e.get("action") != "BID_FOR_COOP" or e.get("tick", 0) < recent_from:
+            continue
+        g = e.get("good")
         if g and g not in covered:
-            bid_pressure[g] = bid_pressure.get(g, 0) + int(b.get("qty") or 0)
+            bid_pressure[g] = bid_pressure.get(g, 0) + int(e.get("qty") or 0)
     for g, qty in sorted(bid_pressure.items()):
         # only goods a non-primitive recipe can produce are actionable
         has_recipe = any(

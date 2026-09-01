@@ -466,6 +466,18 @@ class Run:
                           "goods": {"bread": 3, "water": 3, "electricity": 3}})
         for name, fn, coop in BASELINE_BOTS:
             self.bots[name] = {"fn": _wrap_politics(name, fn, self.governance), "coop": coop}
+        # 2026-09-01: A2's entrepreneur bot was built and tested but never
+        # wired into the live cast (all citizens pre-seated as specialists;
+        # the 43 FOUND_COOP events were genesis scenario coops). Meanwhile
+        # the capital chain starved 400 ticks (hand_tools 7,741 coop bids
+        # vs 6 clears) with no founder ever responding. Seed 3 free-handed
+        # entrepreneurs: they watch chronic unfilled coop-bid pressure and
+        # citizen unmet streaks, then FOUND_COOP with the matching recipe.
+        for i in range(3):
+            name = f"founder_{chr(ord('a') + i)}"
+            self._inject({"after_tick": 1, "op": "add_citizen",
+                          "name": name, "balance": 500})
+            self.bots[name] = {"fn": _wrap_politics(name, ARCHETYPES["entrepreneur"], self.governance), "coop": None}
         self._record_timeline()
 
     # ------------------------------------------------------------ internals
