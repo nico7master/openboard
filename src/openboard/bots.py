@@ -243,8 +243,74 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     # tick 2 — unmet streak 1,999 each — and the hardcore gate read it as
     # a total essential collapse)
     out.extend(personal_needs(who, state, params, tick))
-    if _my_coop(state, who) is not None:
-        return out  # already seated in a co-op
+    seated = _my_coop(state, who)
+    if seated is not None:
+        # Need-driven labor mobility (2026-09-01): founders are the
+        # economy's emergency labor reserve. We LEAVE a co-op that is
+        # STALLED (no PRODUCE by it in the last 10 ticks) while severe
+        # shortages burn elsewhere, and redeploy next tick — join the
+        # least-membered producer of a shortage good (spreading across
+        # the chain), or found if nothing produces it. Matching a
+        # shortage good is NOT enough: all 6 founders parked in a
+        # steelworks that held 3,000 idle labor hours waiting for ore
+        # while iron_miners (the actual root) starved at 2 members.
+        _shortage_goods: set[str] = set()
+        _worst: dict[str, int] = {}
+        for _cit, streaks in state.unmet_needs.items():
+            for good, t in streaks.items():
+                _worst[good] = max(_worst.get(good, 0), int(t or 0))
+        _covered = {g for g, ls in state.listings.items()
+                    if any((l.get("qty") or 0) > 0 for l in ls)}
+        _shortage_goods |= {g for g, t in _worst.items()
+                            if g not in _covered and t >= 5}
+        # unfulfilled coop-bid pressure: bids minus cleared input flows,
+        # last 20 ticks — recurring bids mean demand outruns supply even
+        # when listings appear intermittently
+        _recent_from = max(0, tick - 20)
+        _bid: dict[str, int] = {}
+        _cleared: dict[str, int] = {}
+        # perf (2026-09-01): scan only the tail of applied — events are
+        # appended in tick order, so a bounded suffix covers the 20-tick
+        # window without an O(all-history) pass every tick per founder
+        _applied = state.applied
+        _tail = _applied[max(0, len(_applied) - 600):] if len(_applied) > 600 else _applied
+        for e in _tail:
+            et = e.get("tick", 0)
+            if et < _recent_from:
+                continue
+            if e.get("action") == "BID_FOR_COOP":
+                g = e.get("good")
+                if g:
+                    _bid[g] = _bid.get(g, 0) + int(e.get("qty") or 0)
+            elif e.get("action") == "PRODUCER_INPUT_CLEAR":
+                for x in e.get("served", []):
+                    g = x.get("good")
+                    if g:
+                        _cleared[g] = _cleared.get(g, 0) + int(x.get("qty") or 0)
+        _shortage_goods |= {g for g, q in _bid.items()
+                            if q - _cleared.get(g, 0) >= 20}
+        _sc = state.coops[seated]
+        _my_out = _sc.get("recipe_intent") or _sc.get("trade") or ""
+        _my_goods = set(state.recipes.get(_my_out, {}).get("outputs", {}).keys()) if _my_out else set()
+        _produced_recent = any(
+            e.get("action") == "PRODUCE" and e.get("coop_id") == seated
+            and e.get("tick", 0) >= tick - 10
+            for e in state.applied[-400:]
+        )
+        if _shortage_goods and not _produced_recent and not (_shortage_goods & _my_goods and _produced_recent):
+            # 2026-09-02: early return DISCARDED the personal-needs buys
+            # already collected in `out` — on leave ticks founders bought
+            # nothing and went hungry (trace: unmet pinned at exactly 1 for
+            # 500 ticks on seeds 7/123; odd ticks ate, even ticks starved).
+            out.append(_tx(tick, who, "LEAVE_COOP", {"coop_id": seated}, v))
+            return out
+        # producing coop (or no burning shortage): stay and work
+        _cap = params.get("labor_pool_cap")
+        _rests = ((sum(ord(ch) for ch in who) + tick) % 7) == 0
+        if not _rests and (_cap is None or _sc["labor_pool_hours"] + 8 <= _cap):
+            out.append(_work(tick, who, seated, 8, v))
+        return out
+    # not seated: fall through to shortage detection and founding below
 
     # aggregate the worst unmet streak per good across all citizens
     worst: dict[str, int] = {}
@@ -265,7 +331,9 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     # last 20 ticks. Threshold 20 units so a single small bid can't fire.
     bid_pressure: dict[str, int] = {}
     recent_from = max(0, tick - 20)
-    for e in state.applied:
+    _applied2 = state.applied
+    _tail2 = _applied2[max(0, len(_applied2) - 600):] if len(_applied2) > 600 else _applied2
+    for e in _tail2:
         if e.get("action") != "BID_FOR_COOP" or e.get("tick", 0) < recent_from:
             continue
         g = e.get("good")
@@ -282,6 +350,25 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     if not candidates:
         return out
     candidates.sort(key=lambda gt: (-gt[1], gt[0]))
+
+    # Join-first mobility (2026-09-01): when a shortage good already has a
+    # producer, the bottleneck is usually THROUGHPUT, not absence — adding
+    # members to the starved producer (smallest coop first) injects pooled
+    # labor exactly where the chain is stuck. Founding is the last resort
+    # for goods NO ONE produces. Without this, founders founded duplicates
+    # (three brick coops) while iron_miners starved at 2 members.
+    for good, _streak in candidates:
+        _producers = sorted(
+            (cid for cid, cdata in state.coops.items()
+             if (cdata.get("recipe_intent") or cdata.get("trade") or "") in state.recipes
+             and good in (state.recipes[cdata.get("recipe_intent") or cdata.get("trade")].get("outputs") or {})),
+            key=lambda cid: (len(state.coops[cid]["members"]), cid),
+        )
+        if _producers:
+            target = _producers[0]
+            if who not in state.coops[target]["members"]:
+                return out + [_tx(tick, who, "JOIN_COOP", {"coop_id": target}, v)]
+            break  # already a member of the best producer for this good
 
     free = [c for c in sorted(state.balances.keys())
             if c != who and _my_coop(state, c) is None]
@@ -338,10 +425,24 @@ def personal_needs(who, state, params, tick):
         # Top up BEFORE the consumption day: engine consumes quota every
         # N ticks; buying ahead (bounded at 2x quota) smooths demand bursts
         # so cycle-day spikes don't starve rotated-out buyers.
+        # Shortage memory (realism pack): citizens who just lived through
+        # an unmet streak build a deeper pantry — demand learns from
+        # scarcity. Streak >= 3 raises the buy-ahead ceiling to 3x quota.
         held = inv.get(good, 0)
-        if held >= 2 * quota:
+        _streak = int(state.unmet_needs.get(who, {}).get(good) or 0)
+        # 2026-09-02: shortage-memory pantry applies to MARKET goods only.
+        # Panic-buying ESSENTIALS (3x quota when streak >= 3) is a positive
+        # feedback loop: one citizen's deep pantry consumes stock that
+        # would serve three others, growing THEIR streaks — measured in
+        # the seed-42 gate as dairy streaks 3-7 despite adequate supply.
+        # Essentials are society's guarantee (BUY_ESSENTIAL at cost); the
+        # ceiling stays 2x (smooths cycle-day bursts, no hoarding bonus).
+        _triage = state.effective_triage(good) if good in state.goods else "market"
+        _panic = _triage not in ("essential", "emergency") and _streak >= 3
+        _ceiling = (3 if _panic else 2) * quota
+        if held >= _ceiling:
             continue
-        want = min(quota, 2 * quota - held)
+        want = min(quota, _ceiling - held)
         floor = state.good_cost_baseline.get(good, 1)
         triage = state.effective_triage(good) if good in state.goods else "market"
         if triage in ("essential", "emergency"):
@@ -351,7 +452,16 @@ def personal_needs(who, state, params, tick):
                 out.append(_tx(tick, who, "BUY_ESSENTIAL", {"good": good, "qty": qty}, v))
         else:
             price = floor + 1
-            if balance >= price * want:
+            # Savings floor (realism pack): money velocity varies with
+            # wealth. The floor only gates the buy-AHEAD top-up (held >=
+            # quota, pantry already covers today); a citizen whose need is
+            # at risk (held < quota) always bids. Rationale: the first
+            # version gated all bids and bred maintenance/meat unmet
+            # streaks in the hardcore gate — savings must never starve a
+            # current need.
+            _floor_cr = 3 * quota * max(1, int(floor))
+            _need_at_risk = held < quota
+            if (_need_at_risk or balance >= _floor_cr) and balance >= price * want:
                 out.append(_tx(tick, who, "BID", {
                     "good": good, "max_price": price, "qty": want,
                 }, v))

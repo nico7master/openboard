@@ -126,7 +126,21 @@ RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
     _r("vegetable_farming", {"water": 6}, 50, 3, {"vegetables": 80}),
     _r("orchard", {"water": 4}, 35, 2, {"fruit": 60}),
     _r("fishing", {}, 30, 8, {"fish": 50}),
-    _r("livestock", {"grain": 20, "water": 10}, 60, 4, {"meat": 15, "milk": 50, "eggs": 40}),
+    _r("livestock", {"grain": 20, "water": 10}, 60, 4, {"meat": 18, "milk": 18, "eggs": 18}),
+    # 2026-09-02 3rd pass REVERTED: labor 45 raised grain appetite
+    # (20/run x more runs) and regressed the gate (meat 4, milk 7).
+    # The 60h cadence with cast margin is the honest fix.
+    # 2026-09-02 2nd pass: gate run shows demand ~28.3/tick per good vs ~26
+    # produced (93%) — a structural deficit breeding 3-7 tick streaks on the
+    # rotation. Per-run outputs raised to ~31/tick (110% of demand).
+    # 2026-09-02: joint-output demand gap. Dairy demand (~27/tick) is a
+    # fraction of the old joint output (50 milk + 40 eggs per run), so
+    # one of two livestock coops sat bankrupt on 41,560 unsold milk +
+    # 34,026 eggs and produced NO meat, starving the essential meat
+    # chain (worst streak 12 in the seed-42 gate). Balanced to the
+    # economy-wide dairy demand; meat throughput roughly doubles.
+    # Recipes snapshot into state at genesis: existing saves replay
+    # byte-identically (replay safety preserved).
     # Extraction
     _r("logging", {"hand_tools": 1}, 30, 5, {"timber": 10}),
     _r("quarrying", {"hand_tools": 1}, 40, 8, {"stone": 12}),
