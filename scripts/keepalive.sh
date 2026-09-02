@@ -17,16 +17,23 @@ while true; do
     setsid nohup /opt/venv/bin/python server.py >> /tmp/openboard_server.log 2>&1 < /dev/null &
     sleep 6
   fi
-  # 2) tunnel (exactly one)
-  if ! pgrep -f 'ssh.*serveo.net' > /dev/null; then
-    echo "[$(date '+%F %T')] tunnel down -> reconnecting" >> "$LOG"
+  # 2) tunnel (exactly one) — process alive AND public URL actually working
+  U=$(cat "$URLFILE" 2>/dev/null)
+  TUN_OK=0
+  if [ -n "$U" ]; then
+    C=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$U" 2>/dev/null)
+    [ "$C" = "200" ] && TUN_OK=1
+  fi
+  if [ "$TUN_OK" = "0" ]; then
+    # dead process OR zombie tunnel (process up but 502) -> full reconnect
+    pkill -f 'ssh.*serveo.net' 2>/dev/null
+    echo "[$(date '+%F %T')] tunnel unhealthy (code=$C) -> reconnecting" >> "$LOG"
     rm -f /tmp/serveo_banner.log
     setsid nohup ssh -T -R 80:localhost:8421 \
       -o UserKnownHostsFile=/root/.flaredantic/ssh/known_hosts \
       -o StrictHostKeyChecking=accept-new \
       -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes \
       serveo.net > /tmp/serveo_banner.log 2>&1 < /dev/null &
-    # wait for banner with forwarded URL
     for i in $(seq 1 20); do
       sleep 2
       U=$(grep -oE 'https://[a-z0-9]+-194-106-238-221\.serveousercontent\.com' /tmp/serveo_banner.log 2>/dev/null | tail -1)
