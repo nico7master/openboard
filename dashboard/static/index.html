@@ -118,6 +118,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <button :class="view === 'dashboard' ? 'tab active' : 'tab'" @click="setView('dashboard')">🎛 Engineer</button>
     <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 World</button>
     <button :class="view === 'stability' ? 'tab active' : 'tab'" @click="setView('stability')">🗺 Stability</button>
+    <button :class="view === 'policy' ? 'tab active' : 'tab'" @click="setView('policy')">🧪 Policy Lab</button>
     <button :class="view === 'seat' ? 'tab active' : 'tab'" @click="setView('seat')">🏠 My Seat</button>
   </div>
   <div class="controls">
@@ -513,6 +514,50 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 </div><!-- /grid -->
 
 <!-- CITIZEN SEAT VIEW -->
+<div x-show="view === 'policy'" style="max-width: 860px; margin: 0 auto; padding: 0 12px">
+  <div class="panel" style="margin-bottom: 16px">
+    <h3 style="margin-top:0">🧪 Policy Lab</h3>
+    <p class="muted" style="margin-bottom:10px">Change a rule of society. The Lab forks this world into two shadow copies — one with your change, one without — runs both forward, and shows you the honest difference. Nothing is real until you adopt it.</p>
+    <div x-show="policyError" style="color:var(--red); font-size:12px; margin-bottom:8px" x-text="policyError"></div>
+    <template x-for="knob in policyKnobs" :key="knob.id">
+      <div style="border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px">
+        <div style="font-weight:600; margin-bottom:6px">
+          <span x-text="knob.question"></span>
+          <span class="badge" style="margin-left:8px" x-text="'now: ' + knob.current"></span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px">
+          <template x-for="opt in knob.options" :key="opt">
+            <button class="tab" @click="runPolicyExperiment(knob.id, opt)"
+                    :disabled="policyBusy" style="min-width:90px" x-text="opt"></button>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <div class="panel" x-show="policyResult" style="margin-bottom: 16px">
+    <h3 style="margin-top:0">📊 Experiment: <span x-text="policyResult?.explanation"></span></h3>
+    <p class="muted" style="margin-bottom:10px">
+      Forked at tick <span x-text="policyResult?.fork_tick"></span>,
+      ran <span x-text="policyResult?.ticks"></span> ticks forward — same people, same history, one rule different.
+    </p>
+    <template x-for="row in policyResult?.rows ?? []" :key="row.metric">
+      <div style="border-left:4px solid var(--line); padding:8px 12px; margin-bottom:10px"
+           :style="row.verdict === 'better' ? 'border-left-color:var(--green)' : (row.verdict === 'worse' ? 'border-left-color:var(--red)' : '')">
+        <div style="font-weight:600" x-text="row.metric"></div>
+        <div class="muted" style="font-size:12px" x-text="row.sentence"></div>
+        <div style="font-size:11px; color:var(--muted)">
+          baseline <span x-text="row.baseline"></span> → policy <span x-text="row.policy"></span>
+        </div>
+      </div>
+    </template>
+    <div style="margin-top:12px" x-show="adoptable">
+      <button class="primary" @click="adoptPolicy()" :disabled="adoptBusy" x-text="adoptBusy ? 'Adopting…' : '✅ Adopt this policy'"></button>
+      <span class="muted" style="margin-left:8px; font-size:12px">Adoption is recorded in the public ledger.</span>
+    </div>
+  </div>
+</div>
+
 <div class="grid" x-show="view === 'seat'">
 
 <!-- IDENTITY + NEEDS -->
@@ -750,6 +795,9 @@ function dashboard() {
     flows: { nodes: [], edges: [], pools: {}, population: { met_share: 100 }, weather: [] },
     mapStory: '',
     stabilityByKnob: {},
+    // Policy Lab
+    policyKnobs: [], policyResult: null, policyBusy: false,
+    adoptable: false, adoptBusy: false, policyError: '',
     busy: false, toast: '', resetModal: false, chartError: '', chartDebug: '',
     resetConfig: { seed: 42, governance: false },
     newBot: { name: '', archetype: 'honest_worker', coop: 'farmers' },
@@ -1012,6 +1060,7 @@ function dashboard() {
         this.api('/api/analytics').then(a => { this.analytics = a; this.updateWorldCharts(); });
       }
       if (v === 'stability') {
+        if (this.view === 'policy') this.loadPolicyKnobs();
         this.loadStability();
       }
       if (v === 'seat') {
@@ -1032,6 +1081,34 @@ function dashboard() {
         }
         this.stabilityByKnob = grouped;
       } catch (e) { /* server restarting */ }
+    },
+    // ---- Policy Lab ----
+    async loadPolicyKnobs() {
+      try {
+        const d = await this.api('/api/policy/knobs');
+        this.policyKnobs = d.knobs ?? [];
+      } catch (e) { /* server restarting */ }
+    },
+    async runPolicyExperiment(knobId, optLabel) {
+      this.policyBusy = true; this.policyError = ''; this.policyResult = null; this.adoptable = false;
+      try {
+        const d = await this.api('/api/policy/experiment',
+                                 { method: 'POST', body: { knob_id: knobId, option_id: optLabel, ticks: 200 } });
+        if (!d.ok) { this.policyError = d.error ?? 'experiment failed'; }
+        else { this.policyResult = d.result; this.policyResult.knob_id = knobId; this.policyResult.option_id = optLabel; this.adoptable = true; }
+      } catch (e) { this.policyError = 'experiment failed: ' + e.message; }
+      this.policyBusy = false;
+    },
+    async adoptPolicy() {
+      if (!this.policyResult) return;
+      this.adoptBusy = true;
+      try {
+        const d = await this.api('/api/policy/adopt',
+                                 { method: 'POST', body: { knob_id: this.policyResult.knob_id, option_id: this.policyResult.option_id } });
+        if (!d.ok) { this.policyError = d.error ?? 'adoption failed'; }
+        else { await this.loadPolicyKnobs(); this.policyResult = null; this.adoptable = false; }
+      } catch (e) { this.policyError = 'adoption failed: ' + e.message; }
+      this.adoptBusy = false;
     },
 
     async loadSeat() {

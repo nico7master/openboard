@@ -78,7 +78,12 @@ SPECIALISTS = {
     "sand_worker": make_specialist("sand_extraction", "sand", {}, stock_target=60, fallback_recipe_id="primitive_sand_extraction"),
     "glassmaker": make_specialist("glassmaking", "glass", {"sand": 4}, stock_target=40),
     "electronics_worker": make_specialist("electronics_assembly", "electronics", {"steel": 1, "glass": 2, "coal": 1}, stock_target=30),
-    "toolmaker": make_specialist("hand_tools_craft", "hand_tools", {"steel": 2, "lumber": 1}, stock_target=60),
+    "toolmaker": make_specialist("hand_tools_craft", "hand_tools", {"steel": 2, "lumber": 1}, stock_target=60, fallback_recipe_id="primitive_toolmaking"),
+    # 2026-09-01: circular capital chain deadlock fix — tools need steel,
+    # steel needs iron mining, iron mining needs tools. With zero steel listings
+    # the sole toolmaker idled forever (hand_tools 0 economy-wide).
+    # primitive_toolmaking (25 labor, no inputs) breaks the circle; the bridge
+    # retires once steel returns via the exit ramp.
     "machinist": make_specialist("machine_building_batch", "machines", {"steel": 20, "electronics": 6, "glass": 4}, stock_target=25),
     # Competition: second power producer
     "wind_worker": make_specialist("wind_farm", "electricity", {}, stock_target=250),
@@ -134,6 +139,7 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
     ("miner_j", SPECIALISTS["miner"], "miners"),
     ("miner_k", SPECIALISTS["miner"], "miners"),
     ("miner_l", SPECIALISTS["miner"], "miners"),
+    ("power_d", SPECIALISTS["power_worker"], "power_plant"),
     ("power_a", SPECIALISTS["power_worker"], "power_plant"),
     ("power_b", SPECIALISTS["power_worker"], "power_plant"),
     ("power_c", SPECIALISTS["power_worker"], "power_plant"),
@@ -150,8 +156,14 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
     ("sawyer_b", SPECIALISTS["sawyer"], "sawmill_co"),
     ("iron_a", SPECIALISTS["iron_miner"], "iron_miners"),
     ("iron_b", SPECIALISTS["iron_miner"], "iron_miners"),
+    # 2026-09-01: capital-chain thickness (design review #3). A serial
+    # chain of 2-member coops cannot refill a 20-ore steel run via
+    # primitive bridges (~1.2 ore/tick) inside any recovery window.
+    ("iron_c", SPECIALISTS["iron_miner"], "iron_miners"),
+    ("iron_d", SPECIALISTS["iron_miner"], "iron_miners"),
     ("steel_a", SPECIALISTS["steelworker"], "steelworks"),
     ("steel_b", SPECIALISTS["steelworker"], "steelworks"),
+    ("steel_c", SPECIALISTS["steelworker"], "steelworks"),
     ("sand_a", SPECIALISTS["sand_worker"], "sand_co"),
     ("sand_b", SPECIALISTS["sand_worker"], "sand_co"),
     ("glass_a", SPECIALISTS["glassmaker"], "glassworks"),
@@ -160,18 +172,26 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
     ("elec_b", SPECIALISTS["electronics_worker"], "electronics_co"),
     ("tool_a", SPECIALISTS["toolmaker"], "toolworks"),
     ("tool_b", SPECIALISTS["toolmaker"], "toolworks"),
+    ("tool_c", SPECIALISTS["toolmaker"], "toolworks"),
     ("mach_a", SPECIALISTS["machinist"], "machine_works"),
     ("mach_b", SPECIALISTS["machinist"], "machine_works"),
+    ("mach_c", SPECIALISTS["machinist"], "machine_works"),
     # Competition: second power, grain, bread
     ("wind_a", SPECIALISTS["wind_worker"], "wind_farm"),
     ("wind_b", SPECIALISTS["wind_worker"], "wind_farm"),
     ("wind_c", SPECIALISTS["wind_worker"], "wind_farm"),
     ("wind_d", SPECIALISTS["wind_worker"], "wind_farm"),
+    # 2026-09-02: grain margin — livestock runs burn 20 grain each; at the
+    # old farmer count grain listings ran dry during cycle-day bursts and
+    # livestock starved (milk streak 7). +2 herder-chain grain capacity.
+    ("farmer_j", SPECIALISTS["farmer"], "farmers"),
+    ("farmer_k", SPECIALISTS["farmer"], "farmers"),
     ("farmer_c", SPECIALISTS["farmer"], "farmers_north"),
     ("farmer_d", SPECIALISTS["farmer"], "farmers_north"),
     ("farmer_g", SPECIALISTS["farmer"], "farmers_north"),
     ("farmer_h", SPECIALISTS["farmer"], "farmers_north"),
     ("farmer_i", SPECIALISTS["farmer"], "farmers_north"),
+    ("baker_g", SPECIALISTS["baker"], "bakers"),
     ("baker_c", SPECIALISTS["baker"], "city_bakers"),
     ("baker_d", SPECIALISTS["baker"], "city_bakers"),
     ("baker_f", SPECIALISTS["baker"], "city_bakers"),
@@ -293,21 +313,21 @@ BASELINE_BOTS: list[tuple[str, Any, str]] = [
 ]
 
 BASELINE_COOPS = [
-    {"coop_id": "farmers", "members": ["farmer_a", "farmer_b", "farmer_e", "farmer_f", "worker_a", "worker_b"]},
+    {"coop_id": "farmers", "members": ["farmer_a", "farmer_b", "farmer_e", "farmer_f", "farmer_j", "farmer_k", "worker_a", "worker_b"]},
     {"coop_id": "millers", "members": ["miller_a", "miller_b", "miller_c"]},
-    {"coop_id": "bakers", "members": ["baker_a", "baker_b", "baker_e"]},
+    {"coop_id": "bakers", "members": ["baker_a", "baker_b", "baker_e", "baker_g"]},
     {"coop_id": "miners", "members": ["miner_a", "miner_b", "miner_c", "miner_d", "miner_e", "miner_f", "miner_g", "miner_h", "miner_i", "miner_j", "miner_k", "miner_l"]},
-    {"coop_id": "power_plant", "members": ["power_a", "power_b", "power_c"]},
+    {"coop_id": "power_plant", "members": ["power_a", "power_b", "power_c", "power_d"]},
     {"coop_id": "water_works", "members": ["water_a", "water_b", "water_e", "water_f"]},
     {"coop_id": "loggers", "members": ["logger_a", "logger_b"]},
     {"coop_id": "sawmill_co", "members": ["sawyer_a", "sawyer_b"]},
-    {"coop_id": "iron_miners", "members": ["iron_a", "iron_b"]},
-    {"coop_id": "steelworks", "members": ["steel_a", "steel_b"]},
+    {"coop_id": "iron_miners", "members": ["iron_a", "iron_b", "iron_c", "iron_d"]},
+    {"coop_id": "steelworks", "members": ["steel_a", "steel_b", "steel_c"]},
     {"coop_id": "sand_co", "members": ["sand_a", "sand_b"]},
     {"coop_id": "glassworks", "members": ["glass_a", "glass_b"]},
     {"coop_id": "electronics_co", "members": ["elec_a", "elec_b"]},
-    {"coop_id": "toolworks", "members": ["tool_a", "tool_b"]},
-    {"coop_id": "machine_works", "members": ["mach_a", "mach_b"]},
+    {"coop_id": "toolworks", "members": ["tool_a", "tool_b", "tool_c"]},
+    {"coop_id": "machine_works", "members": ["mach_a", "mach_b", "mach_c"]},
     {"coop_id": "wind_farm", "members": ["wind_a", "wind_b", "wind_c", "wind_d"]},
     {"coop_id": "farmers_north", "members": ["farmer_c", "farmer_d", "farmer_g", "farmer_h", "farmer_i"]},
     {"coop_id": "city_bakers", "members": ["baker_c", "baker_d", "baker_f"]},
@@ -473,11 +493,11 @@ class Run:
         # vs 6 clears) with no founder ever responding. Seed 3 free-handed
         # entrepreneurs: they watch chronic unfilled coop-bid pressure and
         # citizen unmet streaks, then FOUND_COOP with the matching recipe.
-        for i in range(3):
+        for i in range(6):
             name = f"founder_{chr(ord('a') + i)}"
             self._inject({"after_tick": 1, "op": "add_citizen",
                           "name": name, "balance": 500})
-            self.bots[name] = {"fn": _wrap_politics(name, ARCHETYPES["entrepreneur"], self.governance), "coop": None}
+            self.bots[name] = {"fn": _wrap_politics(name, ARCHETYPES["entrepreneur"], self.governance), "coop": None, "arch": "entrepreneur"}
         self._record_timeline()
 
     # ------------------------------------------------------------ internals
@@ -635,7 +655,7 @@ class Run:
             if coop and coop in self.state.coops:
                 self._inject({"after_tick": self.state.tick, "op": "join_coop",
                               "coop": coop, "name": name})
-            self.bots[name] = {"fn": fn, "coop": coop}
+            self.bots[name] = {"fn": fn, "coop": coop, "arch": archetype}
 
     def remove_bot(self, name: str) -> None:
         with self.lock:
@@ -650,7 +670,8 @@ class Run:
             "governance": self.governance,
             "injections": list(self.injections),
             "batches": {str(t): batch for t, batch in sorted(self.batches.items())},
-            "bots": {name: {"coop": b["coop"], "kind": "specialist" if b["fn"] in SPECIALISTS.values() else "archetype"}
+            "bots": {name: {"coop": b["coop"], "kind": "specialist" if b["fn"] in SPECIALISTS.values() else "archetype",
+                           "arch": b.get("arch")}
                      for name, b in self.bots.items()},
         }
 
@@ -678,6 +699,7 @@ class Run:
             for inj in data.get("injections", []):
                 injections_by_tick.setdefault(inj["after_tick"], []).append(inj)
 
+            deferred_injections: list[dict[str, Any]] = []
             for tstr, batch in sorted(data.get("batches", {}).items(), key=lambda kv: int(kv[0])):
                 t = int(tstr)
                 txs = [Transaction(tick=d["tick"], sender=d["sender"], action=d["action"],
@@ -685,20 +707,35 @@ class Run:
                          for d in batch]
                 run._apply_batch(t, txs)
                 for inj in injections_by_tick.get(t, []):
-                    run._apply_injection(inj)
-                    run.injections.append(inj)
+                    try:
+                        run._apply_injection(inj)
+                        run.injections.append(inj)
+                    except KeyError:
+                        # target (coop/citizen) not yet created by replayed
+                        # batches (live order vs replay order can differ):
+                        # defer to after the last batch, order preserved
+                        deferred_injections.append(inj)
                 run._record_timeline()
+            for inj in deferred_injections:
+                run._apply_injection(inj)
+                run.injections.append(inj)
 
             # restore bots (fn resolved from kind; specialists lose their
             # exact closure — default to the matching baseline specialist)
             run.bots = {}
             for name, meta in data.get("bots", {}).items():
                 coop = meta.get("coop")
-                if name in {b[0] for b in BASELINE_BOTS}:
+                arch = meta.get("arch")
+                if arch and arch in SPECIALISTS:
+                    fn = SPECIALISTS[arch]
+                elif arch and arch in ARCHETYPES:
+                    fn = ARCHETYPES[arch]
+                elif name in {b[0] for b in BASELINE_BOTS}:
                     fn = dict((b[0], b[1]) for b in BASELINE_BOTS)[name]
                 else:
+                    # legacy saves without arch: default
                     fn = ARCHETYPES.get("honest_worker")
-                run.bots[name] = {"fn": _wrap_politics(name, fn, run.governance), "coop": coop}
+                run.bots[name] = {"fn": _wrap_politics(name, fn, run.governance), "coop": coop, "arch": arch}
         return run
 
     def _params(self) -> dict[str, Any]:
@@ -1095,6 +1132,81 @@ def api_stability():
 
 def sweeps_dir_exists(d: Path) -> bool:
     return d.is_dir()
+
+
+# ------------------------------------------------- Policy Lab (fork experiments)
+
+@app.get("/api/policy/knobs")
+def api_policy_knobs():
+    """Plain-language policy knobs + the live world's current setting."""
+    from openboard.policy import KNOBS
+    with RUN.lock:
+        params = RUN.state.active_ruleset_params()
+    knobs = []
+    for k in KNOBS:
+        cur = "?"
+        if k.get("kind") == "needs_scale":
+            cur = "Standard"
+        else:
+            cur_key = k.get("current_of")
+            val = params.get(k["param"])
+            if k["param"] in ("max_work_hours_cumulative", "labor_pool_cap"):
+                cur = f"{val}h" if k["param"] == "max_work_hours_cumulative" else (
+                    "Capped" if val is not None else "Uncapped")
+            elif isinstance(val, dict) and cur_key:
+                cur = f"{val.get(cur_key):,} bp"
+            elif val is None:
+                cur = "None"
+            else:
+                cur = str(val)
+        knobs.append({"id": k["id"], "question": k["question"],
+                      "options": [o["label"] for o in k["options"]],
+                      "current": cur})
+    return jsonify({"ok": True, "knobs": knobs})
+
+
+@app.post("/api/policy/experiment")
+def api_policy_experiment():
+    """Fork the live world; drive baseline + policy; return comparison."""
+    from openboard.policy import fork_experiment, compare
+    body = request.get_json(force=True, silent=True) or {}
+    knob_id, option_id = body.get("knob_id"), body.get("option_id")
+    ticks = int(body.get("ticks") or 200)
+    if not knob_id or not option_id:
+        return jsonify({"ok": False, "error": "knob_id and option_id required"}), 400
+    try:
+        res = fork_experiment(RUN, knob_id, option_id, ticks=ticks)
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify({"ok": True, "result": {**res, "rows": compare(res)}})
+
+
+@app.post("/api/policy/adopt")
+def api_policy_adopt():
+    """Adopt a knob option in the LIVE world via ledger RULE_CHANGE
+    (D-PL.3: the Lab proposes; the recorded rule path adopts)."""
+    from openboard.policy import knob_by_id, option_by_id, _apply_patch_to_params
+    from openboard.rules import validate_params
+    from openboard.ledger import Transaction
+    body = request.get_json(force=True, silent=True) or {}
+    knob = knob_by_id(body.get("knob_id", ""))
+    if knob is None:
+        return jsonify({"ok": False, "error": "unknown knob"}), 400
+    opt = option_by_id(knob, body.get("option_id", ""))
+    if opt is None:
+        return jsonify({"ok": False, "error": "unknown option"}), 400
+    with RUN.lock:
+        s = RUN.state
+        params = _apply_patch_to_params(s.active_ruleset_params(), opt["patch"])
+        reason = validate_params(params, known_goods=set(s.goods.keys()))
+        if reason is not None:
+            return jsonify({"ok": False, "error": f"invalid: {reason}"}), 400
+        sender = sorted(s.balances.keys())[0]
+        tx = Transaction(tick=s.tick + 1, sender=sender, action="RULE_CHANGE",
+                         payload={"params": params, "activation_tick": s.tick + 2},
+                         ruleset_version=s.ruleset_version)
+        RUN.pending.append(tx)
+    return jsonify({"ok": True, "adopted": opt["label"], "knob": knob["id"]})
 
 
 @app.post("/api/autoplay")
