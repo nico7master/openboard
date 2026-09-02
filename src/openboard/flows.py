@@ -81,20 +81,30 @@ def supply_edges(state) -> list[dict[str, Any]]:
     return edges
 
 
-def pool_flows(state, events: list[dict[str, Any]]) -> dict[str, int]:
-    """Money moved per channel in the window (for the Circular Flow Stage)."""
+def pool_flows(run, window: int = 5) -> dict[str, int]:
+    """Money moved per channel in the last `window` ticks (Flow Stage).
+    Reads APPLIED events from state (they carry the money fields); raw
+    batch transactions do not, which silently zeroed every channel."""
+    state = run.state
+    from_tick = max(state.tick - window + 1, 1)
     flows = {"wages": 0, "dividends": 0, "services": 0, "taxes": 0,
              "market_sales": 0, "loans": 0, "production_value": 0}
-    for ev in events:
+    for ev in state.applied:
+        if (ev.get("tick") or 0) < from_tick:
+            continue
         a = ev.get("action")
-        if a == "PRODUCE":
+        if a == "WORK":
+            flows["wages"] += ev.get("wage_credits", 0) or 0
+        elif a == "PRODUCE":
             flows["production_value"] += ev.get("capital_rent_paid", 0) or 0
-        elif a == "COOP_DISTRIBUTE":
+        elif a in ("COOP_DISTRIBUTE", "SERVICES_PAID"):
             flows["dividends"] += ev.get("total", 0) or 0
         elif a == "MARKET_CLEAR_ESSENTIAL":
             flows["market_sales"] += sum(
-                (r.get("cost", 0) or 0) for r in (ev.get("buyers") or [])
+                (r.get("paid", 0) or 0) for r in (ev.get("buyers") or [])
             )
+        elif a == "MARKET_CLEAR_AUCTION":
+            flows["market_sales"] += ev.get("total", 0) or ev.get("price", 0) or 0
         elif a == "LOAN":
             flows["loans"] += ev.get("amount", 0) or 0
         elif a == "WEALTH_TAX":
@@ -124,6 +134,6 @@ def build_flows(run) -> dict[str, Any]:
         "tick": state.tick,
         "nodes": industry_nodes(state, events),
         "edges": supply_edges(state),
-        "pools": pool_flows(state, events),
+        "pools": pool_flows(run),
         "population": population_ring(state),
     }

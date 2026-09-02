@@ -891,12 +891,14 @@ function dashboard() {
       const inds = Object.keys(byInd);
       const pos = {};
       const cluster = {};
+      const R1 = W * 0.26, R2 = W * 0.40; // alternate two rings: labels never collide
       inds.forEach((ind, i) => {
         const ang = (i / Math.max(inds.length, 1)) * 2 * Math.PI - Math.PI / 2;
-        cluster[ind] = { x: W / 2 + Math.cos(ang) * (W * 0.36), y: H / 2 + Math.sin(ang) * (H * 0.36), prod: 0, starved: 0, ok: 0 };
+        const rad = i % 2 === 0 ? R1 : R2;
+        cluster[ind] = { x: W / 2 + Math.cos(ang) * rad, y: H / 2 + Math.sin(ang) * (rad * (H / W)), prod: 0, starved: 0, ok: 0, ang, ring: i % 2 };
         byInd[ind].forEach((nd, j) => {
           const a2 = (j / Math.max(byInd[ind].length, 1)) * 2 * Math.PI;
-          pos[nd.id] = { x: cluster[ind].x + Math.cos(a2) * 15, y: cluster[ind].y + Math.sin(a2) * 15, r: 5 + Math.min((nd.produced || 0) / 40, 14) };
+          pos[nd.id] = { x: cluster[ind].x + Math.cos(a2) * 14, y: cluster[ind].y + Math.sin(a2) * 14, r: 7 + Math.min((nd.produced || 0) / 40, 14) };
           cluster[ind].prod += nd.produced || 0;
           if (nd.health === 'starved') cluster[ind].starved++;
           else if (nd.health === 'ok') cluster[ind].ok++;
@@ -921,11 +923,18 @@ function dashboard() {
       });
       const ring = f.population || {};
       const met = ring.met_share ?? 100;
-      ctx.beginPath(); ctx.arc(W / 2, H / 2, 52, 0, 7);
-      ctx.fillStyle = met >= 95 ? '#23863655' : met >= 80 ? '#9e6a0355' : '#da363355';
-      ctx.fill();
-      ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(`👥 ${met}% needs met`, W / 2, H / 2 + 4);
+      // compact gauge ring: arc fills with needs-met share, no big blob
+      const cx = W / 2, cy = H / 2, gr = 40;
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#30363d';
+      ctx.beginPath(); ctx.arc(cx, cy, gr, 0, 2 * Math.PI); ctx.stroke();
+      ctx.strokeStyle = met >= 95 ? '#3fb950' : met >= 80 ? '#d29922' : '#f85149';
+      ctx.beginPath(); ctx.arc(cx, cy, gr, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * (met / 100)); ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(`${met}%`, cx, cy + 1);
+      ctx.fillStyle = '#8b949e'; ctx.font = '10px sans-serif';
+      ctx.fillText('needs met', cx, cy + 15);
       // small coop dots + labeled industry bubbles on top
       nodes.forEach(nd => {
         const p = pos[nd.id]; if (!p) return;
@@ -935,11 +944,14 @@ function dashboard() {
       Object.keys(cluster).forEach(ind => {
         const c = cluster[ind];
         const healthCol = c.starved > c.ok ? '#da3633' : (c.ok > 0 ? '#238636' : '#6e7681');
-        const r = 16 + Math.min(Math.sqrt(c.prod) * 0.6, 20);
+        const r = 18 + Math.min(Math.sqrt(c.prod) * 0.6, 22);
         ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, 7);
         ctx.strokeStyle = healthCol; ctx.lineWidth = 2.5; ctx.stroke();
         ctx.fillStyle = '#e6edf3'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(ind.replace(/_/g, ' '), c.x, c.y + r + 13);
+        // label radiates outward from the center: no ring-to-ring collisions
+        const lx = c.x + Math.cos(c.ang) * (r + 10);
+        const ly = c.y + Math.sin(c.ang) * (r + 13);
+        ctx.fillText(ind.replace(/_/g, ' '), lx, ly);
       });
       if ((f.weather || []).length) {
         ctx.fillStyle = 'rgba(218,54,51,0.06)'; ctx.fillRect(0, 0, W, H);
@@ -959,41 +971,83 @@ function dashboard() {
       const cv = document.getElementById('flowStage');
       if (!cv) return;
       const ctx = cv.getContext('2d');
-      const W = cv.width = cv.clientWidth; const H = cv.height = 420;
+      const W = cv.width = cv.clientWidth; const H = cv.height = 460;
       const p = this.flows.pools || {};
-      const chans = ['wages', 'production_value', 'market_sales', 'dividends'];
       const stages = [
-        { x: W * 0.15, y: H * 0.5, label: '👥 Citizens', v: p.wages || 0 },
-        { x: W * 0.40, y: H * 0.22, label: '🏭 Co-ops', v: p.production_value || 0 },
-        { x: W * 0.62, y: H * 0.5, label: '🛒 Markets', v: p.market_sales || 0 },
-        { x: W * 0.85, y: H * 0.5, label: '🏦 Pools', v: p.dividends || 0 },
+        { x: W * 0.16, y: H * 0.30, label: '👥 Citizens', key: 'wages', sub: 'work here' },
+        { x: W * 0.50, y: H * 0.18, label: '🏭 Co-ops', key: 'production_value', sub: 'make things' },
+        { x: W * 0.84, y: H * 0.30, label: '🛒 Markets', key: 'market_sales', sub: 'buy & sell' },
+        { x: W * 0.50, y: H * 0.72, label: '🏦 Pools', key: 'dividends', sub: 'shared wealth' },
       ];
-      ctx.font = '14px sans-serif';
-      stages.forEach(s => {
-        ctx.beginPath(); ctx.arc(s.x, s.y, 42, 0, 7);
-        ctx.fillStyle = '#161b22'; ctx.fill();
-        ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.fillStyle = '#e6edf3'; ctx.textAlign = 'center';
-        ctx.fillText(s.label, s.x, s.y + 4);
-      });
+      const fmt = v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : String(v);
+      // cycle: citizens ->(labor)-> coops ->(goods)-> markets ->(money)-> pools ->(dividends)-> citizens
+      const pipes = [
+        { a: 0, b: 1, key: 'wages', lbl: 'wages' },
+        { a: 1, b: 2, key: 'production_value', lbl: 'goods' },
+        { a: 2, b: 3, key: 'market_sales', lbl: 'sales' },
+        { a: 3, b: 0, key: 'dividends', lbl: 'dividends' },
+      ];
+      const maxV = Math.max(1, ...pipes.map(pp => p[pp.key] || 0));
+      ctx.clearRect(0, 0, W, H);
       const t = performance.now() / 1000;
-      for (let i = 0; i < stages.length; i++) {
-        const a = stages[i], b = stages[(i + 1) % stages.length];
-        const flow = p[['wages', 'production_value', 'market_sales', 'dividends'][i]] || 0;
+      pipes.forEach((pp, i) => {
+        const a = stages[pp.a], b = stages[pp.b];
+        const flow = p[pp.key] || 0;
         const active = flow > 0;
-        ctx.strokeStyle = active ? '#3fb950' : '#6e7681';
-        ctx.lineWidth = 2 + Math.min(flow / 5000, 6);
-        ctx.beginPath(); ctx.moveTo(a.x + 44, a.y); ctx.lineTo(b.x - 44, b.y); ctx.stroke();
+        const wdt = 2 + (flow / maxV) * 9;
+        // pipe
+        ctx.strokeStyle = active ? '#3fb950' : '#30363d';
+        ctx.lineWidth = active ? wdt : 2;
+        ctx.beginPath();
+        const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+        const off = 48 / len;
+        ctx.moveTo(a.x + dx * off, a.y + dy * off);
+        ctx.lineTo(b.x - dx * off, b.y - dy * off);
+        ctx.stroke();
+        // arrowhead
+        const ax = b.x - dx * off, ay = b.y - dy * off;
+        const ang = Math.atan2(dy, dx);
+        ctx.fillStyle = active ? '#3fb950' : '#30363d';
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax - 12 * Math.cos(ang - 0.4), ay - 12 * Math.sin(ang - 0.4));
+        ctx.lineTo(ax - 12 * Math.cos(ang + 0.4), ay - 12 * Math.sin(ang + 0.4));
+        ctx.closePath(); ctx.fill();
         if (active) {
+          // moving pulses
           for (let k = 0; k < 4; k++) {
-            const u = (t * 0.5 + k / 4 + i * 0.2) % 1;
-            ctx.fillStyle = '#3fb950';
-            ctx.beginPath(); ctx.arc(a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u, 3, 0, 7); ctx.fill();
+            const u = (t * 0.5 + k / 4 + i * 0.25) % 1;
+            const px = a.x + dx * (off + (1 - 2 * off) * u);
+            const py = a.y + dy * (off + (1 - 2 * off) * u);
+            ctx.fillStyle = '#7ee787';
+            ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 7); ctx.fill();
           }
+          // amount label at pipe midpoint
+          ctx.fillStyle = '#7ee787'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+          const mx = a.x + dx * 0.5, my = a.y + dy * 0.5;
+          const perp = { x: -dy / len, y: dx / len };
+          ctx.fillText(pp.lbl + ' ₡' + fmt(flow), mx + perp.x * 18, my + perp.y * 18 + 4);
+        } else {
+          ctx.fillStyle = '#6e7681'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+          const mx = a.x + dx * 0.5, my = a.y + dy * 0.5;
+          const perp = { x: -dy / len, y: dx / len };
+          ctx.fillText(pp.lbl + ' (quiet)', mx + perp.x * 14, my + perp.y * 14 + 4);
         }
-      }
+      });
+      stages.forEach(s => {
+        const flow = p[s.key] || 0;
+        const glow = Math.min(flow / maxV, 1);
+        ctx.beginPath(); ctx.arc(s.x, s.y, 46, 0, 7);
+        ctx.fillStyle = '#161b22'; ctx.fill();
+        ctx.strokeStyle = flow > 0 ? '#3fb950' : '#58a6ff';
+        ctx.lineWidth = 2 + glow * 3; ctx.stroke();
+        ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(s.label, s.x, s.y - 2);
+        ctx.fillStyle = '#8b949e'; ctx.font = '11px sans-serif';
+        ctx.fillText(s.sub, s.x, s.y + 14);
+      });
       ctx.fillStyle = '#8b949e'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('flow thickness = money moved in the last 5 ticks', W / 2, H - 12);
+      ctx.fillText('green pipes pulse with real money moved in the last 5 ticks — thicker = more', W / 2, H - 10);
     },
 
     async api(path, opts = {}) {
