@@ -117,7 +117,6 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <button :class="view === 'stage' ? 'tab active' : 'tab'" @click="setView('stage')">🔄 Flow Stage</button>
     <button :class="view === 'dashboard' ? 'tab active' : 'tab'" @click="setView('dashboard')">🎛 Engineer</button>
     <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 World</button>
-    <button :class="view === 'stability' ? 'tab active' : 'tab'" @click="setView('stability')">🗺 Stability</button>
     <button :class="view === 'policy' ? 'tab active' : 'tab'" @click="setView('policy')">🧪 Policy Lab</button>
     <button :class="view === 'seat' ? 'tab active' : 'tab'" @click="setView('seat')">🏠 My Seat</button>
   </div>
@@ -659,28 +658,6 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 
 </div><!-- /seat grid -->
 
-<!-- STABILITY VIEW (WP5 heat-card) -->
-<div class="grid" x-show="view === 'stability'">
-  <div class="panel col-12">
-    <h3>🗺 Stability map <span class="muted">— coarse sweep at ~1k citizens (3 seeds/combo)</span></h3>
-    <p class="muted">Green = stable in all seeds · yellow = partial · red = unstable. Source: <span class="mono">sweeps/*.json</span> via <span class="mono">/api/stability</span>.</p>
-    <template x-for="(cells, knob) in stabilityByKnob" :key="knob">
-      <div style="margin-bottom:14px">
-        <strong x-text="knob"></strong>
-        <template x-for="c in cells" :key="c.value">
-          <div class="needbar" :title="'value ' + c.value + ' — stable in ' + c.stable + '/' + c.total + ' seeds · avg unmet ' + c.mean_unmet_tail + ' · worst shortage streak ' + c.worst_streak + ' ticks · money invariant ' + (c.invariant_ok ? 'exact' : 'BROKEN')">
-            <span class="lbl mono" x-text="c.value"></span>
-            <div class="vbar"><div class="vbar-fill" :class="c.stable === c.total ? 'green' : (c.stable > 0 ? 'yellow' : 'red')" :style="'width:' + Math.round(100 * c.stable / Math.max(c.total,1)) + '%'"></div></div>
-            <span class="badge" :class="c.stable === c.total ? 'green' : (c.stable > 0 ? 'yellow' : 'red')" x-text="c.stable === c.total ? 'stable' : (c.stable > 0 ? 'shaky' : 'collapses')"></span>
-            <span class="badge" :class="c.invariant_ok ? 'green' : 'red'" x-text="c.invariant_ok ? 'ledger ✓' : 'BROKEN'"></span>
-          </div>
-        </template>
-      </div>
-    </template>
-    <div x-show="!Object.keys(stabilityByKnob).length" class="muted">No sweep data yet — run scripts/stage6_sweeps.py run COARSE.</div>
-  </div>
-</div>
-
 <!-- WORLD VIEW -->
 <div class="grid" x-show="view === 'world'">
 
@@ -794,7 +771,6 @@ function dashboard() {
     story: { cards: [], tick: 0 },
     flows: { nodes: [], edges: [], pools: {}, population: { met_share: 100 }, weather: [] },
     mapStory: '',
-    stabilityByKnob: {},
     // Policy Lab
     policyKnobs: [], policyResult: null, policyBusy: false,
     adoptable: false, adoptBusy: false, policyError: '',
@@ -1059,29 +1035,13 @@ function dashboard() {
         this.$nextTick(() => this.initWorldCharts());
         this.api('/api/analytics').then(a => { this.analytics = a; this.updateWorldCharts(); });
       }
-      if (v === 'stability') {
-        if (this.view === 'policy') this.loadPolicyKnobs();
-        this.loadStability();
-      }
+      if (v === 'policy') this.loadPolicyKnobs();
       if (v === 'seat') {
         this.$nextTick(() => this.initSeatChart());
         this.loadSeat();
       }
     },
 
-    async loadStability() {
-      try {
-        const d = await this.api('/api/stability');
-        const grouped = {};
-        for (const c of (d.combos ?? [])) {
-          (grouped[c.knob] ??= []).push(c);
-        }
-        for (const k of Object.keys(grouped)) {
-          grouped[k].sort((a, b) => a.value - b.value);
-        }
-        this.stabilityByKnob = grouped;
-      } catch (e) { /* server restarting */ }
-    },
     // ---- Policy Lab ----
     async loadPolicyKnobs() {
       try {
