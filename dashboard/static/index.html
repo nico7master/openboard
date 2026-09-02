@@ -112,21 +112,20 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 <div class="header">
   <div class="logo">⬢ OpenBoard <span>economy dashboard</span></div>
   <div class="view-tabs">
-    <button :class="view === 'story' ? 'tab active' : 'tab'" @click="setView('story')">✨ At a Glance</button>
-    <button :class="view === 'map' ? 'tab active' : 'tab'" @click="setView('map')">🗺️ Living Map</button>
-    <button :class="view === 'stage' ? 'tab active' : 'tab'" @click="setView('stage')">🔄 Flow Stage</button>
-    <button :class="view === 'dashboard' ? 'tab active' : 'tab'" @click="setView('dashboard')">🎛 Engineer</button>
-    <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 World</button>
-    <button :class="view === 'policy' ? 'tab active' : 'tab'" @click="setView('policy')">🧪 Policy Lab</button>
-    <button :class="view === 'seat' ? 'tab active' : 'tab'" @click="setView('seat')">🏠 My Seat</button>
+    <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 The World</button>
+    <button :class="view === 'policy' ? 'tab active' : 'tab'" @click="setView('policy')">🧪 The Lab</button>
+    <button :class="view === 'chronicle' ? 'tab active' : 'tab'" @click="setView('chronicle')">📜 Chronicle</button>
   </div>
   <div class="controls">
     <button class="primary" @click="tick()" :disabled="busy">▶ Tick</button>
     <button @click="toggleAutoplay()" :class="autoplay.running ? 'danger' : ''">
       <span x-text="autoplay.running ? '⏸ Stop' : '⏩ Autoplay'"></span>
     </button>
-    <input type="range" min="0.1" max="3" step="0.1" x-model.number="autoplay.interval" style="width:80px" @change="setAutoplay()">
-    <span class="muted mono" x-text="autoplay.interval + 's'"></span>
+    <span style="display:inline-flex; gap:6px; margin-left:8px">
+      <button class="tab" :class="autoplay.interval === 1.5 ? 'active' : ''" @click="setSpeed(1.5)">Slow</button>
+      <button class="tab" :class="autoplay.interval === 0.5 ? 'active' : ''" @click="setSpeed(0.5)">Normal</button>
+      <button class="tab" :class="autoplay.interval === 0.1 ? 'active' : ''" @click="setSpeed(0.1)">Fast</button>
+    </span>
     <button class="danger" @click="resetModal = true">⟲ Reset</button>
     <button @click="save()">💾 Save</button>
     <label class="muted" style="cursor:pointer">📂 Load
@@ -134,418 +133,103 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     </label>
   </div>
   <div class="stats">
-    <div class="stat"><div class="label">Tick</div><div class="value" x-text="state.tick ?? '—'"></div></div>
-    <div class="stat"><div class="label">Money</div><div class="value" x-text="fmt(timeline.money?.at(-1))"></div></div>
-    <div class="stat"><div class="label">Gini</div><div class="value" x-text="fmt(timeline.gini?.at(-1))"></div></div>
-    <div class="stat"><div class="label">Surplus</div><div class="value" x-text="fmt(state.surplus_pool)"></div></div>
-    <div class="stat"><div class="label">Ledger</div><div class="value"><span x-text="state.ledger_counts?.accepted ?? 0" style="color:var(--green)"></span>/<span x-text="state.ledger_counts?.rejected ?? 0" style="color:var(--red)"></span></div></div>
+    <div class="stat"><div class="label">Day</div><div class="value" x-text="Math.max(1, state.tick ?? 1)"></div></div>
   </div>
 </div>
 
-<!-- WORLD AT A GLANCE -->
-<div x-show="view === 'story'" style="max-width: 860px; margin: 0 auto; padding: 0 12px">
-  <template x-for="card in story.cards" :key="card.id">
-    <div class="panel story-card" :class="sevClass(card.severity)">
-      <div style="font-size:30px" x-text="card.icon"></div>
-      <div style="flex:1">
-        <div class="sentence" x-text="card.sentence"></div>
-        <div style="color:var(--muted,#8b949e); font-size:11px; margin-top:4px" x-text="card.series_label || ''"></div>
+<!-- THE WORLD (home) -->
+<div x-show="view === 'world'" style="max-width: 980px; margin: 0 auto; padding: 0 12px">
+  <!-- verdict banner -->
+  <div class="panel" :style="'text-align:center; padding:18px; border-left:6px solid ' + (verdict.color)" style="margin-bottom:14px">
+    <div style="font-size:34px" x-text="verdict.word"></div>
+    <div class="muted" style="font-size:13px" x-text="verdict.sentence"></div>
+  </div>
+  <!-- hero charts -->
+  <div class="panel" style="margin-bottom:14px">
+    <h3 style="margin-top:0">🍞 Are people getting what they need?</h3>
+    <div class="chart-wrap" style="height:160px"><canvas id="heroNeeds"></canvas></div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <h3 style="margin-top:0">⚖️ Is wealth staying shared?</h3>
+    <div class="chart-wrap" style="height:160px"><canvas id="heroGini"></canvas></div>
+  </div>
+  <!-- alert strip: only when something needs attention -->
+  <div class="panel" id="alertStrip" style="margin-bottom:14px" x-show="alerts.length">
+    <template x-for="al in alerts" :key="al.text">
+      <div style="padding:6px 10px; border-left:4px solid var(--red); margin-bottom:6px; font-size:13px">
+        <span x-text="al.icon + ' ' + al.text"></span>
       </div>
-      <div style="color:#58a6ff" x-html="spark(card)"></div>
-    </div>
-  </template>
-  <div class="muted" style="text-align:center; padding:10px" x-text="'tick ' + story.tick"></div>
+    </template>
+  </div>
+  <div class="muted" style="text-align:center; font-size:12px; padding:4px 0 10px">
+    👥 <span x-text="story.population"></span> people · hover anything for exact numbers
+  </div>
 </div>
 
-<!-- LIVING MAP -->
-<div class="panel" x-show="view === 'map'" style="width:100%">
+<!-- LIVING MAP (inside The World) -->
+<div class="panel" x-show="view === 'world'" style="width:100%; max-width: 980px; margin: 0 auto 14px">
   <h3>🗺️ The living economy <span class=muted>— goods flow along real supply chains; click a workshop</span></h3>
-  <canvas id="flowMap" style="width:100%; height:520px; cursor:pointer"
-          @click="const r = $el.getBoundingClientRect(); const cv = $el; [...($refs.mapNodes?.children || [])]">
-  </canvas>
+  <canvas id="flowMap" style="width:100%; height:520px; cursor:pointer"></canvas>
   <div class="mapStory" x-text="mapStory"></div>
   <div class="muted" style="font-size:11px; padding:0 12px 8px">
     🟢 producing · 🔴 waiting on inputs · ⚪ no trade yet — node size = recent production
   </div>
 </div>
 
-<!-- CIRCULAR FLOW STAGE -->
-<div class="panel" x-show="view === 'stage'" style="width:100%">
+<!-- CIRCULAR FLOW STAGE (inside The World) -->
+<div class="panel" x-show="view === 'world'" style="width:100%; max-width: 980px; margin: 0 auto">
   <h3>🔄 The economy as a machine</h3>
   <canvas id="flowStage" style="width:100%; height:420px"></canvas>
 </div>
 
-<div class="grid" x-show="view === 'dashboard'">
 
-<!-- CHARTS -->
-<div class="panel col-6">
-  <h3>📈 Gini coefficient <span class="muted">(lower = more equal)</span></h3>
-  <div x-show="chartError" style="color:var(--red); font-size:11px; margin-bottom:6px" x-text="chartError"></div>
-  <div class="chart-wrap"><canvas id="giniChart"></canvas></div>
-</div>
-<div class="panel col-6">
-  <h3>💰 Money supply & surplus <span class="muted mono" style="font-size:10px" x-text="chartDebug"></span></h3>
-  <div class="chart-wrap"><canvas id="moneyChart"></canvas></div>
-</div>
 
-<!-- CITIZENS -->
-<div class="panel col-4">
-  <h3>👥 Citizens <span class="muted" x-text="(state.citizens?.length ?? 0) + ' active'"></span></h3>
-  <div class="scroll-y">
-  <div class="scroll-y">
-    <template x-for="(name, i) in state.citizens ?? []" :key="name">
-      <div class="cit-row" :style="isBot(name) ? '' : 'border-left:3px solid var(--yellow)'">
-        <div style="display:flex; justify-content:space-between; align-items:center">
-          <span><strong x-text="name"></strong> <span x-show="!isBot(name)" title="human seat">👤</span></span>
-          <span>
-            <template x-for="(streak, good) in (analytics.circular?.unmet_needs?.[name] ?? {})" :key="good">
-              <span class="badge red" style="margin-left:3px" :title="good + ' missing ' + streak + ' ticks'" x-text="good"></span>
-            </template>
-            <span x-show="!Object.keys(analytics.circular?.unmet_needs?.[name] ?? {}).length" class="badge green">✓ provided for</span>
-          </span>
-        </div>
-        <div class="vbar" :title="'savings ' + fmt(state.balances?.[name]) + ' cr · ' + (state.labor_hours?.[name] ?? 0) + 'h worked today'"><div class="vbar-fill blue" :style="wealthBar(name)"></div></div>
-      </div>
-    </template>
-  </div>
-  </div>
-</div>
-
-<!-- CO-OPS -->
-<div class="panel col-4">
-  <h3>🏭 Co-ops</h3>
-  <div class="scroll-y">
-  <template x-for="(coop, id) in state.coops ?? {}" :key="id">
-    <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border)">
-      <div style="display:flex; justify-content:space-between; margin-bottom:4px">
-        <strong x-text="id"></strong>
-        <span class="badge" :class="coop.labor_pool_hours > 0 ? 'green' : 'red'" x-text="coop.labor_pool_hours > 0 ? 'working' : 'idle'"></span>
-      </div>
-      <div class="muted" style="font-size:12px" x-text="coop.members.join(', ')"></div>
-      <div class="vbar" :title="'treasury ' + fmt(coop.treasury) + ' cr'"><div class="vbar-fill purple" :style="coopBar(id, 'treasury', maxTreasury(), 'purple')"></div></div>
-      <div class="vbar" :title="'labor pool ' + (coop.labor_pool_hours || 0) + 'h'"><div class="vbar-fill green" :style="coopBar(id, 'labor_pool_hours', 60, 'green')"></div></div>
-      <div class="muted" style="font-size:11px; margin-top:3px" x-text="invSummary(coop.inventory)"></div>
-    </div>
-  </template>
-  </div>
-</div>
-
-<!-- MARKET -->
-<div class="panel col-4">
-  <h3>🏪 Market</h3>
-  <div style="margin-bottom: 12px">
-    <div class="muted" style="font-size:11px; margin-bottom:6px">LAST CLEARING PRICES</div>
-    <template x-for="(good, price) in state.last_clearing ?? {}" :key="good">
-      <div class="needbar" :title="good + ' sells for ' + price + ' cr (fair cost ' + (state.good_cost_baseline?.[good] ?? '?') + ')'">
-        <span class="lbl" x-text="good"></span>
-        <div class="vbar"><div class="vbar-fill" :style="priceBar(good, price)"></div></div>
-      </div>
-    </template>
-    <div x-show="!Object.keys(state.last_clearing ?? {}).length" class="muted">No trades yet</div>
-  </div>
-  <div class="muted" style="font-size:11px; margin-bottom:6px">COMMON POOL <span class="badge purple" x-show="Object.keys(state.common_pool ?? {}).length" x-text="invSummary(state.common_pool)"></span></div>
-  <div style="border-top:1px solid var(--border); padding-top:10px">
-    <div class="muted" style="font-size:11px; margin-bottom:6px">COST BASELINES (selected)</div>
-    <div class="scroll-y" style="max-height:140px">
-      <template x-for="good in ['bread','grain','flour','fish','water','steel','furniture']" :key="good">
-        <div class="form-row" style="justify-content:space-between; padding: 2px 0" x-show="state.good_cost_baseline?.[good] !== undefined">
-          <span x-text="good"></span>
-          <span class="mono" x-text="state.good_cost_baseline?.[good]"></span>
-        </div>
-      </template>
-    </div>
-  </div>
-</div>
-
-<!-- GOVERNANCE -->
-<div class="panel col-6">
-  <h3>⚖️ Governance
-    <span>
-      <span class="badge" :class="state.governance_enabled ? 'green' : 'gray'" x-text="state.governance_enabled ? 'LIVE' : 'bootstrap'"></span>
-      <span class="badge blue" x-text="'v' + (state.ruleset_version ?? 1)"></span>
-      <span class="badge" :class="state.constitution_phase === 'hardened' ? 'red' : 'yellow'" x-text="state.constitution_phase"></span>
-    </span>
-  </h3>
-  <div class="scroll-y">
-    <div x-show="!Object.keys(state.proposals ?? {}).length" class="muted">No proposals yet</div>
-    <template x-for="(p, pid) in state.proposals ?? {}" :key="pid">
-      <div style="padding:8px; border:1px solid var(--border); border-radius:6px; margin-bottom:8px">
-        <div style="display:flex; justify-content:space-between; align-items:center">
-          <div>
-            <strong class="mono" x-text="pid"></strong>
-            <span class="muted" x-text="'by ' + p.proposer + ' · closes t' + p.closes_tick"></span>
-          </div>
-          <span class="badge" :class="p.status === 'passed' ? 'green' : p.status === 'open' ? 'blue' : 'red'" x-text="p.status"></span>
-        </div>
-        <div style="margin-top:6px; display:flex; justify-content:space-between; align-items:center">
-          <div>
-            <span style="color:var(--green)" x-text="'✓ ' + p.votes_for"></span>
-            <span style="color:var(--red); margin-left:10px" x-text="'✗ ' + p.votes_against"></span>
-            <span x-show="p.is_rollback" class="badge yellow" style="margin-left:8px">rollback</span>
-            <span x-show="p.is_intervention" class="badge purple" style="margin-left:4px" x-text="'intervention: ' + (p.intervention?.type ?? '')"></span>
-          </div>
-          <div class="vote-btns" x-show="p.status === 'open' && state.governance_enabled">
-            <button class="small" @click="act((seat.who ?? state.citizens?.[0] ?? 'worker_a'), 'VOTE', {proposal_id: pid, choice: 'for'})" :disabled="busy">Vote ✓</button>
-            <button class="small" @click="act((seat.who ?? state.citizens?.[0] ?? 'worker_a'), 'VOTE', {proposal_id: pid, choice: 'against'})" :disabled="busy">Vote ✗</button>
-          </div>
-        </div>
-        <details x-show="p.params">
-          <summary class="muted" style="font-size:11px; cursor:pointer">parameters</summary>
-          <pre class="mono" style="font-size:10.5px; white-space:pre-wrap; color:var(--dim)" x-text="JSON.stringify(p.params, null, 1)"></pre>
-        </details>
-      </div>
-    </template>
-  </div>
-</div>
-
-<!-- OVERSIGHT -->
-<div class="panel col-6">
-  <h3>🛡️ Oversight
-    <span class="muted" x-text="state.council_members?.length ? 'council: ' + state.council_members.join(', ') : ''"></span>
-  </h3>
-  <div class="scroll-y">
-    <div x-show="!state.flags?.length" class="muted">No anomalies detected 🎉</div>
-    <template x-for="(f, i) in (state.flags ?? []).slice().reverse()" :key="i">
-      <div style="padding:6px 10px; border:1px solid var(--border); border-left:3px solid var(--yellow); border-radius:4px; margin-bottom:6px; font-size:12.5px">
-        <span class="badge yellow" x-text="f.kind"></span>
-        <strong x-text="f.target"></strong>
-        <span class="muted" x-text="f.good ? '(' + f.good + ')' : ''"></span>
-        <span class="muted mono" style="float:right" x-text="'t' + f.tick"></span>
-      </div>
-    </template>
-  </div>
-</div>
-
-<!-- PLAY AS CITIZEN -->
-<div class="panel col-6">
-  <h3>🎮 Play as citizen <span class="muted">(joins next tick)</span></h3>
-  <div class="action-form">
-    <div class="form-row">
-      <label>Citizen</label>
-      <select x-model="action.sender">
-        <template x-for="c in state.citizens ?? []" :key="c"><option :value="c" x-text="c + (isBot(c) ? '' : ' 👤')"></option></template>
-      </select>
-      <select x-model="action.type">
-        <option value="WORK">Work</option>
-        <option value="BUY_ESSENTIAL">Buy essential</option>
-        <option value="BID">Bid on market</option>
-        <option value="BID_FOR_COOP">Bid for co-op</option>
-        <option value="LIST_GOOD">List goods</option>
-        <option value="PRODUCE">Produce</option>
-        <option value="TRANSFER">Transfer</option>
-        <option value="VOTE">Vote</option>
-        <option value="PROPOSE">Propose rule</option>
-        <option value="ROLLBACK">Rollback</option>
-        <option value="INTERVENE">Intervene</option>
-      </select>
-    </div>
-
-    <!-- WORK -->
-    <template x-if="action.type === 'WORK'">
-      <div class="form-row">
-        <label>Co-op</label>
-        <select x-model="action.payload.coop_id">
-          <option value="">— choose —</option>
-          <template x-for="(c, id) in state.coops ?? {}" :key="id"><option :value="id" x-text="id"></option></template>
-        </select>
-        <label style="min-width:50px">Hours</label>
-        <input type="number" min="1" max="8" x-model.number="action.payload.hours">
-      </div>
-    </template>
-
-    <!-- BUY_ESSENTIAL / BID -->
-    <template x-if="action.type === 'BUY_ESSENTIAL' || action.type === 'BID'">
-      <div class="form-row">
-        <label>Good</label>
-        <select x-model="action.payload.good">
-          <option value="">— choose —</option>
-          <template x-for="g in state.goods ?? []" :key="g"><option :value="g" x-text="g + ' (₡' + (state.good_cost_baseline?.[g] ?? '?') + ')'"></option></template>
-        </select>
-        <template x-if="action.type === 'BID'">
-          <input type="number" placeholder="max price" x-model.number="action.payload.max_price" style="width:100px">
-        </template>
-        <input type="number" placeholder="qty" min="1" x-model.number="action.payload.qty" style="width:80px">
-      </div>
-    </template>
-
-    <!-- BID_FOR_COOP / LIST_GOOD -->
-    <template x-if="action.type === 'BID_FOR_COOP' || action.type === 'LIST_GOOD'">
-      <div class="form-row">
-        <label>Co-op</label>
-        <select x-model="action.payload.coop_id">
-          <option value="">— choose —</option>
-          <template x-for="(c, id) in state.coops ?? {}" :key="id"><option :value="id" x-text="id"></option></template>
-        </select>
-        <select x-model="action.payload.good">
-          <option value="">— good —</option>
-          <template x-for="g in state.goods ?? []" :key="g"><option :value="g" x-text="g"></option></template>
-        </select>
-        <template x-if="action.type === 'BID_FOR_COOP'">
-          <input type="number" placeholder="price" x-model.number="action.payload.max_price" style="width:80px">
-        </template>
-        <input type="number" placeholder="qty" min="1" x-model.number="action.payload.qty" style="width:80px">
-      </div>
-    </template>
-
-    <!-- PRODUCE -->
-    <template x-if="action.type === 'PRODUCE'">
-      <div class="form-row">
-        <label>Co-op</label>
-        <select x-model="action.payload.coop_id">
-          <option value="">— choose —</option>
-          <template x-for="(c, id) in state.coops ?? {}" :key="id"><option :value="id" x-text="id"></option></template>
-        </select>
-        <select x-model="action.payload.recipe_id">
-          <option value="">— recipe —</option>
-          <template x-for="(r, rid) in state.recipes ?? {}" :key="rid">
-            <option :value="rid" x-text="rid + ' (' + recipeSummary(r) + ')'"></option>
-          </template>
-        </select>
-        <input type="number" placeholder="runs" min="1" x-model.number="action.payload.runs" style="width:70px">
-      </div>
-    </template>
-
-    <!-- TRANSFER -->
-    <template x-if="action.type === 'TRANSFER'">
-      <div class="form-row">
-        <label>To</label>
-        <select x-model="action.payload.to">
-          <option value="">— choose —</option>
-          <template x-for="c in state.citizens ?? []" :key="c"><option :value="c" x-text="c"></option></template>
-        </select>
-        <label style="min-width:50px">Amount</label>
-        <input type="number" min="1" x-model.number="action.payload.amount">
-      </div>
-    </template>
-
-    <!-- VOTE -->
-    <template x-if="action.type === 'VOTE'">
-      <div class="form-row">
-        <label>Proposal</label>
-        <select x-model="action.payload.proposal_id">
-          <option value="">— open proposals —</option>
-          <template x-for="(p, pid) in state.proposals ?? {}" :key="pid">
-            <option x-show="p.status === 'open'" :value="pid" x-text="pid + ' by ' + p.proposer"></option>
-          </template>
-        </select>
-        <select x-model="action.payload.choice"><option value="for">for</option><option value="against">against</option></select>
-      </div>
-    </template>
-
-    <!-- PROPOSE / ROLLBACK / INTERVENE: JSON -->
-    <template x-if="['PROPOSE', 'ROLLBACK', 'INTERVENE'].includes(action.type)">
-      <div>
-        <div class="muted" style="font-size:11px; margin-bottom:4px" x-text="jsonHint"></div>
-        <textarea class="json" x-model="action.json" spellcheck="false"></textarea>
-      </div>
-    </template>
-
-    <div class="form-row" style="justify-content:space-between">
-      <button class="primary" @click="submitAction()" :disabled="busy || !action.sender">Queue action</button>
-      <div class="pending-list" x-show="state.pending?.length">
-        <span x-text="state.pending?.length"></span> pending: <span x-text="state.pending?.map(p => p.action).join(', ')"></span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- BOTS -->
-<div class="panel col-3">
-  <h3>🤖 Bots <span class="muted" x-text="Object.keys(state.bots ?? {}).length"></span></h3>
-  <div class="scroll-y" style="max-height:180px; margin-bottom:10px">
-    <template x-for="(meta, name) in state.bots ?? {}" :key="name">
-      <div class="form-row" style="justify-content:space-between; padding:2px 0">
-        <span class="mono" x-text="name"></span>
-        <span style="display:flex; gap:6px; align-items:center">
-          <span class="muted" style="font-size:11px" x-text="meta.coop ?? '—'"></span>
-          <button class="small danger" @click="removeBot(name)">✕</button>
-        </span>
-      </div>
-    </template>
-  </div>
-  <div class="action-form">
-    <div class="form-row">
-      <input placeholder="name" x-model="newBot.name" style="flex:1">
-    </div>
-    <div class="form-row">
-      <select x-model="newBot.archetype" style="flex:1">
-        <template x-for="a in state.archetypes ?? []" :key="a"><option :value="a" x-text="a"></option></template>
-      </select>
-    </div>
-    <div class="form-row">
-      <select x-model="newBot.coop" style="flex:1">
-        <option value="">no coop</option>
-        <template x-for="(c, id) in state.coops ?? {}" :key="id"><option :value="id" x-text="id"></option></template>
-      </select>
-    </div>
-    <button class="small" @click="addBot()" :disabled="!newBot.name || busy">+ Add bot</button>
-  </div>
-</div>
-
-<!-- EVENTS FEED -->
-<div class="panel col-3">
-  <h3>📡 Events <span class="muted">latest</span></h3>
-  <div class="feed scroll-y">
-    <template x-for="(e, i) in (state.events ?? []).slice().reverse().slice(0, 60)" :key="state.tick + '-' + i">
-      <div class="feed-item" :class="feedClass(e)">
-        <span class="t" x-text="'t' + e.tick"></span>
-        <span x-text="feedText(e)"></span>
-      </div>
-    </template>
-  </div>
-</div>
-
-<!-- LEDGER -->
-<div class="panel col-12">
-  <h3>📜 Ledger (recent) <span class="muted">immutable · hash-chained</span></h3>
-    <div class="scroll-y" style="max-height:300px">
-      <template x-for="r in (state.ledger_recent ?? []).slice().reverse()" :key="r.seq">
-        <div class="cit-row" style="display:flex; justify-content:space-between; align-items:center; padding:5px 9px"
-             :title="'entry #' + r.seq + ' · tick ' + r.tick + ' · ' + r.sender + ' · ' + (r.accepted ? 'accepted' : 'rejected: ' + r.reason)">
-          <span><span class="badge" :class="r.accepted ? 'green' : 'red'" x-text="r.accepted ? '✓' : '✗'"></span>
-          <strong style="margin-left:6px" x-text="String(r.action).replace(/_/g, ' ').toLowerCase()"></strong></span>
-          <span class="muted" style="font-size:11.5px" x-text="r.sender"></span>
-        </div>
-      </template>
-    </div>
-</div>
-
-</div><!-- /grid -->
-
-<!-- CITIZEN SEAT VIEW -->
+<!-- THE LAB -->
 <div x-show="view === 'policy'" style="max-width: 860px; margin: 0 auto; padding: 0 12px">
+  <!-- reign strip -->
+  <div class="panel" style="margin-bottom:14px; text-align:center">
+    <strong x-text="'👑 Your reign: ' + reign.tried + ' experiment' + (reign.tried === 1 ? '' : 's') + ' tried, ' + reign.adopted + ' adopted'"></strong>
+  </div>
+
   <div class="panel" style="margin-bottom: 16px">
-    <h3 style="margin-top:0">🧪 Policy Lab</h3>
-    <p class="muted" style="margin-bottom:10px">Change a rule of society. The Lab forks this world into two shadow copies — one with your change, one without — runs both forward, and shows you the honest difference. Nothing is real until you adopt it.</p>
+    <h3 style="margin-top:0">🧪 Change a rule of society</h3>
+    <p class="muted" style="margin-bottom:10px">Pick a question. The Lab runs two twin worlds — with and without your change — and shows the honest difference. Nothing is real until you adopt it.</p>
     <div x-show="policyError" style="color:var(--red); font-size:12px; margin-bottom:8px" x-text="policyError"></div>
     <template x-for="knob in policyKnobs" :key="knob.id">
-      <div style="border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px">
-        <div style="font-weight:600; margin-bottom:6px">
+      <div style="border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px">
+        <div style="font-size:15px; font-weight:600; margin-bottom:8px">
           <span x-text="knob.question"></span>
-          <span class="badge" style="margin-left:8px" x-text="'now: ' + knob.current"></span>
         </div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px">
+        <div class="muted" style="font-size:12px; margin-bottom:10px">today: <span x-text="knob.current"></span></div>
+        <div style="display:flex; flex-wrap:wrap; gap:10px">
           <template x-for="opt in knob.options" :key="opt">
-            <button class="tab" @click="runPolicyExperiment(knob.id, opt)"
-                    :disabled="policyBusy" style="min-width:90px" x-text="opt"></button>
+            <button style="min-width:110px; padding:10px 14px; font-size:14px; border-radius:10px"
+                    :class="policyBusy && pendingOption === opt ? 'primary' : 'tab'"
+                    @click="runPolicyExperiment(knob.id, opt)"
+                    :disabled="policyBusy" x-text="opt"></button>
           </template>
         </div>
       </div>
     </template>
   </div>
 
-  <div class="panel" x-show="policyResult" style="margin-bottom: 16px">
-    <h3 style="margin-top:0">📊 Experiment: <span x-text="policyResult?.explanation"></span></h3>
+  <!-- running state -->
+  <div class="panel" x-show="policyBusy" style="margin-bottom:16px; text-align:center; padding:26px">
+    <div style="font-size:22px; margin-bottom:8px">⏳ Running two worlds…</div>
+    <div class="muted" style="font-size:13px">One with your change, one without. This takes about a minute — the verdict will appear here.</div>
+  </div>
+
+  <div class="panel" x-show="policyResult && !policyBusy" style="margin-bottom: 16px">
+    <h3 style="margin-top:0">📊 Verdict: <span x-text="policyResult?.explanation"></span></h3>
     <p class="muted" style="margin-bottom:10px">
-      Forked at tick <span x-text="policyResult?.fork_tick"></span>,
-      ran <span x-text="policyResult?.ticks"></span> ticks forward — same people, same history, one rule different.
+      Two twin worlds, <span x-text="policyResult?.ticks"></span> days forward — same people, same history, one rule different.
     </p>
     <template x-for="row in policyResult?.rows ?? []" :key="row.metric">
       <div style="border-left:4px solid var(--line); padding:8px 12px; margin-bottom:10px"
            :style="row.verdict === 'better' ? 'border-left-color:var(--green)' : (row.verdict === 'worse' ? 'border-left-color:var(--red)' : '')">
         <div style="font-weight:600" x-text="row.metric"></div>
         <div class="muted" style="font-size:12px" x-text="row.sentence"></div>
-        <div style="font-size:11px; color:var(--muted)">
+        <div style="font-size:11px; color:var(--muted)" title="exact numbers">
           baseline <span x-text="row.baseline"></span> → policy <span x-text="row.policy"></span>
         </div>
       </div>
@@ -658,101 +342,37 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 
 </div><!-- /seat grid -->
 
-<!-- WORLD VIEW -->
-<div class="grid" x-show="view === 'world'">
-
-  <!-- FLOW CHART -->
-  <div class="panel col-12">
-    <h3>🌊 Circular flow <span class="muted">units produced vs bought by citizens per tick — the loop must close</span></h3>
-    <div class="chart-wrap" style="height:240px"><canvas id="flowChart"></canvas></div>
-    <div style="display:flex; gap:14px; margin-top:8px; font-size:12px; flex-wrap:wrap">
-      <span class="muted">🔁 Loop:</span>
-      <span>🍞 consumed <span class="mono" x-text="fmt(analytics.circular?.consumed_totals?.bread ?? 0)"></span></span>
-      <span>💸 dividends <span class="mono" x-text="fmt(analytics.circular?.dividends_paid ?? 0)"></span> cr</span>
-      <span>🏥 services <span class="mono" x-text="fmt(analytics.circular?.services_paid ?? 0)"></span> cr</span>
-      <span>⚠️ unmet now <span class="mono" x-text="Object.keys(analytics.circular?.unmet_needs ?? {}).length"></span> citizens</span>
-    </div>
-  </div>
-
-  <!-- MONEY PIE -->
-  <div class="panel col-4">
-    <h3>💰 Where is the money?</h3>
-    <div class="chart-wrap"><canvas id="moneyPie"></canvas></div>
-    <div class="muted" style="font-size:11.5px; margin-top:8px">
-      Total <span class="mono" x-text="fmt(analytics.money_total)"></span> cr ·
-      minted <span class="mono" style="color:var(--green)" x-text="fmt(analytics.money_minted)"></span> ·
-      retired <span class="mono" style="color:var(--red)" x-text="fmt(analytics.money_retired)"></span>
-    </div>
-  </div>
-
-  <!-- PRODUCTION PIE -->
-  <div class="panel col-4">
-    <h3>🏭 What is produced <span class="muted">by sector, all time</span></h3>
-    <div class="chart-wrap"><canvas id="prodPie"></canvas></div>
-  </div>
-
-  <!-- PURCHASES PIE -->
-  <div class="panel col-4">
-    <h3>🛒 What citizens buy <span class="muted">by sector, all time</span></h3>
-    <div class="chart-wrap"><canvas id="buyPie"></canvas></div>
-  </div>
-
-  <!-- ALERTS -->
-  <div class="panel col-4">
-    <h3>🚨 World alerts <span class="muted" x-text="(analytics.alerts ?? []).length"></span></h3>
-    <div class="scroll-y" style="max-height:260px">
-      <template x-for="(a, i) in analytics.alerts ?? []" :key="i">
-        <div class="feed-item" :class="a.level" style="margin-bottom:6px; padding:6px 10px; border-left:3px solid; font-size:12px"
-             :style="a.level === 'warn' ? 'border-color:var(--yellow)' : a.level === 'alert' ? 'border-color:var(--red)' : a.level === 'flag' ? 'border-color:var(--purple)' : 'border-color:var(--accent)'">
-          <span x-text="a.msg"></span>
-        </div>
-      </template>
-      <div x-show="!(analytics.alerts ?? []).length" class="muted">All quiet.</div>
-    </div>
-  </div>
-
-  <!-- GOODS TABLE -->
-  <div class="panel col-8">
-    <h3>📦 All goods <span class="muted">flows, stocks, price vs cost</span></h3>
-    <div class="scroll-y" style="max-height:260px">
-    <table>
-      <template x-for="g in analytics.goods_table ?? []" :key="g.good">
-        <div class="goodrow">
-          <div style="display:flex; justify-content:space-between; align-items:center">
-            <span><strong x-text="String(g.good).replace(/_/g,' ')"></strong>
-              <span class="badge" :class="g.triage === 'essential' ? 'green' : g.triage === 'emergency' ? 'red' : 'gray'" style="margin-left:6px" x-text="g.triage"></span></span>
-            <span class="muted" style="font-size:11px" x-text="g.category"></span>
-          </div>
-          <div class="vbar" :title="'produced ' + fmt(g.produced_total) + ' · bought ' + fmt(g.bought_total) + ' · listed now ' + (g.listed_now || 0) + ' · coop stock ' + (g.coop_stock || 0) + ' · citizen stock ' + (g.citizen_stock || 0) + ' · common pool ' + (g.common_pool || 0)"><div class="vbar-fill blue" :style="'width:' + Math.min(100, Math.round(100 * (g.bought_total || 0) / Math.max(1, g.produced_total || 1))) + '%'"></div></div>
-          <div class="vbar" :title="'price ' + (g.last_price ?? '—') + ' vs fair cost ' + (g.cost_baseline ?? '—')"><div class="vbar-fill" :style="priceBar(g.good, g.last_price ?? g.cost_baseline ?? 0)"></div></div>
-        </div>
-      </template>
-    </div>
-  </div>
-
-</div><!-- /world grid -->
-
-<!-- RESET MODAL -->
-<div x-show="resetModal" style="position:fixed; inset:0; background:#000a; display:flex; align-items:center; justify-content:center; z-index:50" @click.self="resetModal = false">
-  <div class="panel" style="width:380px">
-    <h3>⟲ Reset economy</h3>
-    <div class="action-form">
-      <div class="form-row">
-        <label>Seed</label>
-        <input type="number" x-model.number="resetConfig.seed">
+<!-- THE CHRONICLE -->
+<div x-show="view === 'chronicle'" style="max-width: 760px; margin: 0 auto; padding: 0 12px">
+  <div class="panel">
+    <h3 style="margin-top:0">📜 The Chronicle <span class="muted">— what happened, in plain words</span></h3>
+    <div class="muted" style="font-size:12px; margin-bottom:10px" x-text="'Today is day ' + (chronicle.now ?? state.tick ?? 1) + '. Scroll back through your reign.'"></div>
+    <template x-for="(ev, i) in chronicle.events.slice().reverse()" :key="i + ev.day + ev.text">
+      <div style="display:flex; gap:10px; padding:7px 4px; border-bottom:1px solid var(--line); align-items:baseline"
+           :style="ev.cls === 'bad' ? 'color:var(--red)' : (ev.cls === 'good' ? 'color:var(--green)' : '')">
+        <span x-text="ev.icon"></span>
+        <span style="font-size:13.5px" x-text="ev.text"></span>
       </div>
-      <div class="form-row">
-        <label>Governance</label>
-        <select x-model="resetConfig.governance">
-          <option :value="false">bootstrap (instant rules)</option>
-          <option :value="true">LIVE (votes required)</option>
-        </select>
-      </div>
-      <div class="form-row" style="justify-content:flex-end; gap:8px">
-        <button @click="resetModal = false">Cancel</button>
-        <button class="danger" @click="reset()">Reset</button>
-      </div>
+    </template>
+    <div class="muted" style="text-align:center; padding:12px; font-size:12px" x-show="!chronicle.events.length">
+      Nothing has happened yet — hit autoplay and history will write itself here.
     </div>
+  </div>
+  <div style="text-align:center; margin-top:14px">
+    <button class="tab" @click="setView('seat')">🏠 Play as a citizen →</button>
+  </div>
+</div>
+
+<!-- first-visit tour -->
+<div x-show="tourOpen" x-transition style="position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:60; display:flex; align-items:center; justify-content:center" @click.self="closeTour()">
+  <div class="panel" style="max-width:420px; margin:0">
+    <h3 style="margin-top:0">Welcome to your world 🌍</h3>
+    <div style="font-size:13.5px; line-height:1.7">
+      <p><strong>1 · Watch</strong> — the charts up top tell you how society is doing. Green is good.</p>
+      <p><strong>2 · Change a rule</strong> — open 🧪 The Lab, pick a question, and two twin worlds will show you the outcome before you commit.</p>
+      <p><strong>3 · See the story</strong> — 📜 The Chronicle writes down everything that happens on your watch.</p>
+    </div>
+    <button class="primary" style="width:100%; margin-top:10px" @click="closeTour()">Got it — let me in</button>
   </div>
 </div>
 
@@ -766,9 +386,13 @@ const chartStore = {};  // Chart.js instances live OUTSIDE Alpine's reactive pro
 
 function dashboard() {
   return {
-    state: {}, timeline: {}, autoplay: { running: false, interval: 0.75 },
-    view: 'story', analytics: {}, worldReady: false,
-    story: { cards: [], tick: 0 },
+    state: {}, timeline: {}, autoplay: { running: false, interval: 0.5 },
+    view: 'world', analytics: {}, worldReady: false,
+    story: { cards: [], tick: 0, population: 0 },
+    chronicle: { now: 0, events: [] },
+    tourOpen: !localStorage.getItem('ob_tour_done'),
+    reign: { tried: 0, adopted: 0 },
+    pendingOption: '',
     flows: { nodes: [], edges: [], pools: {}, population: { met_share: 100 }, weather: [] },
     mapStory: '',
     // Policy Lab
@@ -793,13 +417,16 @@ function dashboard() {
     async init() {
       await this.refresh();
       this.action.sender = this.state.citizens?.[0] ?? '';
-      this.initCharts();
       this.loadStory();
+      this.$nextTick(() => { this.loadFlows(); this.startCanvas(); this.initHeroCharts(); });
       this.pollTimer = setInterval(() => this.refresh(), 1000);
     },
 
     async loadStory() {
-      try { this.story = await this.api('/api/story'); } catch (e) { /* restarting */ }
+      try {
+        this.story = await this.api('/api/story');
+        this.story.population = Object.keys(this.state.citizens ?? {}).length || this.story.population || 0;
+      } catch (e) { /* restarting */ }
     },
 
     async loadFlows() {
@@ -808,6 +435,63 @@ function dashboard() {
 
     sevClass(sev) {
       return { good: 'sev-good', watch: 'sev-watch', bad: 'sev-bad', info: 'sev-info' }[sev] || 'sev-info';
+    },
+
+    get verdict() {
+      const cards = this.story.cards || [];
+      const health = cards.find(c => c.id === 'economy_health');
+      const sev = health?.severity;
+      if (sev === 'bad') return { word: '🔴 CRISIS', color: '#f85149', sentence: health?.sentence ?? '' };
+      if (sev === 'watch') return { word: '🟡 STRAINED', color: '#d29922', sentence: health?.sentence ?? '' };
+      if (sev === 'good') return { word: '🟢 THRIVING', color: '#3fb950', sentence: health?.sentence ?? '' };
+      return { word: '…', color: '#6e7681', sentence: 'Warming up the world — give it a few ticks.' };
+    },
+
+    get alerts() {
+      const out = [];
+      for (const c of this.story.cards || []) {
+        if (c.id === 'economy_health') continue;
+        if (c.severity === 'watch' || c.severity === 'bad') {
+          out.push({ icon: c.icon ?? '⚠️', text: c.sentence });
+        }
+      }
+      return out.slice(0, 4);
+    },
+
+    setSpeed(v) {
+      this.autoplay.interval = v;
+      this.setAutoplay();
+    },
+
+    async loadChronicle() {
+      try { this.chronicle = await this.api('/api/chronicle'); } catch (e) { /* restarting */ }
+    },
+
+    closeTour() {
+      this.tourOpen = false;
+      try { localStorage.setItem('ob_tour_done', '1'); } catch (e) {}
+    },
+
+    initHeroCharts() {
+      this.$nextTick(() => {
+        try {
+          const needs = this.story.cards?.find(c => c.id === 'economy_health');
+          const ineq = this.story.cards?.find(c => c.id === 'inequality');
+          const mk = (id, label, series, color, invert) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (chartStore[id]) chartStore[id].destroy();
+            const data = (series ?? []).slice(-120);
+            chartStore[id] = new Chart(el.getContext('2d'), {
+              type: 'line',
+              data: { labels: data.map((_, i) => i + 1), datasets: [{ label, data, borderColor: color, tension: 0.3, pointRadius: 0, fill: true, backgroundColor: color + '22' }] },
+              options: { animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false } } },
+            });
+          };
+          mk('heroNeeds', 'people with unmet needs', needs?.series, '#f85149');
+          mk('heroGini', 'inequality', ineq?.series, '#d29922');
+        } catch (e) { /* charts optional */ }
+      });
     },
 
     spark(card) {
@@ -825,8 +509,7 @@ function dashboard() {
     startCanvas() {
       if (this._raf) cancelAnimationFrame(this._raf);
       const loop = () => {
-        if (this.view === 'map') this.drawMap();
-        else if (this.view === 'stage') this.drawStage();
+        if (this.view === 'world') { this.drawMap(); this.drawStage(); }
         else return; // left the canvas view: loop stops
         this._raf = requestAnimationFrame(loop);
       };
@@ -1065,11 +748,9 @@ function dashboard() {
         this.state = s;
         this.timeline = s.timeline ?? {};
         this.autoplay = s.autoplay ?? this.autoplay;
-        this.updateCharts();
         if (this.view === 'world') {
-          const a = await this.api('/api/analytics');
-          this.analytics = a;
-          this.updateWorldCharts();
+          await this.loadStory();
+          this.initHeroCharts();
         }
         if (this.view === 'seat') {
           await this.loadSeat();
@@ -1079,16 +760,11 @@ function dashboard() {
 
     setView(v) {
       this.view = v;
-      if (v === 'story') {
-        this.loadStory();
-      }
-      if (v === 'map' || v === 'stage') {
-        this.$nextTick(() => { this.loadFlows(); this.startCanvas(); });
-      }
       if (v === 'world') {
-        this.$nextTick(() => this.initWorldCharts());
-        this.api('/api/analytics').then(a => { this.analytics = a; this.updateWorldCharts(); });
+        this.loadStory();
+        this.$nextTick(() => { this.loadFlows(); this.startCanvas(); this.initHeroCharts(); });
       }
+      if (v === 'chronicle') this.loadChronicle();
       if (v === 'policy') this.loadPolicyKnobs();
       if (v === 'seat') {
         this.$nextTick(() => this.initSeatChart());
@@ -1105,13 +781,28 @@ function dashboard() {
     },
     async runPolicyExperiment(knobId, optLabel) {
       this.policyBusy = true; this.policyError = ''; this.policyResult = null; this.adoptable = false;
+      this.pendingOption = optLabel;
       try {
-        const d = await this.api('/api/policy/experiment',
-                                 { method: 'POST', body: { knob_id: knobId, option_id: optLabel, ticks: 200 } });
-        if (!d.ok) { this.policyError = d.error ?? 'experiment failed'; }
-        else { this.policyResult = d.result; this.policyResult.knob_id = knobId; this.policyResult.option_id = optLabel; this.adoptable = true; }
+        const d = await this.api('/api/policy/experiment/start',
+                                 { method: 'POST', body: { knob_id: knobId, option_id: optLabel, ticks: 100 } });
+        if (!d.ok) { this.policyError = d.error ?? 'experiment failed'; this.policyBusy = false; this.pendingOption = ''; return; }
+        const jobId = d.job_id;
+        // poll until the twin worlds finish (server runs them in background)
+        for (let i = 0; i < 600; i++) {
+          await new Promise(r => setTimeout(r, 2000));
+          const r = await this.api('/api/policy/experiment/result?job_id=' + encodeURIComponent(jobId));
+          if (!r.ok) { this.policyError = r.error ?? 'experiment lost'; break; }
+          if (r.status === 'done') {
+            this.policyResult = r.result; this.policyResult.knob_id = knobId; this.policyResult.option_id = optLabel;
+            this.adoptable = true;
+            this.reign.tried++;
+            break;
+          }
+          if (r.status === 'error') { this.policyError = r.error ?? 'experiment failed'; break; }
+        }
+        if (!this.adoptable && !this.policyError) this.policyError = 'experiment timed out';
       } catch (e) { this.policyError = 'experiment failed: ' + e.message; }
-      this.policyBusy = false;
+      this.policyBusy = false; this.pendingOption = '';
     },
     async adoptPolicy() {
       if (!this.policyResult) return;
@@ -1120,7 +811,7 @@ function dashboard() {
         const d = await this.api('/api/policy/adopt',
                                  { method: 'POST', body: { knob_id: this.policyResult.knob_id, option_id: this.policyResult.option_id } });
         if (!d.ok) { this.policyError = d.error ?? 'adoption failed'; }
-        else { await this.loadPolicyKnobs(); this.policyResult = null; this.adoptable = false; }
+        else { this.reign.adopted++; await this.loadPolicyKnobs(); this.policyResult = null; this.adoptable = false; }
       } catch (e) { this.policyError = 'adoption failed: ' + e.message; }
       this.adoptBusy = false;
     },

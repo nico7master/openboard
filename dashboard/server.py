@@ -915,6 +915,9 @@ class Run:
 
 app = Flask(__name__, static_folder=str(Path(__file__).parent / "static"), static_url_path="/static")
 RUN = Run()
+# async policy-experiment jobs: job_id -> {status, result, error}
+POLICY_JOBS: dict[str, dict[str, Any]] = {}
+POLICY_JOBS_LOCK = threading.Lock()
 AUTOPLAY_THREAD: threading.Thread | None = None
 
 
@@ -1099,6 +1102,53 @@ def api_tick():
     return jsonify({"ok": True, "events": events})
 
 
+@app.get("/api/chronicle")
+def api_chronicle():
+    """Story feed: day-numbered plain sentences derived from the ledger.
+    Covers rule changes, shocks, and essentials-shortage onsets."""
+    import json as _json
+    st = RUN.state
+    day = max(st.tick, 1)
+    events: list[dict[str, Any]] = []
+    prev_shocks: set[str] = set()
+    prev_unmet_goods: set[str] = set()
+    # walk applied events in order, emitting sentences on transitions
+    for ev in st.applied:
+        a = ev.get("action")
+        t = ev.get("tick") or 0
+        if a == "RULE_CHANGE":
+            events.append({"day": t, "icon": "⚖️",
+                           "text": f"Day {t} — A new rule was adopted (v{ev.get('to_version', st.ruleset_version)})."})
+        elif a == "SHOCK_START":
+            kind = str(ev.get("kind", "shock")).replace("_", " ")
+            events.append({"day": t, "icon": "🌩️",
+                           "text": f"Day {t} — A {kind} hit the economy.",
+                           "cls": "bad"})
+            prev_shocks.add(kind)
+        elif a == "SHOCK_END":
+            kind = str(ev.get("kind", "shock")).replace("_", " ")
+            events.append({"day": t, "icon": "🌤️",
+                           "text": f"Day {t} — The {kind} is over.",
+                           "cls": "good"})
+            prev_shocks.discard(kind)
+        elif a == "MARKET_CLEAR_ESSENTIAL":
+            good = ev.get("good")
+            sold = ev.get("sold", 0) or 0
+            if sold == 0 and good not in prev_unmet_goods:
+                events.append({"day": t, "icon": "⚠️",
+                               "text": f"Day {t} — {str(good).replace('_',' ')} became unavailable.",
+                               "cls": "bad"})
+                prev_unmet_goods.add(good)
+            elif sold > 0:
+                prev_unmet_goods.discard(good)
+        elif a == "FOUND_COOP":
+            events.append({"day": t, "icon": "🌱",
+                           "text": f"Day {t} — Citizens founded a new workshop ({ev.get('coop_id', '?').replace('_', ' ')}).",
+                           "cls": "good"})
+    # keep the feed bounded, newest last
+    return jsonify({"ok": True, "now": day, "events": events[-200:]})
+
+
 @app.get("/api/stability")
 def api_stability():
     """WP5 heat-card source: aggregates sweeps/*.json into a stability
@@ -1165,20 +1215,42 @@ def api_policy_knobs():
     return jsonify({"ok": True, "knobs": knobs})
 
 
-@app.post("/api/policy/experiment")
-def api_policy_experiment():
-    """Fork the live world; drive baseline + policy; return comparison."""
+@app.post("/api/policy/experiment/start")
+def api_policy_experiment_start():
+    """Fork-and-compare in a BACKGROUND thread; returns job_id immediately.
+    The twin run takes minutes — synchronously it exceeded tunnel gateway
+    timeouts and returned empty bodies to browsers."""
     from openboard.policy import fork_experiment, compare
     body = request.get_json(force=True, silent=True) or {}
     knob_id, option_id = body.get("knob_id"), body.get("option_id")
-    ticks = int(body.get("ticks") or 200)
+    ticks = int(body.get("ticks") or 100)
     if not knob_id or not option_id:
         return jsonify({"ok": False, "error": "knob_id and option_id required"}), 400
-    try:
-        res = fork_experiment(RUN, knob_id, option_id, ticks=ticks)
-    except ValueError as e:
-        return jsonify({"ok": False, "error": str(e)}), 400
-    return jsonify({"ok": True, "result": {**res, "rows": compare(res)}})
+    job_id = f"exp_{RUN.state.tick}_{int(time.time() * 1000)}"
+    with POLICY_JOBS_LOCK:
+        POLICY_JOBS[job_id] = {"status": "running", "result": None, "error": None}
+
+    def _run_job():
+        try:
+            res = fork_experiment(RUN, knob_id, option_id, ticks=ticks)
+            with POLICY_JOBS_LOCK:
+                POLICY_JOBS[job_id] = {"status": "done", "result": {**res, "rows": compare(res)}, "error": None}
+        except Exception as e:  # surface any failure to the poller
+            with POLICY_JOBS_LOCK:
+                POLICY_JOBS[job_id] = {"status": "error", "result": None, "error": str(e)}
+
+    threading.Thread(target=_run_job, daemon=True).start()
+    return jsonify({"ok": True, "job_id": job_id})
+
+
+@app.get("/api/policy/experiment/result")
+def api_policy_experiment_result():
+    job_id = request.args.get("job_id", "")
+    with POLICY_JOBS_LOCK:
+        job = POLICY_JOBS.get(job_id)
+        if job is None:
+            return jsonify({"ok": False, "error": "unknown job"}), 404
+        return jsonify({"ok": True, **job})
 
 
 @app.post("/api/policy/adopt")
