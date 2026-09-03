@@ -11,6 +11,13 @@ for t in range(2, 2001):
         actions.extend(meta["fn"](name, run.state, run.state.active_ruleset_params(), t, rng))
     run._apply_batch(t, actions)
     run._record_timeline()
+    # Memory hygiene: the gate only reads final unmet streaks, but Run
+    # accumulates every applied event + tx batch (~3.8k events/tick),
+    # which OOM-kills the 10 GB cgroup well before tick 2000
+    # (observed: seed RSS 8.2 GB). Prune what the gate never reads.
+    run.state.applied.clear()
+    run.batches.clear()
+    run._last_events = []
 s = run.state
 ESSENTIALS = {"bread", "water", "electricity", "meals"}
 worst_ess, worst_breadth = 0, 0

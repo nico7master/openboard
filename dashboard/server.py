@@ -476,8 +476,9 @@ class Run:
             for plan in BASELINE_COOPS
         ]
         self._apply_batch(1, founding)
+        _upc = int(self._params().get("money_cap", {}).get("units_per_credit", 100)) if self._params().get("money_cap", {}).get("enabled") else 1
         for coop, amount in BASELINE_TREASURIES.items():
-            self._inject({"after_tick": 1, "op": "treasury", "coop": coop, "amount": amount})
+            self._inject({"after_tick": 1, "op": "treasury", "coop": coop, "amount": amount * _upc})
         # one-time capital seed (recorded injection, replayed on load)
         for coop, goods in CAPITAL_BOOTSTRAP.items():
             self._inject({"after_tick": 1, "op": "capital", "coop": coop, "goods": goods})
@@ -876,6 +877,24 @@ class Run:
                                     "quorum_bp": 5_000, "trial_period_ticks": 10}
             params["oversight"] = dict(params["oversight"])
             params["oversight"]["council_members"] = ["worker_a", "worker_b"]
+        # D18: money-denominated rule constants above were tuned in LEGACY
+        # credits. Fixed-supply worlds run in base units (upc per credit) —
+        # scale them once here, AFTER all assignments, so institutional
+        # channels (advances, buffers, tax thresholds, dividend caps,
+        # rents) keep their real purchasing power. Without this the
+        # channels collapsed to rounding errors: coops starved at birth
+        # while the pool hoarded 20.9M cr (gate seed42
+        # worst_essential=1999, 2026-09-03).
+        upc = int(params.get("money_cap", {}).get("units_per_credit", 100)) if params.get("money_cap", {}).get("enabled") else 1
+        if upc != 1:
+            params["surplus_spending"]["min_pool_buffer"] *= upc
+            params["surplus_spending"]["max_dividend_per_tick"] *= upc
+            params["surplus_spending"]["max_dividend_per_citizen_tick"] *= upc
+            params["capital_rent"]["per_machine_used"] *= upc
+            params["capital_rent"]["per_tool_used"] *= upc
+            params["wealth_tax"]["threshold"] *= upc
+            params["capital_backstop"]["input_advance"]["max_per_coop"] *= upc
+            params["coop_distribution"]["buffer"] *= upc
         return params
 
     # ------------------------------------------------------------ views

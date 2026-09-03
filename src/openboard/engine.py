@@ -800,7 +800,15 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     # Floor division priced high-output staples (100 grain per run) at 0,
     # collapsing the whole market into pure surplus.
     vwap_on = (params.get("cost_accounting") or {}).get("method") == "vwap"
-    labor_cost = recipe["labor_hours"] * runs  # 1 credit/hour base accounting
+    # D18: under fixed supply (money_cap), ALL state money is in base
+    # units — wages are paid at hours*upc — so the baseline stamp must
+    # use the same scale. Legacy worlds (no cap) keep 1 credit/hour.
+    # Before this fix every PRODUCE re-stamped baselines ~100x too low:
+    # bread sold at 9u while its bakers were owed 800u/day — treasuries
+    # drained 100x faster than sales refilled (gate seed42
+    # worst_essential=1999, 2026-09-03).
+    _mc_upc = int((params.get("money_cap") or {}).get("units_per_credit", 100)) if (params.get("money_cap") or {}).get("enabled") else 1
+    labor_cost = recipe["labor_hours"] * runs * _mc_upc
     if vwap_on:
         coop_id_ = tx.payload["coop_id"]
         energy_cost = energy_consumed * _vwap_unit_cost(state, coop_id_, "electricity") if energy_consumed else 0
@@ -1455,7 +1463,13 @@ def _perishability_phase(state: WorldState, tick: int,
     shelf = per.get("shelf_life") or {}
     events: list[dict[str, Any]] = []
 
-    # citizen pantries
+    # citizen pantries — AGGREGATED per good per tick: proportional decay
+    # would otherwise emit an event per citizen per good per tick forever
+    # (buy-ahead keeps pantries above threshold), flooding state.applied
+    # and ballooning memory past the cgroup limit (observed: seed RSS
+    # 8.2 GB at t<2000, OOM kills on 3 gate seeds).
+    citizen_spoil: dict[str, int] = {}
+    citizen_holders: dict[str, int] = {}
     for citizen in sorted(state.citizen_inventory.keys()):
         inv = state.citizen_inventory[citizen]
         for good in sorted(inv.keys()):
@@ -1466,8 +1480,13 @@ def _perishability_phase(state: WorldState, tick: int,
             if spoil <= 0:
                 continue
             inv[good] -= spoil
-            events.append({"tick": tick, "action": "SPOIL", "holder": citizen,
-                           "holder_kind": "citizen", "good": good, "qty": spoil})
+            citizen_spoil[good] = citizen_spoil.get(good, 0) + spoil
+            citizen_holders[good] = citizen_holders.get(good, 0) + 1
+    for good in sorted(citizen_spoil.keys()):
+        events.append({"tick": tick, "action": "SPOIL", "holder": "*citizens",
+                       "holder_kind": "citizens", "good": good,
+                       "qty": citizen_spoil[good],
+                       "holders": citizen_holders[good]})
 
     # coop inventories
     for coop_id in sorted(state.coops.keys()):
