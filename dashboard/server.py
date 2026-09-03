@@ -1250,6 +1250,14 @@ def api_availability():
     return jsonify({"ok": True, "tick": RUN.state.tick, "rows": rows})
 
 
+def _recipe_making(st, good: str) -> str | None:
+    """The first recipe whose outputs include this good."""
+    for rid, rec in sorted(st.recipes.items()):
+        if good in (rec.get("outputs") or {}):
+            return rid
+    return None
+
+
 @app.get("/api/advice")
 def api_advice():
     """The built-in advisor: ranks what's wrong, explains the cause in plain
@@ -1268,7 +1276,9 @@ def api_advice():
         inputs = rec.get("inputs") or {}
         missing_inputs = [g for g, need in inputs.items() if (inv.get(g, 0) or 0) < float(need)]
         if missing_inputs:
-            idle.append({"coop": c.get("name") or cid, "needs": missing_inputs})
+            idle.append({"coop": c.get("name") or cid,
+                         "makes": sorted((rec.get("outputs") or {}).keys()),
+                         "needs": missing_inputs})
 
     advice = []
     for r in rows:
@@ -1277,22 +1287,34 @@ def api_advice():
         good = r["good"]
         n = r["unmet"]
         if r["producers"] == 0:
+            recipe_id = _recipe_making(st, good)
             advice.append({
                 "problem": f"{n} citizens can't buy {good.replace('_', ' ')} — nobody produces it",
                 "cause": "No workshop has this recipe. The good was never part of the production plan.",
-                "action": f"Found a co-op for {good.replace('_', ' ')} (action FOUND_COOP with its recipe), or accept doing without it",
+                "action": f"Found a workshop for {good.replace('_', ' ')} — one click below",
                 "lever": "found_coop",
+                "fix": {"type": "found_coop", "recipe_id": recipe_id} if recipe_id else None,
             })
         elif "supply chain" in r["why"] or "inputs" in r["why"]:
-            starved = [i for i in idle if good in (i.get("needs") or [])]
+            starved = [i for i in idle if good in (i.get("makes") or [])]
             hint = (f"Workshops making {good.replace('_', ' ')} need: " +
                     ", ".join(sorted({g for i in starved for g in i['needs']})) +
                     ". Fix that upstream good first — more producers or more of it listed for sale.") if starved else                 "Fix the upstream good: more producers, or list more of it for sale."
+            fix = None
+            for i in starved:
+                for g in (i.get("needs") or []):
+                    rid = _recipe_making(st, g)
+                    if rid:
+                        fix = {"type": "found_coop", "recipe_id": rid, "for_good": g}
+                        break
+                if fix:
+                    break
             advice.append({
                 "problem": f"{n} citizens can't buy {good.replace('_', ' ')} — the chain above it is broken",
                 "cause": r["why"],
                 "action": hint or "Fix the upstream good: more producers, or list more of it for sale",
                 "lever": "supply_chain",
+                "fix": fix,
             })
         elif "afford" in r["why"]:
             advice.append({
@@ -1310,6 +1332,83 @@ def api_advice():
             })
     advice.sort(key=lambda a: -len(a["problem"]))
     return jsonify({"ok": True, "tick": tick, "advice": advice[:6], "idle_workshops": idle[:6]})
+
+
+@app.get("/api/saves")
+def api_saves():
+    """Decision save points: the world frozen just before each rule change."""
+    saves_dir = Path(__file__).resolve().parent / "saves"
+    out = []
+    if saves_dir.is_dir():
+        for f in sorted(saves_dir.glob("decision_*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+            try:
+                d = json.loads(f.read_text())
+                out.append({"file": f.name, "tick": d.get("tick"),
+                            "label": f.name[len("decision_"):-5].replace("-", " ")})
+            except Exception:
+                continue
+    return jsonify({"ok": True, "saves": out[:25]})
+
+
+@app.post("/api/restore")
+def api_restore():
+    """Roll the world back to a decision save point."""
+    global RUN
+    data = request.get_json(force=True, silent=True) or {}
+    name = str(data.get("file", ""))
+    if not name.startswith("decision_") or "/" in name or ".." in name:
+        return jsonify({"ok": False, "error": "bad save name"}), 400
+    f = Path(__file__).resolve().parent / "saves" / name
+    if not f.exists():
+        return jsonify({"ok": False, "error": "save not found"}), 404
+    try:
+        new_run = Run.from_save(json.loads(f.read_text()))
+    except (ValueError, KeyError) as exc:
+        return jsonify({"ok": False, "error": f"restore failed: {exc}"}), 400
+    with RUN.lock:
+        RUN.autoplay["running"] = False
+    RUN = new_run
+    return jsonify({"ok": True, "tick": RUN.state.tick})
+
+
+@app.post("/api/fix/found_coop")
+def api_fix_found_coop():
+    """One-click fix for 'nobody can make this good': submit a real
+    FOUND_COOP through the engine's own validation. Picks two citizens
+    (jobless first, then from the largest coops) and declares the recipe."""
+    body = request.get_json(force=True, silent=True) or {}
+    recipe_id = str(body.get("recipe_id", ""))
+    if not recipe_id:
+        return jsonify({"ok": False, "error": "recipe_id required"}), 400
+    with RUN.lock:
+        s = RUN.state
+        if recipe_id not in s.recipes:
+            return jsonify({"ok": False, "error": f"unknown recipe {recipe_id}"}), 400
+        in_coop: set[str] = set()
+        for c in s.coops.values():
+            in_coop.update(c.get("members") or [])
+        free = [c for c in sorted(s.balances.keys()) if c not in in_coop]
+        members = free[:2]
+        if len(members) < 2:
+            big = sorted(s.coops.values(), key=lambda c: -len(c.get("members") or []))
+            for c in big:
+                for m in (c.get("members") or []):
+                    if m not in members:
+                        members.append(m)
+                    if len(members) >= 2:
+                        break
+                if len(members) >= 2:
+                    break
+        if len(members) < 2:
+            return jsonify({"ok": False, "error": "not enough citizens to found a coop"}), 400
+        coop_id = f"{recipe_id}_coop_{s.tick}"
+        RUN.pending.append(Transaction(
+            tick=s.tick + 1, sender=members[0], action="FOUND_COOP",
+            payload={"coop_id": coop_id, "name": recipe_id.replace("_", " ") + " coop",
+                     "members": members, "recipe_id": recipe_id},
+            ruleset_version=s.ruleset_version))
+    return jsonify({"ok": True, "coop": coop_id, "members": members,
+                    "note": "founding queued — the workshop appears after the next day clears"})
 
 
 @app.get("/api/stability")
@@ -1394,6 +1493,17 @@ def api_policy_adopt():
         return jsonify({"ok": False, "error": "unknown option"}), 400
     with RUN.lock:
         s = RUN.state
+        # decision save point: freeze the world exactly as it was BEFORE this
+        # law, so the player can always roll the decision back
+        try:
+            saves_dir = Path(__file__).resolve().parent / "saves"
+            saves_dir.mkdir(exist_ok=True)
+            snap_tick = RUN.state.tick
+            snap_name = (f"decision_t{snap_tick}_{body.get('knob_id', 'x')}"
+                         f"_{body.get('option_id', 'x')}.json").replace("/", "-")
+            (saves_dir / snap_name).write_text(json.dumps(RUN.to_save()))
+        except Exception:
+            pass  # a snapshot failure must never block a democratic decision
         params = _apply_patch_to_params(s.active_ruleset_params(), opt["patch"])
         reason = validate_params(params, known_goods=set(s.goods.keys()))
         if reason is not None:

@@ -186,6 +186,15 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
       <div style="font-weight:600; font-size:13.5px" x-text="'⚠️ ' + a.problem"></div>
       <div class="muted" style="font-size:12.5px; margin-top:2px" x-text="'Why: ' + a.cause"></div>
       <div style="font-size:12.5px; color:var(--green,#3fb950)" x-text="'→ ' + a.action"></div>
+      <template x-if="a.fix && a.fix.type === 'found_coop' && a.fix.recipe_id">
+        <div style="margin-top:6px">
+          <button class="tab" style="border:1px solid var(--green,#3fb950); color:var(--green,#3fb950)"
+                  @click="doFix(a.fix)">
+            <span x-text="a.fix.for_good ? ('🔧 Do it — found a workshop for ' + a.fix.for_good.replace('_',' ')) : '🔧 Do it — found a workshop'"></span>
+          </button>
+          <span class="muted" style="font-size:11.5px; margin-left:6px" x-text="fixNote"></span>
+        </div>
+      </template>
     </div>
   </template>
 </div>
@@ -208,7 +217,21 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 
 <!-- THE LAB -->
 <div x-show="view === 'policy'" style="max-width: 860px; margin: 0 auto; padding: 0 12px">
+<!-- DECISION SAVE POINTS -->
+  <div class="panel" style="margin-bottom:16px" x-init="loadSaves()" x-effect="if (state.tick % 10 === 0) loadSaves()">
+    <h3 style="margin-top:0">⏪ Decision save points <span class="muted">— the world frozen just before each law; roll back anytime</span></h3>
+    <div x-show="!saves.length" class="muted" style="padding:2px 8px; font-size:13px">No decisions yet — adopt a policy and a save point appears here automatically.</div>
+    <template x-for="sv in saves" :key="sv.file">
+      <div style="display:flex; align-items:center; gap:10px; padding:5px 8px; border-bottom:1px solid var(--line); font-size:13px">
+        <span class="badge" x-text="'day ' + (sv.tick ?? '?')"></span>
+        <span style="flex:1" x-text="sv.label"></span>
+        <button class="tab" @click="restoreSave(sv.file)">⏪ Restore</button>
+      </div>
+    </template>
+  </div>
   <!-- reign strip -->
+
+  <!-- reign strip (original) -->
   <div class="panel" style="margin-bottom:14px; text-align:center">
     <strong x-text="'👑 Your reign: ' + reign.tried + ' experiment' + (reign.tried === 1 ? '' : 's') + ' tried, ' + reign.adopted + ' adopted'"></strong>
   </div>
@@ -265,7 +288,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <h3 style="margin-top:0">Welcome to your world 🌍</h3>
     <div style="font-size:13.5px; line-height:1.7">
       <p><strong>1 · Watch</strong> — the charts up top tell you how society is doing. Green is good.</p>
-      <p><strong>2 · Change a rule</strong> — open 🧪 The Lab, pick a question, and two twin worlds will show you the outcome before you commit.</p>
+      <p><strong>2 · Change a rule</strong> — open 🧪 The Lab, pick a question and it becomes law immediately — save points let you roll any decision back.</p>
       <p><strong>3 · See the story</strong> — 📜 The Chronicle writes down everything that happens on your watch.</p>
     </div>
     <button class="primary" style="width:100%; margin-top:10px" @click="closeTour()">Got it — let me in</button>
@@ -288,6 +311,8 @@ function dashboard() {
     chronicle: { now: 0, events: [] },
     availability: [],
     advice: [],
+    fixNote: '',
+    saves: [],
     tourOpen: !localStorage.getItem('ob_tour_done'),
     reign: { tried: 0, adopted: 0 },
     pendingOption: '',
@@ -369,6 +394,21 @@ function dashboard() {
       try { this.availability = (await this.api('/api/availability')).rows ?? []; } catch (e) { /* restarting */ }
     },
 
+    async doFix(fix) {
+      if (!fix || !fix.recipe_id) return;
+      try {
+        await this.api('/api/fix/found_coop', { recipe_id: fix.recipe_id });
+        this.fixNote = '✓ founding queued — the workshop appears after the next day clears';
+        setTimeout(() => { this.fixNote = ''; }, 8000);
+      } catch (e) { this.fixNote = '✗ ' + (e.message || 'failed'); }
+    },
+    async loadSaves() {
+      try { this.saves = (await this.api('/api/saves')).saves ?? []; } catch (e) { /* restarting */ }
+    },
+    async restoreSave(file) {
+      if (!confirm('Roll the world back to this decision point? Everything after it will be lost.')) return;
+      try { await this.api('/api/restore', { file }); window.location.reload(); } catch (e) { alert('Restore failed'); }
+    },
     async loadAdvice() {
       try { this.advice = (await this.api('/api/advice')).advice ?? []; } catch (e) { /* restarting */ }
     },
