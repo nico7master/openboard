@@ -581,6 +581,32 @@ def _skill_gain(state: WorldState, citizen: str, coop_id: str, hours: int,
     state.skills[key] = state.skills.get(key, 0) + hours
 
 
+def _memory_bump(state: WorldState, citizen: str, good: str,
+                 params: dict[str, Any]) -> None:
+    """WP1.4: an unmet day etches the shortage into memory (+bump, cap 1000)."""
+    dm = params.get("demand_memory") or {}
+    if not dm.get("enabled"):
+        return
+    bump = int(dm.get("bump", 250))
+    key = f"{citizen}|{good}"
+    state.shortage_memory[key] = min(1000, state.shortage_memory.get(key, 0) + bump)
+
+
+def _memory_decay(state: WorldState, params: dict[str, Any]) -> None:
+    """Memory fades ~1%/tick — remembered pain eases over ~2 years."""
+    dm = params.get("demand_memory") or {}
+    if not dm.get("enabled"):
+        return
+    for key in list(state.shortage_memory.keys()):
+        v = state.shortage_memory[key]
+        if v > 0:
+            nv = v - max(1, v // 100)  # max(1,..): values <100 would stall at v-0
+            if nv <= 0:
+                del state.shortage_memory[key]
+            else:
+                state.shortage_memory[key] = nv
+
+
 def _skill_decay(state: WorldState, params: dict[str, Any]) -> None:
     """Skills fade slowly when idle: 1% of hours lost per tick."""
     if not (params.get("skills") or {}).get("enabled"):
@@ -588,7 +614,7 @@ def _skill_decay(state: WorldState, params: dict[str, Any]) -> None:
     for key in list(state.skills.keys()):
         v = state.skills[key]
         if v > 0:
-            state.skills[key] = v - v // 100
+            state.skills[key] = v - max(1, v // 100)  # same stall fix
 
 
 def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
@@ -1514,6 +1540,7 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
             else:
                 streaks = state.unmet_needs.setdefault(citizen, {})
                 streaks[good] = streaks.get(good, 0) + 1
+                _memory_bump(state, citizen, good, params)
                 unmet[good] = True
         if consumed or unmet:
             events.append({
@@ -2648,6 +2675,8 @@ def apply_tick(
             break
     # WP1.3: skills slowly decay when idle (1%/tick) — after params resolve
     _skill_decay(state, params)
+    # WP1.4: shortage memories fade slowly (1%/tick)
+    _memory_decay(state, params)
     if params is None:  # pragma: no cover — defensive
         raise RuntimeError(f"ruleset v{version_for_tick} missing from state")
 

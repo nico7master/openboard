@@ -481,6 +481,16 @@ def personal_needs(who, state, params, tick):
         _triage = state.effective_triage(good) if good in state.goods else "market"
         _panic = _triage not in ("essential", "emergency") and _streak >= 3
         _ceiling = (3 if _panic else 2) * quota
+        # WP1.4 demand memory: remembered pain keeps the pantry deeper
+        # AFTER recovery too (pre-buying before the next cycle). Market
+        # goods only — essentials keep the flat ceiling (no hoard spiral).
+        _dm = (state.active_ruleset_params().get("demand_memory") or {})
+        if _dm.get("enabled") and _triage not in ("essential", "emergency"):
+            mem = state.shortage_memory.get(f"{who}|{good}", 0)
+            if mem > 0:
+                bonus = 10_000 + (int(_dm.get("ceiling_bonus_bp", 5_000)) * mem) // 1000
+                bonus_bp = 10_000 + (int(_dm.get("ceiling_bonus_bp", 5_000)) * mem) // 1000
+                _ceiling = max(_ceiling, (2 * quota * bonus_bp) // 10_000)
         if held >= _ceiling:
             continue
         want = min(quota, _ceiling - held)

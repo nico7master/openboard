@@ -84,6 +84,10 @@ class WorldState:
     # hours. Omitted from snapshots when empty -> old-world state hashes
     # stay byte-identical (replay compat).
     skills: dict[str, int] = field(default_factory=dict)
+    # WP1.4: demand memory — "citizen|good" -> remembered shortage pain
+    # (0..1000). Bumped by unmet streaks, decays ~1%/tick. Omitted from
+    # snapshots when empty -> old-world state hashes stay byte-identical.
+    shortage_memory: dict[str, int] = field(default_factory=dict)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -113,6 +117,8 @@ class WorldState:
         }
         if self.skills:
             snap["skills"] = dict(sorted(self.skills.items()))
+        if self.shortage_memory:
+            snap["shortage_memory"] = dict(sorted(self.shortage_memory.items()))
 
         # Circular-flow fields: included ONLY when used. Hash-compat: old
         # histories replayed under this engine must hash identically to
@@ -170,6 +176,7 @@ class WorldState:
             money_retired=self.money_retired,
             citizen_inventory={c: dict(inv) for c, inv in self.citizen_inventory.items()},
             skills=dict(self.skills),
+            shortage_memory=dict(self.shortage_memory),
             surplus_pool=self.surplus_pool,
             treasury_in=self.treasury_in,
             listings={g: list(ls) for g, ls in self.listings.items()},
