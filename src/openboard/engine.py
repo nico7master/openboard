@@ -1366,6 +1366,51 @@ def _return_unsold(state: WorldState, good: str) -> int:
 # ---------------------------------------------------- CIRCULAR FLOW
 
 
+def _perishability_phase(state: WorldState, tick: int,
+                         params: dict[str, Any]) -> list[dict[str, Any]]:
+    """D18 / WP1.2: goods rot (flaw R1 — nothing ever spoiled).
+
+    Proportional FIFO-free decay: each tick, every holder loses
+    held // shelf_life units of each perishable good. No timestamps
+    needed — deterministic, and it taxes hoarders hardest (the more
+    you hold, the more rots). Opt-in; inert without the param.
+    """
+    per = params.get("perishability") or {}
+    if not per.get("enabled"):
+        return []
+    shelf = per.get("shelf_life") or {}
+    events: list[dict[str, Any]] = []
+
+    # citizen pantries
+    for citizen in sorted(state.citizen_inventory.keys()):
+        inv = state.citizen_inventory[citizen]
+        for good in sorted(inv.keys()):
+            life = shelf.get(good)
+            if not life or inv.get(good, 0) <= 0:
+                continue
+            spoil = inv[good] // life
+            if spoil <= 0:
+                continue
+            inv[good] -= spoil
+            events.append({"tick": tick, "action": "SPOIL", "holder": citizen,
+                           "holder_kind": "citizen", "good": good, "qty": spoil})
+
+    # coop inventories
+    for coop_id in sorted(state.coops.keys()):
+        inv = state.coops[coop_id].get("inventory") or {}
+        for good in sorted(inv.keys()):
+            life = shelf.get(good)
+            if not life or inv.get(good, 0) <= 0:
+                continue
+            spoil = inv[good] // life
+            if spoil <= 0:
+                continue
+            inv[good] -= spoil
+            events.append({"tick": tick, "action": "SPOIL", "holder": coop_id,
+                           "holder_kind": "coop", "good": good, "qty": spoil})
+    return events
+
+
 def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
     """Citizens use up goods to live (deterministic; spec: circular flow).
 
@@ -2664,6 +2709,9 @@ def apply_tick(
                 "DELEGATE": _apply_delegate,
             }[tx.action](state, tx)
         state.applied.append(entry)
+
+    # Perishability: goods age at day start (WP1.2, opt-in)
+    state.applied.extend(_perishability_phase(state, tick, params))
 
     # Listings snapshot for oversight: dominance exists while listed,
     # even though clearing empties state.listings afterwards (§6.4)
