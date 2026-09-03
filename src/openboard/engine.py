@@ -558,10 +558,49 @@ def _validate_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     return None
 
 
+def _skill_level(state: WorldState, citizen: str, coop_id: str,
+                 params: dict[str, Any]) -> int:
+    """WP1.3: skill level for (citizen, coop). Level = hours // 100, cap 5."""
+    sk = params.get("skills") or {}
+    if not sk.get("enabled"):
+        return 0
+    hpl = int(sk.get("hours_per_level", 100))
+    if hpl <= 0:
+        return 0
+    max_lv = int(sk.get("max_level", 5))
+    hours = state.skills.get(f"{citizen}|{coop_id}", 0)
+    return min(max_lv, hours // hpl)
+
+
+def _skill_gain(state: WorldState, citizen: str, coop_id: str, hours: int,
+                params: dict[str, Any]) -> None:
+    """Learning-by-doing: WORK hours accumulate as skill hours."""
+    if not (params.get("skills") or {}).get("enabled"):
+        return
+    key = f"{citizen}|{coop_id}"
+    state.skills[key] = state.skills.get(key, 0) + hours
+
+
+def _skill_decay(state: WorldState, params: dict[str, Any]) -> None:
+    """Skills fade slowly when idle: 1% of hours lost per tick."""
+    if not (params.get("skills") or {}).get("enabled"):
+        return
+    for key in list(state.skills.keys()):
+        v = state.skills[key]
+        if v > 0:
+            state.skills[key] = v - v // 100
+
+
 def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
     coop = state.coops[tx.payload["coop_id"]]
     hours = tx.payload["hours"]
     mult_bp = params.get("wage_multiplier_bp", 10_000)
+    # WP1.3: skilled workers earn somewhat more (+3% per level)
+    skp = params.get("skills") or {}
+    if skp.get("enabled"):
+        level = _skill_level(state, tx.sender, tx.payload["coop_id"], params)
+        mult_bp += mult_bp * level * int(skp.get("wage_bonus_bp", 300)) // 10_000
+        _skill_gain(state, tx.sender, tx.payload["coop_id"], hours, params)
 
     # Integer-only wage math with remainder accumulation (no floats, ever)
     total_bp = hours * mult_bp + coop.get("wage_remainder_bp", 0)
@@ -715,11 +754,20 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
             # dividends (the t~800 machine-death failure mode).
             state.capital_fund += capital_rent
 
-    # Produce outputs
+    # Produce outputs (WP1.3: skilled members produce more, +5%/level of
+    # the coop's average skill level, integer bp math)
+    skp = params.get("skills") or {}
+    out_mult_bp = 10_000
+    if skp.get("enabled"):
+        levels = [_skill_level(state, m, coop_id_of := tx.payload["coop_id"], params)
+                  for m in coop.get("members", [])]
+        avg_lv = sum(levels) // len(levels) if levels else 0
+        out_mult_bp = 10_000 + avg_lv * int(skp.get("output_bonus_bp", 500))
     outputs_produced: dict[str, int] = {}
     for good, qty in recipe["outputs"].items():
-        inventory[good] = inventory.get(good, 0) + qty * runs
-        outputs_produced[good] = qty * runs
+        produced = qty * runs * out_mult_bp // 10_000
+        inventory[good] = inventory.get(good, 0) + produced
+        outputs_produced[good] = produced
 
     # Cost baseline: ceil((labor + energy + material inputs) / total output units)
     # Round UP, never down: production at cost must not price below cost.
@@ -2598,6 +2646,8 @@ def apply_tick(
         if rs["version"] == version_for_tick:
             params = rs["params"]
             break
+    # WP1.3: skills slowly decay when idle (1%/tick) — after params resolve
+    _skill_decay(state, params)
     if params is None:  # pragma: no cover — defensive
         raise RuntimeError(f"ruleset v{version_for_tick} missing from state")
 

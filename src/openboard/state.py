@@ -80,6 +80,10 @@ class WorldState:
     # Cleared at tick boundaries before any snapshot -> state hashes are
     # unaffected; populated only while transactions are being applied.
     worked_hours_tick: dict[str, int] = field(default_factory=dict)
+    # WP1.3: learning-by-doing — "citizen|coop_id" -> accumulated skill
+    # hours. Omitted from snapshots when empty -> old-world state hashes
+    # stay byte-identical (replay compat).
+    skills: dict[str, int] = field(default_factory=dict)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -107,6 +111,8 @@ class WorldState:
             "common_pool": dict(sorted(self.common_pool.items())),
             "last_clearing": dict(sorted(self.last_clearing.items())),
         }
+        if self.skills:
+            snap["skills"] = dict(sorted(self.skills.items()))
 
         # Circular-flow fields: included ONLY when used. Hash-compat: old
         # histories replayed under this engine must hash identically to
@@ -163,6 +169,7 @@ class WorldState:
             money_minted=self.money_minted,
             money_retired=self.money_retired,
             citizen_inventory={c: dict(inv) for c, inv in self.citizen_inventory.items()},
+            skills=dict(self.skills),
             surplus_pool=self.surplus_pool,
             treasury_in=self.treasury_in,
             listings={g: list(ls) for g, ls in self.listings.items()},
