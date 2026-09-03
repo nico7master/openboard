@@ -779,7 +779,9 @@ def _validate_list_good(state: WorldState, tx: Transaction, params: dict[str, An
     if tx.sender not in state.balances:
         return Reason.UNKNOWN_SENDER
 
-    if not isinstance(payload, dict) or set(payload.keys()) != {"coop_id", "good", "qty"}:
+    if not isinstance(payload, dict) or set(payload.keys()) not in (
+        {"coop_id", "good", "qty"}, {"coop_id", "good", "qty", "clearance"}
+    ):
         return Reason.INVALID_PAYLOAD
 
     coop_id = payload.get("coop_id")
@@ -797,6 +799,15 @@ def _validate_list_good(state: WorldState, tx: Transaction, params: dict[str, An
         return Reason.INVALID_QTY
     if coop["inventory"].get(good, 0) < qty:
         return Reason.NOT_ENOUGH_INVENTORY
+    # D18 (WP1.1): a clearance listing dumps the seller's ENTIRE remaining
+    # stock of the good below the cost floor — honest glut-clearing that
+    # cannot be used for predation (the predator would have to stop
+    # producing too). Only when the ruleset enables sub-floor clearance.
+    if payload.get("clearance"):
+        if not (params.get("sub_floor_clearance") or {}).get("enabled"):
+            return Reason.INVALID_PAYLOAD
+        if coop["inventory"].get(good, 0) != qty:
+            return Reason.NOT_ENOUGH_INVENTORY  # must be the WHOLE stock
     return None
 
 
@@ -809,11 +820,17 @@ def _apply_list_good(state: WorldState, tx: Transaction) -> dict[str, Any]:
     # Escrow: goods leave inventory into the listing
     coop["inventory"][good] -= qty
     floor = state.good_cost_baseline.get(good, 1)
-
+    price = floor
+    if payload.get("clearance"):
+        mdb = int((state.active_ruleset_params().get("sub_floor_clearance")
+                   or {}).get("max_discount_bp", 5_000))
+        price = max(1, floor - floor * mdb // 10_000)
     state.listings.setdefault(good, []).append({
         "coop_id": payload["coop_id"],
         "qty": qty,
         "floor": floor,
+        "price": price,
+        "clearance": bool(payload.get("clearance")),
         "listed_tick": tx.tick,
     })
 
@@ -850,7 +867,7 @@ def _validate_bid(state: WorldState, tx: Transaction, params: dict[str, Any]) ->
         return Reason.INVALID_QTY
 
     floor = state.good_cost_baseline.get(good, 1)
-    if price < floor:
+    if price < floor and not (params.get("sub_floor_clearance") or {}).get("enabled"):
         return Reason.INVALID_PRICE  # below cost floor
 
     # Affordability at submission (max exposure = price × qty)
@@ -906,7 +923,7 @@ def _validate_bid_for_coop(state: WorldState, tx: Transaction, params: dict[str,
         return Reason.INVALID_QTY
 
     floor = state.good_cost_baseline.get(good, 1)
-    if price < floor:
+    if price < floor and not (params.get("sub_floor_clearance") or {}).get("enabled"):
         return Reason.INVALID_PRICE
 
     if coop.get("treasury", 0) < price * qty:
@@ -1113,7 +1130,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                     if entry["coop_id"] == bid["coop_id"]:
                         continue  # no self-dealing (wash guard)
                     take = min(entry["qty"], want)
-                    price = entry["floor"]
+                    price = entry.get("price", entry["floor"])
                     if coop.get("treasury", 0) < take * price:
                         break
                     coop["treasury"] -= take * price
@@ -1165,7 +1182,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                 take = min(entry["qty"], need)
                 if take <= 0:
                     continue
-                price = entry["floor"]
+                price = entry.get("price", entry["floor"])
                 if state.balances[buyer["bidder"]] < take * price:
                     break  # cannot pay at settlement — deterministic drop
                 state.balances[buyer["bidder"]] -= take * price
