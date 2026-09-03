@@ -11,6 +11,7 @@ Spec: docs/superpowers/specs/2026-08-21-dashboard-server-design.md
 from __future__ import annotations
 
 import copy
+import json
 import random
 import sys
 import threading
@@ -1103,6 +1104,16 @@ def api_tick():
 
 
 @app.get("/api/chronicle")
+def availability_producers(st, good: str) -> list[dict[str, Any]]:
+    out = []
+    for cid, c in st.coops.items():
+        rid = c.get("recipe_intent") or c.get("trade") or ""
+        outs = (st.recipes.get(rid) or {}).get("outputs") or {}
+        if good in outs:
+            out.append(c)
+    return out
+
+
 def api_chronicle():
     """Story feed: day-numbered plain sentences derived from the ledger.
     Covers rule changes, shocks, and essentials-shortage onsets."""
@@ -1112,6 +1123,7 @@ def api_chronicle():
     events: list[dict[str, Any]] = []
     prev_shocks: set[str] = set()
     prev_unmet_goods: set[str] = set()
+    streak_start: dict[str, int] = {}
     # walk applied events in order, emitting sentences on transitions
     for ev in st.applied:
         a = ev.get("action")
@@ -1135,18 +1147,105 @@ def api_chronicle():
             good = ev.get("good")
             sold = ev.get("sold", 0) or 0
             if sold == 0 and good not in prev_unmet_goods:
-                events.append({"day": t, "icon": "⚠️",
-                               "text": f"Day {t} — {str(good).replace('_',' ')} became unavailable.",
-                               "cls": "bad"})
                 prev_unmet_goods.add(good)
-            elif sold > 0:
+                streak_start[good] = t
+            elif sold > 0 and good in prev_unmet_goods:
+                # shortage ENDED: one summary line instead of daily spam
+                d0 = streak_start.pop(good, t)
+                if t - d0 >= 3:
+                    events.append({"day": t, "icon": "🔄",
+                                   "text": f"Day {t} — {str(good).replace('_',' ')} is back after {t - d0} days short.",
+                                   "cls": "good"})
                 prev_unmet_goods.discard(good)
         elif a == "FOUND_COOP":
             events.append({"day": t, "icon": "🌱",
                            "text": f"Day {t} — Citizens founded a new workshop ({ev.get('coop_id', '?').replace('_', ' ')}).",
                            "cls": "good"})
+    # chronic shortages that NEVER came back get one honest line, with cause
+    for good in sorted(prev_unmet_goods):
+        d0 = streak_start.get(good, day)
+        if day - d0 >= 3:
+            n_p = len(availability_producers(st, good))
+            why = ("no workshop can make it — found a co-op for it in 🧪 The Lab?"
+                   if n_p == 0 else
+                   "its workshop(s) are starved of their own inputs — fix the supply chain above them")
+            events.append({"day": d0, "icon": "⛔",
+                           "text": f"Day {d0} — {good.replace('_',' ')} ran out and never came back ({day - d0}+ days). {why}",
+                           "cls": "bad"})
+    events.sort(key=lambda e: e["day"])
     # keep the feed bounded, newest last
-    return jsonify({"ok": True, "now": day, "events": events[-200:]})
+    return jsonify({"ok": True, "now": day, "events": events[-250:]})
+
+
+@app.get("/api/availability")
+def api_availability():
+    """The honest answer to 'can people buy what they need?': one row per
+    essential good — who can make it, how much is around, and WHY it's
+    missing when it is. This is the actionable view the flow stage replaced."""
+    from openboard.catalog import GOODS
+    st = RUN.state
+    tick = st.tick
+
+    # who produces what (from live coops' recipe intents)
+    producers: dict[str, list[dict[str, Any]]] = {}
+    for cid, c in st.coops.items():
+        rid = c.get("recipe_intent") or c.get("trade") or ""
+        rec = st.recipes.get(rid) or {}
+        outs = rec.get("outputs") or {}
+        if not outs:
+            continue
+        for g in outs:
+            producers.setdefault(g, []).append({
+                "name": c.get("name") or cid,
+                "members": len(c.get("members") or []),
+                "inventory": float((c.get("inventory") or {}).get(g, 0)),
+            })
+
+    # demand signal: unmet needs right now
+    unmet: dict[str, int] = {}
+    for cit, needs in st.unmet_needs.items():
+        for g in needs:
+            unmet[g] = unmet.get(g, 0) + 1
+
+    rows = []
+    for g, meta in sorted(GOODS.items()):
+        if meta.get("triage") != "essential":
+            continue
+        ps = producers.get(g, [])
+        stock = sum(p["inventory"] for p in ps)
+        listing = st.listings.get(g) or []
+        n_away = unmet.get(g, 0)
+        # why missing: no producer / producer starved of inputs / has stock but not sold
+        if not ps:
+            why = "nobody can make this yet — no workshop has the recipe"
+            status = "missing"
+        elif n_away == 0:
+            why = "" if stock > 0 else "produced and sold out each day — demand outruns supply"
+            status = "ok" if (stock > 0 or listing) else "tight"
+            if not why:
+                why = f"{len(ps)} workshop(s) producing, available today"
+            else:
+                status = "tight"
+        else:
+            starved = [p for p in ps if p["inventory"] <= 0]
+            if starved and len(starved) == len(ps):
+                why = f"producer(s) ran out of THEIR inputs — the supply chain above them is broken"
+            elif listing:
+                why = f"{len(listing)} lot(s) for sale but {n_away} citizen(s) can't afford them — prices too high for the poor"
+            else:
+                why = f"{n_away} citizen(s) need it and none is for sale — producers not listing"
+            status = "missing" if n_away > 20 else "tight"
+        rows.append({
+            "good": g,
+            "status": status,
+            "unmet": n_away,
+            "producers": len(ps),
+            "producer_names": [p["name"] for p in ps][:3],
+            "stock": round(stock, 1),
+            "why": why,
+        })
+    rows.sort(key=lambda r: (-r["unmet"], r["good"]))
+    return jsonify({"ok": True, "tick": tick, "rows": rows})
 
 
 @app.get("/api/stability")
@@ -1637,10 +1736,43 @@ def api_load():
     return jsonify({"ok": True, "tick": RUN.state.tick})
 
 
+AUTOSAVE_PATH = Path(__file__).resolve().parent / "autosave.json"
+
+
+def _autosave_loop() -> None:
+    """Persist the live world every 30s so a server restart never erases
+    a reign again (the day-818 world died exactly that way)."""
+    while True:
+        time.sleep(30)
+        try:
+            with RUN.lock:
+                snap = RUN.to_save()
+            tmp = AUTOSAVE_PATH.with_suffix(".tmp")
+            tmp.write_text(json.dumps(snap))
+            tmp.replace(AUTOSAVE_PATH)
+        except Exception:
+            pass  # autosave must never take the server down
+
+
+def _try_autoload() -> None:
+    if not AUTOSAVE_PATH.exists():
+        return
+    try:
+        snap = json.loads(AUTOSAVE_PATH.read_text())
+        new_run = Run.from_save(snap)
+        global RUN
+        RUN = new_run
+        print(f"autosave restored: tick {RUN.state.tick}", flush=True)
+    except Exception as exc:
+        print(f"autosave load failed: {exc}", flush=True)
+
+
 def main() -> None:
     global AUTOPLAY_THREAD
+    _try_autoload()
     AUTOPLAY_THREAD = threading.Thread(target=_autoplay_loop, daemon=True)
     AUTOPLAY_THREAD.start()
+    threading.Thread(target=_autosave_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=8421, debug=False)
 
 

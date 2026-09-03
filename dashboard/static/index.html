@@ -147,11 +147,11 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   <!-- hero charts -->
   <div class="panel" style="margin-bottom:14px">
     <h3 style="margin-top:0">🍞 Are people getting what they need?</h3>
-    <div class="chart-wrap" style="height:160px"><canvas id="heroNeeds"></canvas></div>
+    <div style="height:170px; position:relative; overflow:hidden"><canvas id="heroNeeds"></canvas></div>
   </div>
   <div class="panel" style="margin-bottom:14px">
     <h3 style="margin-top:0">⚖️ Is wealth staying shared?</h3>
-    <div class="chart-wrap" style="height:160px"><canvas id="heroGini"></canvas></div>
+    <div style="height:160px; position:relative; overflow:hidden"><canvas id="heroGini"></canvas></div>
   </div>
   <!-- alert strip: only when something needs attention -->
   <div class="panel" id="alertStrip" style="margin-bottom:14px" x-show="alerts.length">
@@ -176,10 +176,18 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   </div>
 </div>
 
-<!-- CIRCULAR FLOW STAGE (inside The World) -->
+<!-- AVAILABILITY BOARD (inside The World) -->
 <div class="panel" x-show="view === 'world'" style="width:100%; max-width: 980px; margin: 0 auto">
-  <h3>🔄 The economy as a machine</h3>
-  <canvas id="flowStage" style="width:100%; height:420px"></canvas>
+  <h3>🛒 Can people buy what they need? <span class="muted">— live, with the why</span></h3>
+  <template x-for="row in availability" :key="row.good">
+    <div style="display:flex; align-items:center; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line); font-size:13.5px">
+      <span style="width:110px; font-weight:600" x-text="row.good.replace('_',' ')"></span>
+      <span class="badge" :class="row.status === 'ok' ? 'green' : (row.status === 'tight' ? 'yellow' : 'red')"
+            x-text="row.status === 'ok' ? '✓ available' : (row.status === 'tight' ? '⚠ tight' : '✗ unavailable')"></span>
+      <span style="flex:1; color:var(--muted,#8b949e)" x-text="row.why"></span>
+      <span class="muted" style="font-size:11.5px" x-show="row.unmet > 0" x-text="row.unmet + ' can’t buy it'"></span>
+    </div>
+  </template>
 </div>
 
 
@@ -214,9 +222,9 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   </div>
 
   <!-- running state -->
-  <div class="panel" x-show="policyBusy" style="margin-bottom:16px; text-align:center; padding:26px">
-    <div style="font-size:22px; margin-bottom:8px">⏳ Running two worlds…</div>
-    <div class="muted" style="font-size:13px">One with your change, one without. This takes about a minute — the verdict will appear here.</div>
+  <div class="panel" x-show="policyBusy" style="margin-bottom:16px; text-align:center; padding:26px; border:2px solid var(--line)">
+    <div style="font-size:22px; margin-bottom:8px">⏳ Running two worlds… <span class="muted" x-text="expElapsed + 's'"></span></div>
+    <div class="muted" style="font-size:13px">Simulating <strong x-text="pendingOption"></strong> in one twin world while an unchanged twin runs alongside. A full run takes 1–4 minutes — leave this tab open and the verdict will appear right here.</div>
   </div>
 
   <div class="panel" x-show="policyResult && !policyBusy" style="margin-bottom: 16px">
@@ -390,6 +398,8 @@ function dashboard() {
     view: 'world', analytics: {}, worldReady: false,
     story: { cards: [], tick: 0, population: 0 },
     chronicle: { now: 0, events: [] },
+    availability: [],
+    expElapsed: 0,
     tourOpen: !localStorage.getItem('ob_tour_done'),
     reign: { tried: 0, adopted: 0 },
     pendingOption: '',
@@ -467,6 +477,10 @@ function dashboard() {
       try { this.chronicle = await this.api('/api/chronicle'); } catch (e) { /* restarting */ }
     },
 
+    async loadAvailability() {
+      try { this.availability = (await this.api('/api/availability')).rows ?? []; } catch (e) { /* restarting */ }
+    },
+
     closeTour() {
       this.tourOpen = false;
       try { localStorage.setItem('ob_tour_done', '1'); } catch (e) {}
@@ -485,7 +499,7 @@ function dashboard() {
             chartStore[id] = new Chart(el.getContext('2d'), {
               type: 'line',
               data: { labels: data.map((_, i) => i + 1), datasets: [{ label, data, borderColor: color, tension: 0.3, pointRadius: 0, fill: true, backgroundColor: color + '22' }] },
-              options: { animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false } } },
+              options: { animation: false, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false } } },
             });
           };
           mk('heroNeeds', 'people with unmet needs', needs?.series, '#f85149');
@@ -751,6 +765,7 @@ function dashboard() {
         if (this.view === 'world') {
           await this.loadStory();
           this.initHeroCharts();
+          if (this.availability.length || this.state.tick % 5 === 0) this.loadAvailability();
         }
         if (this.view === 'seat') {
           await this.loadSeat();
@@ -762,6 +777,7 @@ function dashboard() {
       this.view = v;
       if (v === 'world') {
         this.loadStory();
+        this.loadAvailability();
         this.$nextTick(() => { this.loadFlows(); this.startCanvas(); this.initHeroCharts(); });
       }
       if (v === 'chronicle') this.loadChronicle();
@@ -781,7 +797,7 @@ function dashboard() {
     },
     async runPolicyExperiment(knobId, optLabel) {
       this.policyBusy = true; this.policyError = ''; this.policyResult = null; this.adoptable = false;
-      this.pendingOption = optLabel;
+      this.pendingOption = optLabel; this.expElapsed = 0;
       try {
         const d = await this.api('/api/policy/experiment/start',
                                  { method: 'POST', body: { knob_id: knobId, option_id: optLabel, ticks: 100 } });
@@ -790,6 +806,7 @@ function dashboard() {
         // poll until the twin worlds finish (server runs them in background)
         for (let i = 0; i < 600; i++) {
           await new Promise(r => setTimeout(r, 2000));
+          this.expElapsed = i * 2;
           const r = await this.api('/api/policy/experiment/result?job_id=' + encodeURIComponent(jobId));
           if (!r.ok) { this.policyError = r.error ?? 'experiment lost'; break; }
           if (r.status === 'done') {
