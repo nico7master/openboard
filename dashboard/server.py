@@ -1103,7 +1103,6 @@ def api_tick():
     return jsonify({"ok": True, "events": events})
 
 
-@app.get("/api/chronicle")
 def availability_producers(st, good: str) -> list[dict[str, Any]]:
     out = []
     for cid, c in st.coops.items():
@@ -1114,6 +1113,7 @@ def availability_producers(st, good: str) -> list[dict[str, Any]]:
     return out
 
 
+@app.get("/api/chronicle")
 def api_chronicle():
     """Story feed: day-numbered plain sentences derived from the ledger.
     Covers rule changes, shocks, and essentials-shortage onsets."""
@@ -1177,14 +1177,10 @@ def api_chronicle():
     return jsonify({"ok": True, "now": day, "events": events[-250:]})
 
 
-@app.get("/api/availability")
-def api_availability():
-    """The honest answer to 'can people buy what they need?': one row per
-    essential good — who can make it, how much is around, and WHY it's
-    missing when it is. This is the actionable view the flow stage replaced."""
+def availability_rows(st) -> list[dict[str, Any]]:
+    """One row per essential good — who can make it, how much is around,
+    and WHY it's missing when it is."""
     from openboard.catalog import GOODS
-    st = RUN.state
-    tick = st.tick
 
     # who produces what (from live coops' recipe intents)
     producers: dict[str, list[dict[str, Any]]] = {}
@@ -1245,7 +1241,75 @@ def api_availability():
             "why": why,
         })
     rows.sort(key=lambda r: (-r["unmet"], r["good"]))
-    return jsonify({"ok": True, "tick": tick, "rows": rows})
+    return rows
+
+
+@app.get("/api/availability")
+def api_availability():
+    rows = availability_rows(RUN.state)
+    return jsonify({"ok": True, "tick": RUN.state.tick, "rows": rows})
+
+
+@app.get("/api/advice")
+def api_advice():
+    """The built-in advisor: ranks what's wrong, explains the cause in plain
+    words, and names the concrete lever the player can pull."""
+    import collections
+    st = RUN.state
+    tick = st.tick
+    rows = availability_rows(st)
+
+    # producer side: who is idle and why
+    idle = []
+    for cid, c in st.coops.items():
+        inv = c.get("inventory") or {}
+        rid = c.get("recipe_intent") or c.get("trade") or ""
+        rec = st.recipes.get(rid) or {}
+        inputs = rec.get("inputs") or {}
+        missing_inputs = [g for g, need in inputs.items() if (inv.get(g, 0) or 0) < float(need)]
+        if missing_inputs:
+            idle.append({"coop": c.get("name") or cid, "needs": missing_inputs})
+
+    advice = []
+    for r in rows:
+        if r["unmet"] <= 0:
+            continue
+        good = r["good"]
+        n = r["unmet"]
+        if r["producers"] == 0:
+            advice.append({
+                "problem": f"{n} citizens can't buy {good.replace('_', ' ')} — nobody produces it",
+                "cause": "No workshop has this recipe. The good was never part of the production plan.",
+                "action": f"Found a co-op for {good.replace('_', ' ')} (action FOUND_COOP with its recipe), or accept doing without it",
+                "lever": "found_coop",
+            })
+        elif "supply chain" in r["why"] or "inputs" in r["why"]:
+            starved = [i for i in idle if good in (i.get("needs") or [])]
+            hint = (f"Workshops making {good.replace('_', ' ')} need: " +
+                    ", ".join(sorted({g for i in starved for g in i['needs']})) +
+                    ". Fix that upstream good first — more producers or more of it listed for sale.") if starved else                 "Fix the upstream good: more producers, or list more of it for sale."
+            advice.append({
+                "problem": f"{n} citizens can't buy {good.replace('_', ' ')} — the chain above it is broken",
+                "cause": r["why"],
+                "action": hint or "Fix the upstream good: more producers, or list more of it for sale",
+                "lever": "supply_chain",
+            })
+        elif "afford" in r["why"]:
+            advice.append({
+                "problem": f"{n} citizens can't afford {good.replace('_', ' ')}",
+                "cause": "It's for sale but priced beyond their balances.",
+                "action": "Raise dividends share or quotas in 🧪 The Lab — put more buying power in citizens' hands",
+                "lever": "lab",
+            })
+        else:
+            advice.append({
+                "problem": f"{n} citizens can't buy {good.replace('_', ' ')} — none for sale",
+                "cause": r["why"],
+                "action": "Producers hold stock but aren't listing it — check listing rules or add competition",
+                "lever": "market",
+            })
+    advice.sort(key=lambda a: -len(a["problem"]))
+    return jsonify({"ok": True, "tick": tick, "advice": advice[:6], "idle_workshops": idle[:6]})
 
 
 @app.get("/api/stability")
@@ -1312,44 +1376,6 @@ def api_policy_knobs():
                       "options": [o["label"] for o in k["options"]],
                       "current": cur})
     return jsonify({"ok": True, "knobs": knobs})
-
-
-@app.post("/api/policy/experiment/start")
-def api_policy_experiment_start():
-    """Fork-and-compare in a BACKGROUND thread; returns job_id immediately.
-    The twin run takes minutes — synchronously it exceeded tunnel gateway
-    timeouts and returned empty bodies to browsers."""
-    from openboard.policy import fork_experiment, compare
-    body = request.get_json(force=True, silent=True) or {}
-    knob_id, option_id = body.get("knob_id"), body.get("option_id")
-    ticks = int(body.get("ticks") or 100)
-    if not knob_id or not option_id:
-        return jsonify({"ok": False, "error": "knob_id and option_id required"}), 400
-    job_id = f"exp_{RUN.state.tick}_{int(time.time() * 1000)}"
-    with POLICY_JOBS_LOCK:
-        POLICY_JOBS[job_id] = {"status": "running", "result": None, "error": None}
-
-    def _run_job():
-        try:
-            res = fork_experiment(RUN, knob_id, option_id, ticks=ticks)
-            with POLICY_JOBS_LOCK:
-                POLICY_JOBS[job_id] = {"status": "done", "result": {**res, "rows": compare(res)}, "error": None}
-        except Exception as e:  # surface any failure to the poller
-            with POLICY_JOBS_LOCK:
-                POLICY_JOBS[job_id] = {"status": "error", "result": None, "error": str(e)}
-
-    threading.Thread(target=_run_job, daemon=True).start()
-    return jsonify({"ok": True, "job_id": job_id})
-
-
-@app.get("/api/policy/experiment/result")
-def api_policy_experiment_result():
-    job_id = request.args.get("job_id", "")
-    with POLICY_JOBS_LOCK:
-        job = POLICY_JOBS.get(job_id)
-        if job is None:
-            return jsonify({"ok": False, "error": "unknown job"}), 404
-        return jsonify({"ok": True, **job})
 
 
 @app.post("/api/policy/adopt")

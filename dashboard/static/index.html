@@ -176,6 +176,20 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   </div>
 </div>
 
+<!-- ADVISOR -->
+<div class="panel" x-show="view === 'world'" style="width:100%; max-width: 980px; margin: 0 auto 14px"
+     x-init="loadAdvice()" x-effect="if (view === 'world' && state.tick % 5 === 0) loadAdvice()">
+  <h3>🧭 What's wrong — and what you can do <span class="muted">— the system explains itself</span></h3>
+  <div x-show="!advice.length" class="muted" style="padding:6px 8px; font-size:13px">Nothing needs your attention right now.</div>
+  <template x-for="(a, i) in advice" :key="i + a.problem">
+    <div style="border-left:4px solid var(--red); padding:8px 12px; margin-bottom:8px">
+      <div style="font-weight:600; font-size:13.5px" x-text="'⚠️ ' + a.problem"></div>
+      <div class="muted" style="font-size:12.5px; margin-top:2px" x-text="'Why: ' + a.cause"></div>
+      <div style="font-size:12.5px; color:var(--green,#3fb950)" x-text="'→ ' + a.action"></div>
+    </div>
+  </template>
+</div>
+
 <!-- AVAILABILITY BOARD (inside The World) -->
 <div class="panel" x-show="view === 'world'" style="width:100%; max-width: 980px; margin: 0 auto">
   <h3>🛒 Can people buy what they need? <span class="muted">— live, with the why</span></h3>
@@ -201,7 +215,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 
   <div class="panel" style="margin-bottom: 16px">
     <h3 style="margin-top:0">🧪 Change a rule of society</h3>
-    <p class="muted" style="margin-bottom:10px">Pick a question. The Lab runs two twin worlds — with and without your change — and shows the honest difference. Nothing is real until you adopt it.</p>
+    <p class="muted" style="margin-bottom:10px">Pick an option and it becomes law immediately — recorded in the public ledger. Watch the world respond, keep what works, change what doesn't. There is only one world: this one.</p>
     <div x-show="policyError" style="color:var(--red); font-size:12px; margin-bottom:8px" x-text="policyError"></div>
     <template x-for="knob in policyKnobs" :key="knob.id">
       <div style="border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px">
@@ -213,7 +227,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
           <template x-for="opt in knob.options" :key="opt">
             <button style="min-width:110px; padding:10px 14px; font-size:14px; border-radius:10px"
                     :class="policyBusy && pendingOption === opt ? 'primary' : 'tab'"
-                    @click="runPolicyExperiment(knob.id, opt)"
+                    @click="applyPolicy(knob.id, opt)"
                     :disabled="policyBusy" x-text="opt"></button>
           </template>
         </div>
@@ -221,135 +235,9 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     </template>
   </div>
 
-  <!-- running state -->
-  <div class="panel" x-show="policyBusy" style="margin-bottom:16px; text-align:center; padding:26px; border:2px solid var(--line)">
-    <div style="font-size:22px; margin-bottom:8px">⏳ Running two worlds… <span class="muted" x-text="expElapsed + 's'"></span></div>
-    <div class="muted" style="font-size:13px">Simulating <strong x-text="pendingOption"></strong> in one twin world while an unchanged twin runs alongside. A full run takes 1–4 minutes — leave this tab open and the verdict will appear right here.</div>
+  <div class="muted" style="font-size:12px; text-align:center; padding:8px">
+    Every change is a real ledger rule change — the world keeps its history, you keep iterating.
   </div>
-
-  <div class="panel" x-show="policyResult && !policyBusy" style="margin-bottom: 16px">
-    <h3 style="margin-top:0">📊 Verdict: <span x-text="policyResult?.explanation"></span></h3>
-    <p class="muted" style="margin-bottom:10px">
-      Two twin worlds, <span x-text="policyResult?.ticks"></span> days forward — same people, same history, one rule different.
-    </p>
-    <template x-for="row in policyResult?.rows ?? []" :key="row.metric">
-      <div style="border-left:4px solid var(--line); padding:8px 12px; margin-bottom:10px"
-           :style="row.verdict === 'better' ? 'border-left-color:var(--green)' : (row.verdict === 'worse' ? 'border-left-color:var(--red)' : '')">
-        <div style="font-weight:600" x-text="row.metric"></div>
-        <div class="muted" style="font-size:12px" x-text="row.sentence"></div>
-        <div style="font-size:11px; color:var(--muted)" title="exact numbers">
-          baseline <span x-text="row.baseline"></span> → policy <span x-text="row.policy"></span>
-        </div>
-      </div>
-    </template>
-    <div style="margin-top:12px" x-show="adoptable">
-      <button class="primary" @click="adoptPolicy()" :disabled="adoptBusy" x-text="adoptBusy ? 'Adopting…' : '✅ Adopt this policy'"></button>
-      <span class="muted" style="margin-left:8px; font-size:12px">Adoption is recorded in the public ledger.</span>
-    </div>
-  </div>
-</div>
-
-<div class="grid" x-show="view === 'seat'">
-
-<!-- IDENTITY + NEEDS -->
-<div class="panel col-6">
-  <h3>🪑 My seat <span class="muted" x-text="seat.who ? (seat.who + (seat.is_bot ? ' (bot)' : ' 👤')) : ''"></span></h3>
-  <div class="form-row" style="margin-bottom:8px">
-    <label>Sit as</label>
-    <select x-model="seatWho" @change="loadSeat()">
-      <template x-for="c in seat.citizens ?? []" :key="c"><option :value="c" x-text="c + ((seat.humans ?? []).includes(c) ? ' 👤' : '')"></option></template>
-    </select>
-    <span class="badge" x-show="seat.crisis" style="background:#d29922">🚨 CRISIS — advantages suspended</span>
-  </div>
-  <div class="form-row" style="justify-content:space-between; font-size:14px">
-    <span>💰 Balance <strong class="mono" x-text="seat.balance ?? '—'"></strong> cr</span>
-    <span>🛠 Labor today <strong class="mono" x-text="seat.hours ? (seat.hours.done + '/' + seat.hours.max + 'h') : '—'"></strong></span>
-  </div>
-  <div class="scroll-y" style="max-height:260px; margin-top:8px">
-    <div>
-      <template x-for="r in seat.needs_rows ?? []" :key="r.good">
-        <div class="needbar" :style="r.unmet ? 'background:#f8514918' : ''">
-          <span class="lbl" :title="r.good + ' — have ' + r.held + ' of ' + r.quota + ' needed' + (r.due_today ? ', needed today' : '') + (r.price != null ? ', costs about ' + r.price + ' cr' : '')" x-text="r.good"></span>
-          <div class="vbar"><div class="vbar-fill" :style="'width:' + Math.max(needPct(r), 2) + '%; ' + needBarColor(r)"></div></div>
-          <span class="badge" :class="r.unmet ? 'red' : (needPct(r) >= 100 ? 'green' : 'yellow')" x-text="r.unmet ? 'missing' : (needPct(r) >= 100 ? 'ready' : 'buying')"></span>
-        </div>
-      </template>
-    </div>
-  </div>
-</div>
-
-<!-- WHAT CAN I DO RIGHT NOW -->
-<div class="panel col-6">
-  <h3>⚡ What can I do right now <span class="muted" x-text="(seat.actions ?? []).length + ' options'"></span></h3>
-  <div class="scroll-y" style="max-height:340px">
-    <template x-for="(a, i) in seat.actions ?? []" :key="seat.who + '-a-' + i">
-      <div class="form-row" style="justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border)">
-        <span style="flex:1">
-          <strong x-text="a.label ?? a.type"></strong>
-          <span class="muted" style="font-size:11px; display:block" x-text="a.why || a.summary || ''"></span>
-        </span>
-        <span style="display:flex; gap:4px">
-          <template x-if="a.type === 'VOTE'">
-            <span class="vote-btns">
-              <button class="small" @click="seatAct(a, 'for')">✓ for</button>
-              <button class="small danger" @click="seatAct(a, 'against')">✗ against</button>
-            </span>
-          </template>
-          <template x-if="a.type !== 'VOTE'">
-            <button class="small primary" @click="seatAct(a)" :disabled="busy || a.affordable === false" x-text="a.affordable === false ? 'can't afford' : 'Do it'"></button>
-          </template>
-        </span>
-      </div>
-    </template>
-    <p class="muted" x-show="!(seat.actions ?? []).length">Nothing available right now — wait for the next tick.</p>
-  </div>
-</div>
-
-<!-- MY CO-OPS + VOTES -->
-<div class="panel col-6">
-  <h3>🏭 My co-ops</h3>
-  <template x-for="c in seat.my_coops ?? []" :key="c.id">
-    <div class="form-row" style="justify-content:space-between; padding:3px 0">
-      <span><strong x-text="c.name"></strong> <span class="muted" x-text="c.members + ' members · ' + (c.recipe_intent ?? '?')"></span></span>
-      <span class="mono muted" x-text="'₡' + c.treasury + ' · ' + invSummary(c.inventory)"></span>
-    </div>
-  </template>
-  <p class="muted" x-show="!(seat.my_coops ?? []).length">Not a member of any co-op yet.</p>
-  <h3 style="margin-top:12px">🗳 Open votes <span class="muted" x-text="(seat.open_proposals ?? []).filter(p => p.needs_my_vote).length + ' waiting on me'"></span></h3>
-  <template x-for="p in seat.open_proposals ?? []" :key="p.proposal_id">
-    <div class="form-row" style="justify-content:space-between; padding:4px 0">
-      <span class="mono" style="font-size:11px" x-text="p.proposal_id + ' by ' + p.proposer + ' · closes t' + p.closes_tick + ' · ' + JSON.stringify(p.params).slice(0, 80)"></span>
-      <span style="display:flex; gap:4px; align-items:center">
-        <span class="badge" :class="p.my_vote ? 'green' : 'red'" x-text="p.my_vote ? 'voted ' + p.my_vote : 'waiting on YOU'"></span>
-        <button class="small" @click="seatAct({type:'VOTE', label:'Vote on ' + p.proposal_id, payload:{proposal_id: p.proposal_id}}, 'for')" :disabled="busy || p.my_vote">✓</button>
-        <button class="small danger" @click="seatAct({type:'VOTE', payload:{proposal_id: p.proposal_id}, label:'Vote on ' + p.proposal_id}, 'against')" :disabled="busy || p.my_vote">✗</button>
-      </span>
-    </div>
-  </template>
-  <p class="muted" x-show="!(seat.open_proposals ?? []).length">No open proposals.</p>
-</div>
-
-<!-- MY FEED + BALANCE CHART -->
-<div class="panel col-6">
-  <h3>📡 My feed <span class="muted">events about me</span></h3>
-  <div class="feed scroll-y">
-    <template x-for="(e, i) in (seat.my_events ?? []).slice().reverse()" :key="seat.tick + '-' + i">
-      <div class="feed-item" :class="feedClass(e)">
-        <span class="t" x-text="'t' + e.tick"></span>
-        <span x-text="feedText(e)"></span>
-      </div>
-    </template>
-    <p class="muted" x-show="!(seat.my_events ?? []).length">Nothing yet — work, buy, vote and it shows here.</p>
-  </div>
-</div>
-<div class="panel col-6">
-  <h3>📈 My balance <span class="muted">live while seated</span></h3>
-  <canvas id="seatChart" height="120"></canvas>
-  <div class="muted" style="font-size:11px" x-show="chartError" x-text="chartError"></div>
-</div>
-
-</div><!-- /seat grid -->
-
 <!-- THE CHRONICLE -->
 <div x-show="view === 'chronicle'" style="max-width: 760px; margin: 0 auto; padding: 0 12px">
   <div class="panel">
@@ -399,7 +287,7 @@ function dashboard() {
     story: { cards: [], tick: 0, population: 0 },
     chronicle: { now: 0, events: [] },
     availability: [],
-    expElapsed: 0,
+    advice: [],
     tourOpen: !localStorage.getItem('ob_tour_done'),
     reign: { tried: 0, adopted: 0 },
     pendingOption: '',
@@ -479,6 +367,10 @@ function dashboard() {
 
     async loadAvailability() {
       try { this.availability = (await this.api('/api/availability')).rows ?? []; } catch (e) { /* restarting */ }
+    },
+
+    async loadAdvice() {
+      try { this.advice = (await this.api('/api/advice')).advice ?? []; } catch (e) { /* restarting */ }
     },
 
     closeTour() {
@@ -795,42 +687,20 @@ function dashboard() {
         this.policyKnobs = d.knobs ?? [];
       } catch (e) { /* server restarting */ }
     },
-    async runPolicyExperiment(knobId, optLabel) {
-      this.policyBusy = true; this.policyError = ''; this.policyResult = null; this.adoptable = false;
-      this.pendingOption = optLabel; this.expElapsed = 0;
-      try {
-        const d = await this.api('/api/policy/experiment/start',
-                                 { method: 'POST', body: { knob_id: knobId, option_id: optLabel, ticks: 100 } });
-        if (!d.ok) { this.policyError = d.error ?? 'experiment failed'; this.policyBusy = false; this.pendingOption = ''; return; }
-        const jobId = d.job_id;
-        // poll until the twin worlds finish (server runs them in background)
-        for (let i = 0; i < 600; i++) {
-          await new Promise(r => setTimeout(r, 2000));
-          this.expElapsed = i * 2;
-          const r = await this.api('/api/policy/experiment/result?job_id=' + encodeURIComponent(jobId));
-          if (!r.ok) { this.policyError = r.error ?? 'experiment lost'; break; }
-          if (r.status === 'done') {
-            this.policyResult = r.result; this.policyResult.knob_id = knobId; this.policyResult.option_id = optLabel;
-            this.adoptable = true;
-            this.reign.tried++;
-            break;
-          }
-          if (r.status === 'error') { this.policyError = r.error ?? 'experiment failed'; break; }
-        }
-        if (!this.adoptable && !this.policyError) this.policyError = 'experiment timed out';
-      } catch (e) { this.policyError = 'experiment failed: ' + e.message; }
-      this.policyBusy = false; this.pendingOption = '';
-    },
-    async adoptPolicy() {
-      if (!this.policyResult) return;
-      this.adoptBusy = true;
+    async applyPolicy(knobId, optLabel) {
+      if (!confirm('Make "' + optLabel + '" the law of the land? It takes effect in 2 days (ticks).')) return;
+      this.policyBusy = true; this.policyError = ''; this.pendingOption = optLabel;
       try {
         const d = await this.api('/api/policy/adopt',
-                                 { method: 'POST', body: { knob_id: this.policyResult.knob_id, option_id: this.policyResult.option_id } });
+                                 { method: 'POST', body: { knob_id: knobId, option_id: optLabel } });
         if (!d.ok) { this.policyError = d.error ?? 'adoption failed'; }
-        else { this.reign.adopted++; await this.loadPolicyKnobs(); this.policyResult = null; this.adoptable = false; }
+        else {
+          this.reign.adopted++;
+          this.showToast('⚖️ Law changed: ' + optLabel + ' — takes effect in 2 days');
+          await this.loadPolicyKnobs();
+        }
       } catch (e) { this.policyError = 'adoption failed: ' + e.message; }
-      this.adoptBusy = false;
+      this.policyBusy = false; this.pendingOption = '';
     },
 
     async loadSeat() {
