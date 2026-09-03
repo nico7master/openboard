@@ -68,13 +68,24 @@ def demographics_phase(
         # money. Fund it from the surplus pool first; mint only the
         # shortfall. Opt-in via params["birth_stake_from_pool"]; legacy
         # worlds (param absent) keep the v0.01 mint-everything behavior.
+        # Fixed supply (money_cap): minting is FORBIDDEN — the stake is
+        # what the pool can afford (never minted).
         minted = stake
-        if (params or {}).get("birth_stake_from_pool"):
+        mc = (params or {}).get("money_cap") or {}
+        if mc.get("enabled"):
+            upc = int(mc.get("units_per_credit", 100))
+            stake = 500 * upc
+            from_pool = min(int(state.surplus_pool), stake)
+            state.surplus_pool -= from_pool
+            minted = 0  # fixed supply never mints
+            stake = from_pool  # citizen receives what society could give
+        elif (params or {}).get("birth_stake_from_pool"):
             from_pool = min(int(state.surplus_pool), stake)
             state.surplus_pool -= from_pool
             minted = stake - from_pool
         cid = _next_citizen_id(state)
-        state.balances[cid] = stake
+        if stake > 0:
+            state.balances[cid] = stake
         state.money_minted += minted
         state.citizen_inventory[cid] = {}
         meta = state.citizens_meta.setdefault(cid, {})

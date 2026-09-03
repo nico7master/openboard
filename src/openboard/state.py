@@ -279,9 +279,44 @@ def genesis_state(
         version=1, params=params, activated_at=0, change_tx_hash="genesis"
     )
 
+    # Fixed supply (money_cap, D15): the FULL money stock exists at day
+    # zero. Citizen stakes are stated in credits; all state money is in
+    # units (units_per_credit per credit, default 100 -> 0.5 credits is
+    # representable). Citizens keep their nominal stakes x units; the
+    # remainder of the cap is the Society Pool (the nation's credit fund).
+    # All money-denominated baselines scale by units so recipes/prices
+    # keep their real values. No minting ever follows: wages and birth
+    # stakes are transfers (wage shortfall = coop debt), so
+    # sum(balances) + pools == cap forever.
+    mc = params.get("money_cap") or {}
+    upc = int(mc.get("units_per_credit", 100))
+    total_units = int(mc.get("total", 2_100_000_000))
+    balances = dict(citizens)
+    surplus_pool = 0
+    minted_total = 0
+    if mc.get("enabled"):
+        stake_units = 500 * upc
+        for cid in balances:
+            balances[cid] = 500 * upc
+        placed = stake_units * len(balances)
+        surplus_pool = max(0, total_units - placed)
+        minted_total = 0  # nothing minted post-genesis, ever
+        # scale money-denominated baselines and money params to units
+        for g in list(baselines):
+            baselines[g] = baselines[g] * upc
+        if params.get("wage_multiplier_bp") is not None:
+            pass  # bp-based: scales with hours; wage credits x upc handled
+        for k in ("surplus_reserve_cap", "energy_price", "transfer_limit"):
+            if isinstance(params.get(k), int):
+                params[k] = params[k] * upc
+        if isinstance(params.get("wealth_tax"), dict):
+            wt = params["wealth_tax"]
+            if isinstance(wt.get("threshold"), int):
+                wt["threshold"] = wt["threshold"] * upc
+
     return WorldState(
         tick=0,
-        balances=dict(citizens),
+        balances=balances,
         applied=[],
         labor_hours={cid: 0 for cid in citizens},
         goods=goods,
@@ -290,10 +325,10 @@ def genesis_state(
         rulesets=[genesis_ruleset.to_dict()],
         ruleset_version=1,
         good_cost_baseline=baselines,
-        money_minted=0,
+        money_minted=minted_total,
         money_retired=0,
         citizen_inventory={cid: {} for cid in citizens},
-        surplus_pool=0,
+        surplus_pool=surplus_pool,
         treasury_in=0,
         listings={},
         bids=[],

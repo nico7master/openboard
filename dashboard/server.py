@@ -747,6 +747,14 @@ class Run:
         # alphabetically-late citizens forever even with surplus supply.
         # Fair clearing rotates service order by tick (votable).
         params["fair_clearing"] = True
+        # D15: fixed money supply — 21,000,000 credits, divisible to 0.01
+        # (100 units per credit). The full stock exists at genesis (citizen
+        # stakes + the Society Pool); no minting ever follows. Wages pay
+        # treasury-first with visible coop wage-debt; birth stakes are a
+        # pool transfer. The money invariant is exact: balances + pool +
+        # coop treasuries == 21,000,000 credits, forever.
+        params["money_cap"] = {"enabled": True, "total": 2_100_000_000,
+                               "units_per_credit": 100}
         # Stage 4 fix: producer input priority — coops buy their inputs
         # at cost BEFORE the citizen essential pass (share-capped), so
         # downstream producers (kitchen/meals, household goods, capital

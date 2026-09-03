@@ -572,16 +572,32 @@ def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
     # mint only the shortfall. Society stands behind honest work, but a
     # solvent coop no longer silently expands the money supply.
     # Legacy mode ("mint", the v0.01 behavior) stays available for replay.
-    mint_mode = params.get("wage_mint_mode", "mint")
-    if mint_mode == "treasury_first":
-        funded = min(coop.get("treasury", 0), credits)
-        minted = credits - funded
+    # Fixed-supply mode (money_cap): minting is FORBIDDEN. The treasury
+    # pays what it can; any shortfall becomes the coop's wage debt to the
+    # worker (visible on the ledger, repaid automatically from future
+    # sales by the wage-debt repayment phase).
+    mc = params.get("money_cap") or {}
+    upc = int(mc.get("units_per_credit", 100)) if mc.get("enabled") else 1
+    owed = credits * upc  # wage in state units (credits when no cap)
+    if mc.get("enabled"):
+        funded = min(coop.get("treasury", 0), owed)
         coop["treasury"] = coop.get("treasury", 0) - funded
-        state.balances[tx.sender] += credits
-        state.money_minted += minted
+        state.balances[tx.sender] += funded
+        if funded < owed:
+            debt = owed - funded
+            wd = coop.setdefault("wage_debt", {})
+            wd[tx.sender] = wd.get(tx.sender, 0) + (owed - funded)
     else:
-        state.balances[tx.sender] += credits
-        state.money_minted += credits
+        mint_mode = params.get("wage_mint_mode", "mint")
+        if mint_mode == "treasury_first":
+            funded = min(coop.get("treasury", 0), credits)
+            minted = credits - funded
+            coop["treasury"] = coop.get("treasury", 0) - funded
+            state.balances[tx.sender] += credits
+            state.money_minted += minted
+        else:
+            state.balances[tx.sender] += credits
+            state.money_minted += credits
 
     coop["labor_pool_hours"] += hours
     state.labor_hours[tx.sender] += hours
@@ -1295,8 +1311,10 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         })
 
     # --- Pass 3: retire pool beyond the cap
+    # Fixed supply (money_cap): NO destruction. The pool is the nation's
+    # credit fund; deflation comes from scarcity, not from burning money.
     cap = params.get("surplus_reserve_cap", 0)
-    if state.surplus_pool > cap:
+    if not (params.get("money_cap") or {}).get("enabled") and state.surplus_pool > cap:
         excess = state.surplus_pool - cap
         state.surplus_pool -= excess
         state.money_retired += excess
@@ -1547,6 +1565,41 @@ def _coop_distribute_phase(state: WorldState, tick: int, params: dict[str, Any])
     return events
 
 
+def _wage_debt_repay_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Fixed supply (money_cap): coops repay wage debt from treasury,
+    oldest debt first, after the day's sales. Transfers only — the fixed
+    supply is never expanded. Deterministic (sorted coops, citizens)."""
+    mc = params.get("money_cap") or {}
+    if not mc.get("enabled"):
+        return []
+    events: list[dict[str, Any]] = []
+    for cid in sorted(state.coops.keys()):
+        coop = state.coops[cid]
+        wd = coop.get("wage_debt") or {}
+        if not wd or coop.get("treasury", 0) <= 0:
+            continue
+        for who in sorted(wd.keys()):
+            if coop.get("treasury", 0) <= 0:
+                break
+            owed = wd[who]
+            pay = min(owed, coop["treasury"])
+            if pay <= 0:
+                continue
+            coop["treasury"] -= pay
+            wd[who] = owed - pay
+            state.balances[who] = state.balances.get(who, 0) + pay
+            if wd[who] <= 0:
+                del wd[who]
+            events.append({
+                "tick": tick,
+                "action": "WAGE_DEBT_REPAY",
+                "coop_id": cid,
+                "citizen": who,
+                "paid": pay,
+            })
+    return events
+
+
 def _wealth_tax_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
     """Wealth tax above a threshold, paid into the surplus pool.
 
@@ -1655,7 +1708,9 @@ def _capital_refresh_phase(state: WorldState, tick: int, params: dict[str, Any])
         for good, qty in top_up.items():
             inv[good] = inv.get(good, 0) + qty
         state.capital_fund -= cost
-        state.money_retired += cost
+        if not (params.get("money_cap") or {}).get("enabled"):
+            state.money_retired += cost  # legacy: destruction shrinks supply
+        # fixed supply: the pool paid, money stays in circulation (transfer)
         events.append({
             "tick": tick,
             "action": "CAPITAL_REFRESH",
@@ -2600,6 +2655,9 @@ def apply_tick(
     # End-of-tick market clearing (deterministic) — spec §9
     market_events = _clear_markets(state, tick, params, ledger)
     state.applied.extend(market_events)
+
+    # Fixed supply: coops repay wage debt from the day's sales (D14).
+    state.applied.extend(_wage_debt_repay_phase(state, tick, params))
 
     # Emergency input advance runs BEFORE dividends/services: a
     # deadlocked producer (no inputs -> no output -> no income) gets
