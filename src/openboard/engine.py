@@ -20,7 +20,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE"})
 
 
 def _is_int(v: Any) -> bool:
@@ -477,6 +477,40 @@ def _apply_join_coop(state: WorldState, tx: Transaction) -> dict[str, Any]:
     }
 
 
+
+def _validate_leave_coop(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    """LEAVE_COOP (2026-09-01, need-driven labor mobility): symmetric to
+    JOIN_COOP. A member may exit their co-op freely — labor is not owned
+    by the co-op. Leaving an empty co-op is allowed (it simply idles)."""
+    payload = tx.payload
+
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    if not isinstance(payload, dict) or set(payload.keys()) != {"coop_id"}:
+        return Reason.INVALID_PAYLOAD
+
+    coop_id = payload.get("coop_id")
+    if coop_id not in state.coops:
+        return Reason.COOP_NOT_FOUND
+
+    if _member_of(state, tx.sender) is None:
+        return Reason.NOT_A_MEMBER
+
+    return None
+
+
+def _apply_leave_coop(state: WorldState, tx: Transaction) -> dict[str, Any]:
+    coop = state.coops[tx.payload["coop_id"]]
+    coop["members"].remove(tx.sender)
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "LEAVE_COOP",
+        "coop_id": tx.payload["coop_id"],
+    }
+
+
 # --------------------------------------------------------------------- WORK
 
 
@@ -534,9 +568,20 @@ def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
     credits = total_bp // 10_000
     coop["wage_remainder_bp"] = total_bp % 10_000
 
-    # Money creation by work (D4): wages are minted, not transferred
-    state.balances[tx.sender] += credits
-    state.money_minted += credits
+    # Wage funding (D14 flaw fix L2): pay from the coop's treasury first;
+    # mint only the shortfall. Society stands behind honest work, but a
+    # solvent coop no longer silently expands the money supply.
+    # Legacy mode ("mint", the v0.01 behavior) stays available for replay.
+    mint_mode = params.get("wage_mint_mode", "mint")
+    if mint_mode == "treasury_first":
+        funded = min(coop.get("treasury", 0), credits)
+        minted = credits - funded
+        coop["treasury"] = coop.get("treasury", 0) - funded
+        state.balances[tx.sender] += credits
+        state.money_minted += minted
+    else:
+        state.balances[tx.sender] += credits
+        state.money_minted += credits
 
     coop["labor_pool_hours"] += hours
     state.labor_hours[tx.sender] += hours
@@ -1516,16 +1561,38 @@ def _wealth_tax_phase(state: WorldState, tick: int, params: dict[str, Any]) -> l
     if threshold <= 0 or rate_bp <= 0:
         return []
 
+    # D14 flaw fix L4: optionally count coop net assets (treasury share +
+    # inventory valued at cost baselines, attributed evenly to members) in
+    # the tax base. Without this, goods are a tax-free wealth hideout
+    # (nothing decays). Opt-in via wt["include_inventory"]; legacy worlds
+    # replay unchanged.
+    member_shares: dict[str, int] = {}
+    if wt.get("include_inventory"):
+        base = state.good_cost_baseline
+        for cid in sorted(state.coops.keys()):
+            c = state.coops[cid]
+            members = c.get("members") or []
+            if not members:
+                continue
+            inv_value = sum(base.get(g, 1) * q for g, q in (c.get("inventory") or {}).items())
+            net = int(c.get("treasury", 0)) + inv_value
+            per = net // len(members)
+            if per > 0:
+                for m in sorted(members):
+                    member_shares[m] = member_shares.get(m, 0) + per
+
     events: list[dict[str, Any]] = []
     for who in sorted(state.balances.keys()):
-        bal = state.balances[who]
+        bal = state.balances[who] + member_shares.get(who, 0)
         excess = bal - threshold
         if excess <= 0:
             continue
         tax = excess * rate_bp // 10_000
         if tax <= 0:
             continue
-        state.balances[who] = bal - tax
+        pay = min(tax, state.balances[who])
+        state.balances[who] -= pay
+        tax = pay
         state.surplus_pool += tax
         events.append({
             "tick": tick,
@@ -2195,12 +2262,21 @@ def _detect_anomalies(state: WorldState, tick: int, params: dict[str, Any], list
         # is structural, not abuse. Require >= 2 listing coops.
         if len(by_coop) < 2:
             continue
+        # Structural dominance floor (realism pack): with n producers the
+        # structural share of the largest is 1/n — flagging a coop near it
+        # is noise (a healthy n=2 split is 50/50; a single producer is
+        # structural and already skipped above). Behavioral dominance =
+        # exceeding the LARGER of the configured share (70% default) or
+        # structural + 15pp, so the bar rises as producer count shrinks.
+        _n = len(by_coop)
+        _structural_bp = 10_000 // _n
+        _threshold_bp = max(ov["market_power_share_bp"], _structural_bp + 1_500)
         for coop_id in sorted(by_coop.keys()):
-            if by_coop[coop_id] * 10_000 > ov["market_power_share_bp"] * total:
+            if by_coop[coop_id] * 10_000 > _threshold_bp * total:
                 key = ("MARKET_POWER", coop_id, good)
                 if key not in flagged:
                     flag = {"tick": tick, "kind": "MARKET_POWER", "target": coop_id, "good": good,
-                            "share_bp": by_coop[coop_id] * 10_000 // total, "threshold_bp": ov["market_power_share_bp"]}
+                            "share_bp": by_coop[coop_id] * 10_000 // total, "threshold_bp": _threshold_bp}
                     state.flags.append(flag)
                     events.append({"tick": tick, "action": "OVERSIGHT_FLAG", **flag})
 
@@ -2459,6 +2535,7 @@ def apply_tick(
             "RULE_CHANGE": lambda t: _validate_rule_change(state, t, params),
             "FOUND_COOP": lambda t: _validate_found_coop(state, t, params),
             "JOIN_COOP": lambda t: _validate_join_coop(state, t, params),
+            "LEAVE_COOP": lambda t: _validate_leave_coop(state, t, params),
             "WORK": lambda t: _validate_work(state, t, params),
             "PRODUCE": lambda t: _validate_produce(state, t, params),
             "LIST_GOOD": lambda t: _validate_list_good(state, t, params),
@@ -2505,6 +2582,7 @@ def apply_tick(
             entry = {
                 "TRANSFER": _apply_transfer,
                 "JOIN_COOP": _apply_join_coop,
+                "LEAVE_COOP": _apply_leave_coop,
                 "LIST_GOOD": _apply_list_good,
                 "BID": _apply_bid,
                 "BID_FOR_COOP": _apply_bid_for_coop,

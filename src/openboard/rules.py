@@ -38,6 +38,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
+    "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
     "transfer_limit": 0,  # 0 = unlimited
     "max_coop_members": 12,
     "min_coop_members": 2,

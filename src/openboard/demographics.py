@@ -57,11 +57,25 @@ def demographics_phase(
 
     # 1) birth
     interval = max(1, int(cfg.get("birth_interval_ticks", 400)))
-    if tick % interval == 0:
+    # Crisis birth suppression (realism pack): families don't grow during
+    # famines/emergencies. Skip the birth slot while a ratified crisis is
+    # active — the slot is simply skipped (next birth at the next interval
+    # multiple), keeping ids and the invariant untouched.
+    from .crisis import crisis_active
+    if tick % interval == 0 and not crisis_active(state):
         stake = 500
+        # D14 flaw fix L3: the welcome stake is society's cost, not new
+        # money. Fund it from the surplus pool first; mint only the
+        # shortfall. Opt-in via params["birth_stake_from_pool"]; legacy
+        # worlds (param absent) keep the v0.01 mint-everything behavior.
+        minted = stake
+        if (params or {}).get("birth_stake_from_pool"):
+            from_pool = min(int(state.surplus_pool), stake)
+            state.surplus_pool -= from_pool
+            minted = stake - from_pool
         cid = _next_citizen_id(state)
         state.balances[cid] = stake
-        state.money_minted += stake
+        state.money_minted += minted
         state.citizen_inventory[cid] = {}
         meta = state.citizens_meta.setdefault(cid, {})
         meta["age"] = 0
