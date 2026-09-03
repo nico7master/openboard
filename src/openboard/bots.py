@@ -67,11 +67,48 @@ def honest_worker(who, state, params, tick, rng) -> list[Transaction]:
     return out
 
 
+def _max_runs(c: dict, r: dict, cap: int = 4) -> int:
+    """How many recipe runs the coop can afford this tick (D14 auto-scale).
+    Bounded by material inputs, energy, and pooled labor -- capped so a
+    rich coop does not dump its whole pantry into one tick's run."""
+    n = cap
+    for g, q in (r.get("inputs") or {}).items():
+        n = min(n, int(c["inventory"].get(g, 0) // max(1, q)))
+    e = r.get("energy", 0) or 0
+    if e:
+        n = min(n, int(c["inventory"].get("electricity", 0) // e))
+    lh = r.get("labor_hours", 0) or 0
+    if lh:
+        n = min(n, int(c.get("labor_pool_hours", 0) // lh))
+    return max(0, n)
+
+
 def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
     """Work hard, produce when inputs allow, list the surplus."""
     v = state.ruleset_version
     coop = _my_coop(state, who)
     if coop is None:
+        # D14 auto-mobility: a jobless citizen joins the least-membered
+        # coop that produces a chronically short good -- founding is not
+        # the only answer; existing coops scale by taking hands.
+        worst: dict[str, int] = {}
+        for _cit, streaks in state.unmet_needs.items():
+            for good, t in streaks.items():
+                worst[good] = max(worst.get(good, 0), int(t or 0))
+        covered = {g for g, ls in state.listings.items()
+                   if any((l.get("qty") or 0) > 0 for l in ls)}
+        short = [g for g, t in worst.items() if g not in covered and t >= 5]
+        if short:
+            cands = []
+            for cid, c in state.coops.items():
+                rid = c.get("recipe_intent") or c.get("trade") or ""
+                rec = state.recipes.get(rid) or {}
+                if set((rec.get("outputs") or {})) & set(short):
+                    cands.append((len(c.get("members") or []), cid))
+            if cands:
+                cands.sort()
+                target = cands[0][1]
+                return [_tx(tick, who, "JOIN_COOP", {"coop_id": target}, v)]
         return []
     out = [_work(tick, who, coop, 8, v)]
     c = state.coops[coop]
@@ -79,7 +116,11 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
     if c["labor_pool_hours"] >= 2:
         for rid, r in state.recipes.items():
             if all(c["inventory"].get(g, 0) >= q for g, q in r["inputs"].items()) and c["labor_pool_hours"] >= r["labor_hours"] and c["inventory"].get("electricity", 0) >= r["energy"]:
-                out.append(_tx(tick, who, "PRODUCE", {"coop_id": coop, "recipe_id": rid, "runs": 1}, v))
+                # D14 auto-scale: run the recipe as many times as inputs,
+                # energy and labor allow (was hardcoded 1 -- coops could
+                # never grow output by scaling up)
+                runs = max(1, _max_runs(c, r))
+                out.append(_tx(tick, who, "PRODUCE", {"coop_id": coop, "recipe_id": rid, "runs": runs}, v))
                 break
     # list surplus outputs (keep 5 units of anything)
     for g in sorted(c["inventory"].keys()):
