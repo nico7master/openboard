@@ -42,11 +42,21 @@ def make_specialist(
         # retires automatically once capital is held or buyable.
         _primary_recipe_id = active_id  # capital recipe we may fall back FROM
         if fallback_recipe_id and fallback_recipe_id in state.recipes:
-            cap_goods = [g for g in recipe["inputs"] if g in ("hand_tools", "machines")]
-            short = any(c["inventory"].get(g, 0) < recipe["inputs"][g] for g in cap_goods)
+            # Bridge trigger (generalized 2026-09-01): engage the primitive
+            # bridge when ANY declared recipe input is short AND unbuyable
+            # (no live listing we can afford). Originally capital-goods-only,
+            # which deadlocked the circular capital chain: toolworks (the
+            # sole hand_tools producer) starved on STEEL — a material, not
+            # capital — so it never bridged, tools hit zero economy-wide,
+            # and every miner pinned to primitive recipes forever. Only
+            # specialists with a catalogued fallback_recipe_id can bridge;
+            # the exit ramp below keeps bidding the primary's inputs so the
+            # bridge retires itself when the market recovers.
+            bridge_goods = sorted(recipe["inputs"].keys())
+            short = any(c["inventory"].get(g, 0) < recipe["inputs"][g] for g in bridge_goods)
             buyable = True
-            for g in cap_goods:
-                ls = state.listings.get(g) or []
+            for g in bridge_goods:
+                ls = [e for e in (state.listings.get(g) or []) if e.get("qty", 0) > 0]
                 if not ls:
                     buyable = False
                     break
@@ -62,8 +72,16 @@ def make_specialist(
         # consumption — recycled by wealth tax + dividends, NOT an exploit.
         # The engine-side labor_pool_cap bounds adversarial farming; honest
         # pools never approach it because production consumes them.
+        # Rest days (realism pack): nobody works 8h every tick forever.
+        # One full rest day in ten, staggered per citizen by a stable
+        # name hash — deterministic, no rng draw (replay-safe). Pooled
+        # labor absorbs the missing hours via production sizing. Cadence
+        # is 1-in-10, not 1-in-7: the serial capital chain
+        # (machine_works -> miners) missed its 50-tick recovery window
+        # at 1-in-7 (-14% throughput) and the ratchet gate failed.
+        _rests = ((sum(ord(ch) for ch in who) + tick) % 10) == 0
         _cap = params.get("labor_pool_cap")
-        if _cap is None or c["labor_pool_hours"] + 8 <= _cap:
+        if not _rests and (_cap is None or c["labor_pool_hours"] + 8 <= _cap):
             out.append(_tx(tick, who, "WORK", {"coop_id": coop_id, "hours": 8}, v))
 
 

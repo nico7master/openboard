@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -237,6 +237,15 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
         upc = mc.get("units_per_credit", 100)
         if isinstance(upc, bool) or not isinstance(upc, int) or upc <= 0:
             return Reason.INVALID_RULESET
+
+    isc = params.get("inequality_seed")
+    if isc is not None:
+        if not isinstance(isc, dict) or not isinstance(isc.get("enabled"), bool):
+            return Reason.INVALID_RULESET
+        for k in ("top_pct_bp", "top_share_bp"):
+            v = isc.get(k, 100 if k == "top_pct_bp" else 5000)
+            if isinstance(v, bool) or not isinstance(v, int) or not (0 < v <= 10_000):
+                return Reason.INVALID_RULESET
 
     if "fair_clearing" in params:
         if not isinstance(params["fair_clearing"], bool):

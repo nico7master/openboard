@@ -254,3 +254,30 @@ runaway; revisit under shocks/growth tuning.
 - **D8.6 Accounts**: PBKDF2-salted credentials, token sessions,
   one-citizen-one-seat; concurrency proven by two humans acting in one
   tick. Engine never sees credentials — accounts are a dashboard layer.
+
+### 2026-09-01 — Midnight City / Midnight Network lessons (external review)
+
+Source: docs/ideas/2026-09-01-midnight-city-comparison.md. Midnight City
+(launched 2026-02-26) is Cardano partner chain Midnight's live AI-agent
+economy demo — not a competitor, but an independent validation of our
+"prove it with bots before humans arrive" methodology. Implementation
+lessons adopted:
+- **Anchor reproducibility fields (anchor v1.5)**: add `rules_hash`,
+  `engine_version`, `tick_height` to the anchor message alongside
+  `merkle_root` — an anchored state becomes verifiable as *the output of
+  a specific deterministic engine version* (our TEE-attestation
+  equivalent, via determinism instead of trusted hardware).
+- **Cardano native assets = future on-chain asset layer**: if seats/shares
+  ever go on-chain (game layer), issue as CIP-25/68 native assets on L1,
+  all logic stays in the engine (Midnight's NIGHT-on-L1 / activity-on-L2
+  split).
+- **Fee stabilizer knob for Policy Lab**: capacity-based fee elasticity
+  (fees fall when the market is underused) as a votable market rule
+  experiment.
+- **Three-viewer dashboard pattern** (public / auditor / god): same data
+  at three permission levels — dramatizes transparency.
+- **Docs kept AI-consumable** (replay protocol, anchor format), following
+  Midnight's AI-assisted development doc structure.
+- **Rejected**: TEEs, ZK circuits, Substrate node ops — trust via
+  determinism + transparency, not trusted hardware. Full rationale in the
+  comparison doc.

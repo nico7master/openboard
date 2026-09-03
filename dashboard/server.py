@@ -439,10 +439,11 @@ def _wrap_politics(name: str, fn, governance: bool):
 class Run:
     """One engine run: world, bots, timeline, feed, save/replay."""
 
-    def __init__(self, seed: int = 42, governance: bool = False):
+    def __init__(self, seed: int = 42, governance: bool = False, scenario: str = "equal"):
         self.lock = threading.RLock()
         self.seed = seed
         self.governance = governance
+        self.scenario = scenario
         self.autoplay = {"running": False, "interval": 0.75}
 
         # circular-flow params + governance via one source of truth
@@ -522,11 +523,30 @@ class Run:
 
     def _apply_injection(self, inj: dict[str, Any]) -> None:
         op = inj["op"]
+        # D15: under a fixed money supply, founding capital is a TRANSFER
+        # from the Society Pool (the nation's credit fund), never new
+        # money. Otherwise the cap leaks by every injection (observed:
+        # +29,400 over the 21M cap in 20 ticks).
+        fixed = bool((self.state.active_ruleset_params().get("money_cap") or {}).get("enabled"))
         if op == "treasury":
+            if fixed:
+                take = min(int(self.state.surplus_pool), int(inj["amount"]))
+                self.state.surplus_pool -= take
+                self.state.coops[inj["coop"]]["treasury"] = (
+                    self.state.coops[inj["coop"]].get("treasury", 0) + take)
+                return
             coop = self.state.coops[inj["coop"]]
             coop["treasury"] = coop.get("treasury", 0) + inj["amount"]
         elif op == "add_citizen":
-            self.state.balances[inj["name"]] = inj["balance"]
+            if fixed:
+                # D15: a new citizen's stake is a transfer from the Society
+                # Pool (same as engine birth stakes), never new money.
+                stake = int(inj["balance"])
+                take = min(int(self.state.surplus_pool), stake)
+                self.state.surplus_pool -= take
+                self.state.balances[inj["name"]] = take
+            else:
+                self.state.balances[inj["name"]] = inj["balance"]
             self.state.labor_hours[inj["name"]] = self.state.labor_hours.get(inj["name"], 0)
             self.state.citizen_inventory.setdefault(inj["name"], {})
         elif op == "capital":
@@ -760,6 +780,12 @@ class Run:
         # downstream producers (kitchen/meals, household goods, capital
         # maintenance) are not starved by citizen FCFS demand.
         params["producer_input_priority"] = {"enabled": True, "share_cap_bp": 5_000}
+        # D16 scenario: start like the real world — the top 1% own 50% of
+        # ALL money, the Society Pool starts empty. The game is using
+        # policies (wealth tax, dividends, credit union) to rebalance.
+        if getattr(self, "scenario", "equal") == "unequal":
+            params["inequality_seed"] = {"enabled": True, "top_pct_bp": 100,
+                                         "top_share_bp": 5_000}
         params["triage_overrides"] = {
             g: "essential" for g in (
                 "vegetables", "fruit", "meat", "milk", "eggs", "cheese",
@@ -810,7 +836,13 @@ class Run:
         # Stage 6 sweep evidence (2026-09-01): 200bp is UNSTABLE (Gini trend
         # +0.153, drifts 1.5k->3k unchecked); 400-600bp is the stable region
         # (trend -0.24). Default moved to the proven-stable 400bp.
-        params["wealth_tax"] = {"threshold": 5_000, "rate_bp": 400}
+        if getattr(self, "scenario", "equal") == "unequal":
+            # D16: the unequal world starts UNREDACTED — no wealth tax.
+            # The top 1% keep their 50% until the player enacts policy.
+            # Enacting redistribution IS the first game.
+            params["wealth_tax"] = {"threshold": 5_000, "rate_bp": 0}
+        else:
+            params["wealth_tax"] = {"threshold": 5_000, "rate_bp": 400}
         # Anti multi-tx mint exploit: cumulative WORK hours per citizen per
         # tick are capped (per-tx cap alone allowed 10 txs = 10x mint).
         params["max_work_hours_cumulative"] = 8
@@ -1544,10 +1576,18 @@ def api_reset():
     data = request.get_json(force=True, silent=True) or {}
     governance = bool(data.get("governance", False))
     seed = int(data.get("seed", 42))
+    scenario = str(data.get("scenario", "equal"))
+    if scenario not in ("equal", "unequal"):
+        return jsonify({"ok": False, "error": "unknown scenario"}), 400
     with RUN.lock:
         RUN.autoplay["running"] = False
-    RUN = Run(seed=seed, governance=governance)
-    return jsonify({"ok": True, "tick": RUN.state.tick})
+    RUN = Run(seed=seed, governance=governance, scenario=scenario)
+    top_share = 0
+    if scenario == "unequal":
+        top = sorted(RUN.state.balances.values(), reverse=True)
+        top_share = (top[0] * max(1, len(top) // 100)) * 100 if top else 0
+    return jsonify({"ok": True, "tick": RUN.state.tick, "scenario": scenario,
+                    "money_cap_credits": 21_000_000 if (RUN.state.active_ruleset_params().get("money_cap") or {}).get("enabled") else None})
 
 
 @app.get("/api/seat")

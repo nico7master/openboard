@@ -1,0 +1,58 @@
+# Midnight City (Midnight Network / Cardano) — Comparison
+
+*Research note, 2026-09-01. Sources: hackernoon.com deep-dive, midnight.network blog (via search), CoinDesk, Binance Square. Our prior Cardano work: `docs/superpowers/specs/2026-08-29-cardano-anchoring-investigation.md` (Midnight was not previously evaluated).*
+
+## What Midnight City actually is
+- Launched 2026-02-26 at midnight.city; open beta, free to observe.
+- A **live stress-test / marketing demo** for the **Midnight network**, Cardano's privacy partner chain (mainnet final week of March 2026).
+- Five districts (Kalendo, Nexus, Prooflux, Prisultimate, Bison Flats); autonomous AI agents (Gemini via Gobi API, Jungian-archetype personalities, long-term memory) register jobs, create businesses, buy, converse — generating sustained, unpredictable on-chain transaction volume.
+- Demonstrates ZK proofs, TEE-attested L2 blocks, and **selective disclosure** via three viewing modes: Public / Auditor / God.
+- Pitch: "the first AI MMORPG that plays itself. You direct." — but functionally it is a proof-of-capacity exercise, not a game with stakes or player economy.
+
+## Do we compete?
+**No — different products, opposite philosophies, shared aesthetic.**
+
+| Dimension | Midnight City | OpenBoard Economy |
+|---|---|---|
+| Purpose | Demonstrate/measure a privacy L1 | Prove an economic system; then games on top |
+| Chain role | Chain *is* the product; sim generates load | Engine is source of truth; chain is a notary (Cardano metadata anchors) |
+| Transparency | Private by default, ZK + selective disclosure | Fully transparent append-only ledger — the *point* |
+| Agents | LLM-driven, unpredictable, opaque | Deterministic economic bots, replayable, auditable |
+| Humans | Observers (3 permission modes) | Players, voters, adversaries, auditors with real decisions |
+| Claim to prove | Network scalability under realistic load | Economic stability, fairness, adversarial resilience |
+| Business | L1 token economy (NIGHT/DUST), institutional privacy | Game frontends on a proven headless engine |
+
+Overlap is presentational: persistent world, autonomous agents living/working 24/7, "prove it with bots before humans arrive." That's a shared *narrative*, not a market collision. Their economy has no labor-time recipes, coops, surplus redistribution, or governance — the substance of OpenBoard.
+
+## What we can take
+1. **Three-viewer UX pattern** (public / auditor / god): maps directly onto our dashboard — citizen view, auditor view (limited ledger slices), god view (full analytics, already spec'd 2026-08-21). Adopt their framing of *the same data seen at three permission levels* — it dramatizes transparency instead of just exposing tables.
+2. **"The simulation is the stress test" as marketing**: Midnight City turned Stage-6-style robustness testing into a public spectacle. A long-running public OpenBoard sim (anchored daily on Cardano preprod) with a live dashboard would be *more* verifiable than theirs — every claim checkable against the Merkle-anchored ledger. Candidate for our first public-facing milestone (the role our anchor spec left open for Catalyst).
+3. **Dual-resource separation** (NIGHT governance/value vs DUST non-tradable usage resource): validates our separation of **credit (flow, earned by labor, non-capital)** from **seat/ownership (governance)** — worth citing as independent precedent in design docs.
+4. **District flavor**: five named districts with lore made a bare testnet legible. Our coops/markets could get the same treatment in the round-based market game.
+
+## What we can learn (warnings)
+- Reception was mixed: "hype vs adoption" skepticism (GlimpChain). An always-on spectacle without player stakes invites shrugs. Our answer is differentiators they structurally lack: verifiable fairness, replayable determinism, adversarial 'Break the System' entry path.
+- LLM agents are expensive and opaque; our deterministic bots are a feature for an economy game (auditable, reproducible outcomes), not a limitation. Do not chase LLM-agent vibes at the cost of replayability.
+- Midnight deliberately keeps its privacy features *invisible* in the demo; our equivalent bet is the opposite — make the ledger the hero.
+
+## Implementation lessons (how Midnight ↔ Cardano actually work)
+
+Architecture of the pair (from docs.midnight.network, midnight-node repo, dev.to deep-dive, CoinDesk):
+- Midnight is a **Substrate-based partner chain**: own consensus, own ledger, own block production — Cardano provides final settlement security, not execution.
+- **Settlement path**: L2 blocks → re-executed inside TEEs (secure enclaves) → cryptographic attestation → specialized oracle → Cardano L1. Cardano only ever sees attestations, not the private transactions.
+- **Asset split**: NIGHT exists as a Cardano *native asset* (CNA) on the parent chain; usage (DUST) lives only on Midnight. Value on L1, activity on L2.
+- **Fee economics**: DUST is a non-tradable, renewable resource (generated by holding NIGHT, consumed by use), with an automatic stabilizer — fees fall when blocks run below ~50% capacity, keeping the network usable in low-demand periods.
+- **Dev experience**: Compact contracts compile to plain JavaScript + ZK circuit representations; docs are deliberately structured for AI-assisted development.
+
+Lessons for OpenBoard, mapped to our implementation:
+1. **Our anchor.py already implements their settlement pattern in miniature** — state → root → L1, chained to previous. Validation, not just inspiration.
+2. **Cheap v1.5 upgrade — make anchors *reproducibility* commitments**: add `rules_hash`, `engine_version`, and `tick_height` to the anchor message alongside `merkle_root`. Then an anchored state is verifiable not just as data, but as *the output of a specific deterministic engine version* — our equivalent of their TEE attestation, achieved with pure determinism instead of trusted hardware.
+3. **Cardano native assets = future home of game assets**: when seats/coop shares/achievements ever need to exist on-chain (game layer), issue them as Cardano native assets (CIP-25/68) while all logic stays in the engine — same L1-value/L2-logic split Midnight uses.
+4. **Fee/resource stabilizer as a Policy Lab knob**: their capacity-based fee elasticity is a ready-made design for our auction/market fees — a plain-language knob ('market stall fee adapts to marketplace congestion') with before/after comparison, fitting our core loop.
+5. **Verifier-first observability**: their public block explorer is what makes the demo legible. Our equivalent: a ~50-line public verifier script + a live dashboard page showing the anchor chain (day, root, prev) — publish both with the first real anchor.
+6. **Docs structured for AI-assisted development**: their docs are optimized so coding agents can generate correct integrations. Keep our engine docs (replay protocol, anchor format) in the same AI-consumable shape — it lowers onboarding for any future contributor or game frontend.
+7. **What NOT to copy**: TEEs (trusted hardware = a trust root we explicitly reject), ZK circuits (massive complexity to hide data we *want* visible), Substrate node ops (a team-sized lift). Their stack exists to prove a *private* chain; ours exists to prove a *transparent* economy. Opposite constraints, so opposite architectures — but the settlement-to-Cardano pattern is shared and free to reuse.
+8. **Unverified lead**: one CoinDesk research snippet suggests Hydra v1 is used somewhere in Midnight's stack — worth checking in Midnight's docs before we pick our own Hydra strategy for multiplayer actions (our anchor spec already defers Hydra to the game layer).
+
+## Verdict
+Not a competitor. A validation: the biggest new Cardano-ecosystem launch independently arrived at "persistent AI-agent economy as public proof," which is our Phase-7 methodology. Take the viewer-mode UX, the live-demo-as-marketing move, and the dual-resource precedent; stay on our path (deterministic engine → anchoring → Break the System).

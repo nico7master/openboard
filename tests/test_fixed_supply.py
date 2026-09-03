@@ -122,3 +122,36 @@ def test_pool_funds_whole_stake_when_rich():
     born = [e for e in ev if e.get("action") == "CITIZEN_BORN"][0]
     assert s.balances[born["citizen"]] == 50_000  # full 500cr stake
     assert s.money_minted == 0
+
+
+# ---- D16: real-world unequal start (top 1% own 50%)
+
+def _isc_params(**over):
+    p = _params(**over)
+    p['inequality_seed'] = {'enabled': True, 'top_pct_bp': 100, 'top_share_bp': 5_000}
+    return p
+
+
+def test_inequality_seed_top1_own_half():
+    s = _world(_isc_params(), n=100)
+    sorted_bals = sorted(s.balances.values(), reverse=True)
+    top1 = sorted_bals[:1]  # 1% of 100 citizens = 1 citizen
+    rest = sorted_bals[1:]
+    assert sum(top1) == 2_100_000_000 * 5_000 // 10_000  # exactly half
+    assert all(b == sum(top1) for b in top1)
+    assert all(0 < b < sum(top1) for b in rest)
+    assert s.surplus_pool == 0  # society starts publicly poor
+
+
+def test_inequality_seed_supply_conserved():
+    s = _world(_isc_params(), n=100)
+    total = (sum(s.balances.values()) + int(s.surplus_pool)
+             + sum(int(c.get('treasury', 0)) for c in s.coops.values()))
+    # exact cap minus rounding dust (< n units)
+    assert 2_100_000_000 - 100 <= total <= 2_100_000_000
+
+
+def test_inequality_seed_default_off():
+    s = _world(_params(), n=5)  # no inequality_seed
+    bals = set(s.balances.values())
+    assert bals == {50_000}  # everyone equal, as D15

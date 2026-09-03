@@ -15,6 +15,12 @@ mechanism, and how does this map to the game vision (Hydra/Paima)?
 - `verify_anchor(...)` — anyone with the ledger + the on-chain anchor
   can verify. Tampering with ANY historical tx breaks the root.
 
+> **2026-09-01 update (Midnight City lessons):** for anchor v1.5, also
+> embed `rules_hash`, `engine_version`, and `tick_height` in the anchor
+> message — making each anchor a *reproducibility* commitment (the state
+> is the output of a specific deterministic engine version), not just a
+> data commitment. See docs/ideas/2026-09-01-midnight-city-comparison.md.
+
 The design is exactly the production pattern used by audit-trail systems:
 merkle-tree the data, post only the root on-chain (Cardano's own docs
 recommend this for larger datasets).

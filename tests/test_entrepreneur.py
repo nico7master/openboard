@@ -34,7 +34,8 @@ def _world():
 def test_no_shortage_no_action():
     s = _world()
     txs = entrepreneur("e1", s, s.active_ruleset_params(), 1, random.Random(1))
-    assert txs == []
+    # founders buy their own needs (feeding fix) but must NOT found
+    assert all(t.action != "FOUND_COOP" for t in txs)
 
 
 def test_chronic_shortage_triggers_founding():
@@ -43,8 +44,9 @@ def test_chronic_shortage_triggers_founding():
     for c in s.balances:
         s.unmet_needs[c] = {"books": 7}
     txs = entrepreneur("e1", s, s.active_ruleset_params(), 1, random.Random(1))
-    assert len(txs) == 1
-    tx = txs[0]
+    found = [t for t in txs if t.action == "FOUND_COOP"]
+    assert len(found) == 1
+    tx = found[0]
     assert tx.action == "FOUND_COOP"
     assert tx.payload["recipe_id"] == "book_printing"  # produces books
     assert tx.payload["members"] == ["e1", "f1"]  # self + first free citizen
@@ -57,7 +59,7 @@ def test_covered_good_ignored():
         s.unmet_needs[c] = {"books": 7}
     s.listings["books"] = [{"seller": "x", "floor": 5, "qty": 3, "tick": 1}]
     txs = entrepreneur("e1", s, s.active_ruleset_params(), 1, random.Random(1))
-    assert txs == []  # market already covers books
+    assert all(t.action != "FOUND_COOP" for t in txs)  # market already covers books
 
 
 def test_already_in_coop_no_action():
@@ -66,7 +68,8 @@ def test_already_in_coop_no_action():
     for c in s.balances:
         s.unmet_needs[c] = {"books": 9}
     txs = entrepreneur("e1", s, s.active_ruleset_params(), 1, random.Random(1))
-    assert txs == []
+    # seated founders now WORK (join-and-work fallback) but never re-found
+    assert all(t.action != "FOUND_COOP" for t in txs)
 
 
 def test_founding_applies_end_to_end():
@@ -79,7 +82,7 @@ def test_founding_applies_end_to_end():
     txs = bot("e1", s, s.active_ruleset_params(), 1, random.Random(1))
     led = Ledger()
     apply_tick(s, led, txs, current_tick=1)
-    coop_id = txs[0].payload["coop_id"]
+    coop_id = [t for t in txs if t.action == "FOUND_COOP"][0].payload["coop_id"]
     assert coop_id in s.coops
     assert s.coops[coop_id]["recipe_intent"] == "book_printing"
     assert "e1" in s.coops[coop_id]["members"]

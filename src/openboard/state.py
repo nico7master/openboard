@@ -294,13 +294,38 @@ def genesis_state(
     balances = dict(citizens)
     surplus_pool = 0
     minted_total = 0
+    isc = params.get("inequality_seed") or {}
     if mc.get("enabled"):
-        stake_units = 500 * upc
-        for cid in balances:
-            balances[cid] = 500 * upc
-        placed = stake_units * len(balances)
-        surplus_pool = max(0, total_units - placed)
-        minted_total = 0  # nothing minted post-genesis, ever
+        if isc.get("enabled"):
+            # Real-world unequal start (D16): the top 1% own 50% of ALL
+            # money; everyone else splits the remainder; the Society Pool
+            # starts EMPTY — society is publicly poor while private wealth
+            # concentrates. Policies must earn public funds (wealth tax).
+            n = len(balances)
+            top_n = max(1, (n * int(isc.get("top_pct_bp", 100))) // 10_000)
+            top_share = total_units * int(isc.get("top_share_bp", 5_000)) // 10_000
+            sorted_ids = sorted(balances.keys())
+            rich = sorted_ids[:top_n]
+            rest = sorted_ids[top_n:]
+            for cid in rich:
+                balances[cid] = top_share // len(rich)
+            placed = top_share
+            if rest:
+                each = (total_units - top_share) // len(rest)
+                for cid in rest:
+                    balances[cid] = each
+                placed += each * len(rest)
+            surplus_pool = 0  # society starts publicly poor
+            minted_total = 0
+            # NOTE: leftover units (rounding dust) stay unplaced; the
+            # invariant counts only circulated money.
+        else:
+            stake_units = 500 * upc
+            for cid in balances:
+                balances[cid] = 500 * upc
+            placed = stake_units * len(balances)
+            surplus_pool = max(0, total_units - placed)
+            minted_total = 0  # nothing minted post-genesis, ever
         # scale money-denominated baselines and money params to units
         for g in list(baselines):
             baselines[g] = baselines[g] * upc

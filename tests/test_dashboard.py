@@ -30,16 +30,20 @@ class TestRunLifecycle:
 
     def test_money_invariant_holds(self):
         r = server.Run(seed=42)
-        # genesis money = citizen stakes + seeded treasuries (read, don't hardcode:
-        # the baseline cast grows across stages)
-        initial = sum(r.state.balances.values()) + sum(
-            c.get("treasury", 0) for c in r.state.coops.values())
+        # D15 fixed supply: the conservation law is balances + pool +
+        # capital fund + treasuries == the cap, forever (nothing minted,
+        # nothing retired in fixed mode).
+        mc = (r.state.active_ruleset_params().get("money_cap") or {})
         for _ in range(20):
             r.tick()
         treasuries = sum(c.get("treasury", 0) for c in r.state.coops.values())
         total = (sum(r.state.balances.values()) + r.state.surplus_pool
                  + r.state.capital_fund + treasuries)
-        assert total == initial + r.state.money_minted - r.state.money_retired
+        if mc.get("enabled"):
+            assert total == int(mc.get("total", 2_100_000_000))
+        else:
+            initial = sum(r.state.balances.values()) + treasuries
+            assert total == initial + r.state.money_minted - r.state.money_retired
 
 
 class TestAnalytics:
