@@ -458,6 +458,15 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
                if any((l.get("qty") or 0) > 0 for l in ls)}
     candidates = [(g, t) for g, t in sorted(worst.items())
                   if g not in covered and t >= 5]
+    # D18 capacity starvation: a good can be 'covered' (listed in
+    # dribbles) yet chronically short when demand outgrew its producers'
+    # capacity — fish was listed ~1 unit/tick by ONE fishery (1 run/day =
+    # 50 fish) while 181/181 citizens went unmet; 'covered' closed both
+    # the join path and the founding path forever. A worst streak beyond
+    # the breadth bound (30) despite active listings is evidence of
+    # structural under-capacity, not oscillation.
+    candidates += [(g, t) for g, t in sorted(worst.items())
+                   if g in covered and t >= 30]
     # 2026-09-01: producer-input demand is invisible to citizen unmet
     # streaks — the capital chain (hand_tools 7,741 coop bids vs 6 clears,
     # machines 4,447 vs 2, steel 5,499 vs 28) starved for 400 ticks while
@@ -494,13 +503,19 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     # labor exactly where the chain is stuck. Founding is the last resort
     # for goods NO ONE produces. Without this, founders founded duplicates
     # (three brick coops) while iron_miners starved at 2 members.
+    _join_cap = params.get("max_coop_members", 12)
     for good, _streak in candidates:
         _producers = sorted(
             (cid for cid, cdata in state.coops.items()
              if (cdata.get("recipe_intent") or cdata.get("trade") or "") in state.recipes
-             and good in (state.recipes[cdata.get("recipe_intent") or cdata.get("trade")].get("outputs") or {})),
+             and good in (state.recipes[cdata.get("recipe_intent") or cdata.get("trade")].get("outputs") or {})
+             and len(cdata.get("members") or []) < _join_cap),
             key=lambda cid: (len(state.coops[cid]["members"]), cid),
         )
+        # only coops with ROOM qualify for join-first: a capacity-capped
+        # producer (fishery at the 12-member ceiling) would bounce the
+        # JOIN with COOP_FULL and dead-end the candidate — the founder
+        # must fall through to founding a second coop instead
         if _producers:
             target = _producers[0]
             if who not in state.coops[target]["members"]:
