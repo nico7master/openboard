@@ -147,6 +147,37 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
             _rec = state.recipes.get(_rid) or {}
             if _worst_g in (_rec.get("outputs") or {}):
                 _cands.append((len(cd.get("members") or []), cid))
+        # D18 chain-aware targeting: the DIRECT producer is not always the
+        # bottleneck. Late-run gate world: bread produced 48.6/tick vs
+        # ~180/tick demand for 181 citizens; citizens joined city_bakers
+        # (54x) and power_plant (36x) but NEVER the farmers — because the
+        # signal stops at the short good. The chain math: bread 48/tick <-
+        # flour 11.5/tick (millers, 3 members) <- grain 45/tick (13
+        # farmers). When nothing upstream of the short good is at capacity,
+        # the true bottleneck is UPSTREAM: also target producers of the
+        # shortage good's transitive inputs (direct producers still sort
+        # first — they are always the primary target when they have room).
+        _target_goods = {_worst_g}
+        _changed = True
+        while _changed:
+            _changed = False
+            for _rec in state.recipes.values():
+                _o = set(_rec.get("outputs") or {})
+                if _o & _target_goods:
+                    _add = set(_rec.get("inputs") or {}) - _target_goods
+                    if _add:
+                        _target_goods |= _add
+                        _changed = True
+        if not _cands:
+            for cid, cd in state.coops.items():
+                if cid == coop:
+                    continue
+                if len(cd.get("members") or []) >= _cap:
+                    continue
+                _rid = cd.get("recipe_intent") or cd.get("trade") or ""
+                _rec = state.recipes.get(_rid) or {}
+                if set(_rec.get("outputs") or {}) & _target_goods:
+                    _cands.append((len(cd.get("members") or []), cid))
         if _cands:
             _cands.sort()
             return [
@@ -427,13 +458,18 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
         _shortage_goods |= {g for g, q in _bid.items()
                             if q - _cleared.get(g, 0) >= 20}
         _sc = state.coops[seated]
+        _sc_lpt = _sc.get("last_produce_tick")
         _my_out = _sc.get("recipe_intent") or _sc.get("trade") or ""
         _my_goods = set(state.recipes.get(_my_out, {}).get("outputs", {}).keys()) if _my_out else set()
-        _produced_recent = any(
-            e.get("action") == "PRODUCE" and e.get("coop_id") == seated
-            and e.get("tick", 0) >= tick - 10
-            for e in state.applied[-400:]
-        )
+        # D18 (engine-signal): the event-window scan above read a 400-event
+        # slice of a ~3.8k-event tick — in the gate world (applied cleared
+        # each tick) it saw almost nothing, so PRODUCING coops read as
+        # 'not produced recently' and founders flapped join/leave EVERY
+        # tick (observed: 5,508 founder join/leave events over 2,000
+        # ticks; livestock_north joined+left 2,754 times). The engine
+        # field last_produce_tick is exact and window-independent.
+        _sc_lpt = _sc.get("last_produce_tick")
+        _produced_recent = _sc_lpt is not None and (tick - _sc_lpt) <= 10
         if _shortage_goods and not _produced_recent and not (_shortage_goods & _my_goods and _produced_recent):
             # 2026-09-02: early return DISCARDED the personal-needs buys
             # already collected in `out` — on leave ticks founders bought
