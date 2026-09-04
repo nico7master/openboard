@@ -1253,14 +1253,34 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             claimable = (total_qty * cap_bp) // 10_000
             if claimable <= 0:
                 continue
-            pbids.sort(key=lambda b: (b["bidder"], b["qty"]))
-            # rotate service order by tick: alphabetical FCFS starved late
-            # names forever when supply is scarce (millers lost grain to
-            # livestock_co every tick; bread chain died) — mirrors the
-            # fair_clearing rotation citizens already have.
-            if len(pbids) > 1:
-                _off = tick % len(pbids)
-                pbids = pbids[_off:] + pbids[:_off]
+            # D18 essential-chain priority: replacement-rate production
+            # made breadth-chain coops (livestock) bid heavily for shared
+            # inputs (grain) and the tick-rotation starved the BREAD chain
+            # (gate 16: essentials 4->17, bread streak 60). The model's
+            # triage ethos: producers of ESSENTIAL goods are served first
+            # from the claimable share; breadth-chain producers share the
+            # remainder, each group rotated by tick (fair within class).
+            _ess_out = {"bread", "water", "electricity", "meals"}
+            def _chain_of(b: dict[str, Any]) -> int:
+                _c = state.coops.get(b.get("coop_id") or "")
+                if not _c:
+                    return 1
+                _rid = _c.get("recipe_intent") or _c.get("trade") or ""
+                _outs = set(state.recipes.get(_rid, {}).get("outputs") or {})
+                return 0 if _outs & _ess_out else 1
+            _ess_bids = sorted((b for b in pbids if _chain_of(b) == 0), key=lambda b: (b["bidder"], b["qty"]))
+            _oth_bids = sorted((b for b in pbids if _chain_of(b) == 1), key=lambda b: (b["bidder"], b["qty"]))
+            # rotate service order within each class by tick: alphabetical
+            # FCFS starved late names forever when supply is scarce
+            # (millers lost grain to livestock_co every tick; bread chain
+            # died) — mirrors the fair_clearing rotation citizens have.
+            if len(_ess_bids) > 1:
+                _off = tick % len(_ess_bids)
+                _ess_bids = _ess_bids[_off:] + _ess_bids[:_off]
+            if len(_oth_bids) > 1:
+                _off = tick % len(_oth_bids)
+                _oth_bids = _oth_bids[_off:] + _oth_bids[:_off]
+            pbids = _ess_bids + _oth_bids
             served: list[dict[str, Any]] = []
             for bid in pbids:
                 if claimable <= 0:
