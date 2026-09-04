@@ -462,11 +462,30 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     # dribbles) yet chronically short when demand outgrew its producers'
     # capacity — fish was listed ~1 unit/tick by ONE fishery (1 run/day =
     # 50 fish) while 181/181 citizens went unmet; 'covered' closed both
-    # the join path and the founding path forever. A worst streak beyond
-    # the breadth bound (30) despite active listings is evidence of
-    # structural under-capacity, not oscillation.
-    candidates += [(g, t) for g, t in sorted(worst.items())
-                   if g in covered and t >= 30]
+    # the join path and the founding path forever. A worst-streak test
+    # FAILS here: the dribble service RESETS individual streaks before
+    # they reach the bound (sampled streak 11 at t600, never 30), so the
+    # signal must be aggregate: how much of the good did ALL citizens
+    # actually BUY (clear events) vs how big the population is, over a
+    # 20-tick window. Served < 10% of population => structural
+    # under-capacity, founding-grade evidence.
+    _served: dict[str, int] = {}
+    _tail3 = state.applied[-max(0, len(state.applied) - 8000):] if len(state.applied) > 8000 else state.applied
+    _from3 = tick - 20
+    for _e in _tail3:
+        if _from3 > 0 and (_e_t := _e.get('tick', 0)) and _e_t < _from3:
+            continue
+        # the real event is MARKET_CLEAR_ESSENTIAL with a `sold` field
+        # (verified: {'action': 'MARKET_CLEAR_ESSENTIAL', 'good': 'bread',
+        #  'listed': 111, 'sold': 111, buyers: [...]} — 'qty' is None)
+        if _e.get('action') == 'MARKET_CLEAR_ESSENTIAL':
+            _g3 = _e.get('good')
+            if _g3:
+                _served[_g3] = _served.get(_g3, 0) + int(_e.get('sold') or 0)
+    _pop = len(state.balances)
+    for g in sorted(covered):
+        if g in worst and worst[g] >= 5 and _served.get(g, 0) < _pop // 10:
+            candidates.append((g, worst[g] * 10))
     # 2026-09-01: producer-input demand is invisible to citizen unmet
     # streaks — the capital chain (hand_tools 7,741 coop bids vs 6 clears,
     # machines 4,447 vs 2, steel 5,499 vs 28) starved for 400 ticks while
@@ -479,20 +498,39 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     recent_from = max(0, tick - 20)
     _applied2 = state.applied
     _tail2 = _applied2[max(0, len(_applied2) - 600):] if len(_applied2) > 600 else _applied2
+    # D18 chronic bid deficit: a good can be 'covered' (listed in
+    # dribbles) yet chronically UNDER-SERVED — livestock bid 2,050 grain
+    # per 100 ticks (~20/tick, needing 20/run) while sitting at grain:0
+    # and producing 1 run/tick; milk streak 37 cascaded from grain
+    # starvation. Track cleared volume alongside bids: a good whose
+    # 20-tick cleared volume is far below its bid volume is structurally
+    # under-supplied even though listings exist.
+    bid_cleared: dict[str, int] = {}
     for e in _tail2:
-        if e.get("action") != "BID_FOR_COOP" or e.get("tick", 0) < recent_from:
+        if e.get("tick", 0) < recent_from:
             continue
         g = e.get("good")
-        if g and g not in covered:
+        if not g:
+            continue
+        if e.get("action") == "BID_FOR_COOP":
             bid_pressure[g] = bid_pressure.get(g, 0) + int(e.get("qty") or 0)
+        elif e.get("action") == "PRODUCER_INPUT_CLEAR":
+            bid_cleared[g] = bid_cleared.get(g, 0) + int(e.get("qty") or 0)
     for g, qty in sorted(bid_pressure.items()):
         # only goods a non-primitive recipe can produce are actionable
         has_recipe = any(
             g in (rec.get("outputs") or {}) and not rid.startswith("primitive")
             for rid, rec in state.recipes.items()
         )
-        if has_recipe and qty >= 20:
+        if not has_recipe or qty < 20:
+            continue
+        if g not in covered:
             candidates.append((g, qty))
+        elif bid_cleared.get(g, 0) * 2 < qty:
+            # chronic bid deficit on a covered good: producers clear less
+            # than half of what downstream coops bid — under-capacity,
+            # join/found more producers of it
+            candidates.append((g, qty // 2))
     if not candidates:
         return out
     candidates.sort(key=lambda gt: (-gt[1], gt[0]))
