@@ -670,6 +670,12 @@ def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
             cost = energy * (state.good_cost_baseline.get("electricity", 1) + 2)
             cost += sum(q * (state.good_cost_baseline.get(g, 1) + 2)
                         for g, q in sorted((inputs or {}).items()))
+            # 1.5x margin: bots bid at the LIVE floor (baseline drifts up
+            # when real scarcity lifts listings above the book estimate —
+            # observed: fishery bid 2016u vs a 1616u reserve, 294
+            # INSUFFICIENT_FUNDS bounces, 0.16 runs/tick on a profitable
+            # recipe). The margin keeps bids fundable from the reserve.
+            cost = cost * 3 // 2
             if cost > 0 and (reserve == 0 or cost < reserve):
                 reserve = cost
         available = max(0, coop.get("treasury", 0) - reserve)
@@ -2261,6 +2267,9 @@ def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -
             # fishery was 'never deadlockable', so it starved on energy)
             energy = int(recipe.get("energy", 0)) if isinstance(recipe, dict) else 0
             cost += energy * (state.good_cost_baseline.get("electricity", 1) + 2)
+            # same 1.5x live-floor margin as the wage-draw reserve: the
+            # advance must fund bids at real market prices, not book ones
+            cost = cost * 3 // 2
             if best is None or cost < best:
                 best = cost
         if best is None or best <= 0:
