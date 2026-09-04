@@ -645,7 +645,28 @@ def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
     upc = int(mc.get("units_per_credit", 100)) if mc.get("enabled") else 1
     owed = credits * upc  # wage in state units (credits when no cap)
     if mc.get("enabled"):
-        funded = min(coop.get("treasury", 0), owed)
+        # D18 protected input budget: the wage draw must not consume the
+        # working capital the next production run needs. Observed: a
+        # 12-member coop owes ~9,600 units/day in wages; the input
+        # advance (~450 units) arrived and the wage draw drained it to
+        # zero BEFORE the same tick's input bids — advance -> wages eat
+        # it -> no inputs -> no sales -> more debt, forever. The reserve
+        # (cheapest runnable recipe's inputs at bot-bid prices, the same
+        # estimate the input-advance phase uses) is left in the treasury
+        # for input/capital bids; wages above it are paid, below it they
+        # become wage-debt (dischargeable via the pool backstop).
+        reserve = 0
+        for rid in sorted(state.recipes.keys()):
+            recipe = state.recipes.get(rid)
+            inputs = recipe.get("inputs") if isinstance(recipe, dict) else getattr(recipe, "inputs", None)
+            if not inputs:
+                continue
+            cost = sum(q * (state.good_cost_baseline.get(g, 1) + 2)
+                       for g, q in sorted((inputs or {}).items()))
+            if cost > 0 and (reserve == 0 or cost < reserve):
+                reserve = cost
+        available = max(0, coop.get("treasury", 0) - reserve)
+        funded = min(available, owed)
         coop["treasury"] = coop.get("treasury", 0) - funded
         state.balances[tx.sender] += funded
         if funded < owed:
