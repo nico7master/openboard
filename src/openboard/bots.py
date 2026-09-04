@@ -189,13 +189,26 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
             if not (_outs & _target_goods):
                 continue
             _is_direct = _worst_g in _outs
-            _is_bottleneck = any(
-                _bid.get(_og, 0) - _cleared.get(_og, 0) >= 20 for _og in _outs
-            )
-            _tier = 0 if _is_bottleneck else (1 if _is_direct else 2)
-            _chain_cands.append((_tier, len(cd.get("members") or []), cid))
+            # D18 throughput-deficit ranking: gate runs 18-20 were
+            # byte-identical (19/86) because bid deficits are cash-limited
+            # (starving bakers stop bidding) and never fired tier-0. The
+            # robust bottleneck signal is CAPACITY per member: a coop whose
+            # recipe transforms a large input volume but fields few members
+            # (millers: 3 members, 11.5 flour/tick vs ~24 needed) is the
+            # constraint. Rank by members per output-unit needed: the
+            # stage with the lowest labor-per-output density relative to
+            # the direct producer is the true bottleneck. Compute a simple
+            # deterministic capacity score: members / (labor_hours x
+            # runs_possible); the direct producer anchors tiering, the
+            # capacity score breaks ties ACROSS stages.
+            _labor_h = int(_rec.get("labor_hours") or 1)
+            _out_units = sum(int(x) for x in (_rec.get("outputs") or {}).values())
+            _cap_score = len(cd.get("members") or []) / max(1, _labor_h * max(1, _out_units // 10))
+            _tier = 0 if (not _is_direct and _cap_score < 0.5) else (1 if _is_direct else 2)
+            _chain_cands.append((_tier, len(cd.get("members") or []), cid, _cap_score))
         if _chain_cands:
-            _chain_cands.sort()
+            # sort by (tier, capacity score ASC = weakest stage first, members ASC, name)
+            _chain_cands.sort(key=lambda x: (x[0], x[3], x[1], x[2]))
             return [
                 _tx(tick, who, "LEAVE_COOP", {"coop_id": coop}, v),
                 _tx(tick, who, "JOIN_COOP", {"coop_id": _chain_cands[0][2]}, v),
