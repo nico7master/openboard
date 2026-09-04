@@ -113,11 +113,40 @@ def test_wage_debt_repay_leaves_working_capital():
         payload={"coop_id": "bakery", "name": "bakery", "members": ["c0", "c1"]},
         ruleset_version=1)], current_tick=1)
     coop = s.coops["bakery"]
-    coop["wage_debt"] = {"c0": 1_000_000}
+    # debt below the insolvency threshold (150x daily wage = 240k for a
+    # 2-member coop): the normal capped-repayment path applies
+    coop["wage_debt"] = {"c0": 100_000}
     coop["treasury"] = 10_000
     ev = _wage_debt_repay_phase(s, 5, s.active_ruleset_params())
     assert coop["treasury"] == 5_000  # 50% retained for inputs/capital
     assert ev[0]["paid"] == 5_000
+
+
+def test_wage_debt_pool_backstop_on_structural_insolvency():
+    """A debt book past 150x the daily wage bill is structurally unpayable
+    (a PROMISE, never issued money) — the Society Pool assumes it: pool ->
+    citizens transfer, book cleared, treasury untouched. Observed: miners
+    debt 2.8M units vs 8.8M-unit private money supply; the repay phase
+    then seized 50% of every inflow forever and chains starved.
+    """
+    s = _world(_params())
+    led = Ledger()
+    apply_tick(s, led, [Transaction(tick=1, sender="c0", action="FOUND_COOP",
+        payload={"coop_id": "bakery", "name": "bakery", "members": ["c0", "c1"]},
+        ruleset_version=1)], current_tick=1)
+    coop = s.coops["bakery"]
+    coop["wage_debt"] = {"c0": 400_000, "c1": 400_000}  # > 150x1600
+    coop["treasury"] = 10_000
+    pool_before = s.surplus_pool
+    supply_before = _supply(s)
+    ev = _wage_debt_repay_phase(s, 5, s.active_ruleset_params())
+    assumed = [e for e in ev if e["action"] == "WAGE_DEBT_ASSUMED"]
+    assert assumed and assumed[0]["assumed"] == 800_000
+    assert coop["wage_debt"] == {}                # book cleared
+    assert coop["treasury"] == 10_000             # working capital untouched
+    assert s.balances["c0"] == 50_000 + 400_000   # workers paid by society
+    assert s.surplus_pool == pool_before - 800_000
+    assert _supply(s) == supply_before            # pure transfer
 
 
 def test_birth_stake_pool_only_never_mints():

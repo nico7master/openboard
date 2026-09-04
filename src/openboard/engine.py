@@ -1769,11 +1769,40 @@ def _wage_debt_repay_phase(state: WorldState, tick: int, params: dict[str, Any])
     wdr = params.get("wage_debt_repay") or {}
     repay_bp = int(wdr.get("repay_bp", 5_000)) if isinstance(wdr, dict) else 5_000
     repay_bp = max(1_000, min(10_000, repay_bp))
+    # D18 insolvency backstop: wage-debt is a PROMISE, never issued money.
+    # When the book grows past 150 ticks of the coop's daily wage bill,
+    # it is structurally unpayable (observed: miners debt 2.8M units vs
+    # private money supply 8.8M units; repay phase then seized 50% of
+    # EVERY treasury inflow incl. advances forever -> inputs never bought
+    # -> chains starved economy-wide). Society (the surplus pool) assumes
+    # the debt: pool -> citizens transfer, book cleared. The pool holds
+    # 99% of the fixed supply precisely to fund society this way.
+    pool_assumes = bool(wdr.get("pool_backstop", True))
     events: list[dict[str, Any]] = []
     for cid in sorted(state.coops.keys()):
         coop = state.coops[cid]
         wd = coop.get("wage_debt") or {}
-        if not wd or coop.get("treasury", 0) <= 0:
+        if not wd:
+            continue
+        # --- structural insolvency: pool assumes the debt
+        if pool_assumes:
+            total_debt = sum(wd.values())
+            daily_wage = len(coop.get("members") or []) * 800
+            if total_debt > daily_wage * 150 and state.surplus_pool >= total_debt:
+                state.surplus_pool -= total_debt
+                for who in sorted(wd.keys()):
+                    state.balances[who] = state.balances.get(who, 0) + wd[who]
+                events.append({
+                    "tick": tick,
+                    "action": "WAGE_DEBT_ASSUMED",
+                    "coop_id": cid,
+                    "assumed": total_debt,
+                    "workers": sorted(wd.keys()),
+                    "pool_after": state.surplus_pool,
+                })
+                coop["wage_debt"] = {}
+                continue  # treasury untouched: working capital preserved
+        if coop.get("treasury", 0) <= 0:
             continue
         budget = coop["treasury"] * repay_bp // 10_000
         for who in sorted(wd.keys()):
