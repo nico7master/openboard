@@ -656,7 +656,9 @@ def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
         # for input/capital bids; wages above it are paid, below it they
         # become wage-debt (dischargeable via the pool backstop).
         reserve = 0
-        for rid in sorted(state.recipes.keys()):
+        _intent = coop.get("recipe_intent")
+        _rids = [_intent] if isinstance(_intent, str) and _intent in state.recipes else []
+        for rid in sorted(_rids) or sorted(state.recipes.keys()):
             recipe = state.recipes.get(rid)
             inputs = recipe.get("inputs") if isinstance(recipe, dict) else getattr(recipe, "inputs", None)
             if not inputs:
@@ -2254,9 +2256,26 @@ def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -
         if best is None or best <= 0:
             continue
         treasury = coop.get("treasury", 0)
-        if treasury >= best:
+        # D18: size the advance to the coop's STOCK TARGET, not one run.
+        # A coop topping up to exactly one run's cost gets drained by the
+        # same day's wage draw and re-enters the queue tomorrow at survival
+        # volume (observed: millers 0.24 runs/tick, bread chain ~20x under
+        # demand). Refill the working capital needed to run to target and
+        # let the protected wage draw preserve it.
+        # output units per run of the coop's first known recipe
+        out_units = 1
+        _first_recipe = state.recipes.get(rids[0])
+        _outs = _first_recipe.get("outputs") if isinstance(_first_recipe, dict) else getattr(_first_recipe, "outputs", None)
+        if isinstance(_first_recipe, dict):
+            _outs = _first_recipe.get("outputs") or {}
+            if _outs:
+                out_units = max(1, sum(int(q) for q in _outs.values()))
+        stock_target = int(coop.get("stock_target", 120)) if isinstance(coop.get("stock_target", 120), int) else 120
+        target_runs = max(1, -(-stock_target // max(1, out_units)))
+        want = target_runs * best
+        if treasury >= want:
             continue
-        shortfall = min(best - treasury, max_per)
+        shortfall = min(max(want - treasury, 1), max_per)
         if shortfall <= 0 or state.surplus_pool < shortfall:
             continue
         state.surplus_pool -= shortfall
