@@ -1349,6 +1349,20 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                     if not (b.get("coop_id") is not None and b["qty"] <= 0)
                 ]
             if served:
+                # D18 CRITICAL: accumulate coop-to-coop sold volume into
+                # recent_sales. The replacement-rate produce gate only saw
+                # the two CITIZEN-market passes — but grain and flour flow
+                # almost entirely COOP->COOP through this pass. Farmers
+                # (18k grain hoarded) and millers therefore never saw any
+                # 'recent sales', never triggered replacement production,
+                # and ran at a trickle (45 grain/tick vs ~260 potential;
+                # bread 48.6/tick vs ~180 needed) — the whole essential
+                # chain starved at 3.7x under-capacity while every hand-
+                # targeting patch changed nothing: the bottleneck coops
+                # never WANTED to produce because demand never reached
+                # them through the only channel they sell on.
+                _pip_sold = sum(int(x.get("qty") or 0) for x in served)
+                state.recent_sales[good] = state.recent_sales.get(good, 0) + _pip_sold
                 events.append({
                     "tick": tick,
                     "action": "PRODUCER_INPUT_CLEAR",
