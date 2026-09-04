@@ -129,23 +129,30 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
         if t > _worst_t:
             _worst_g, _worst_t = g, t
     if _worst_g is not None and _worst_t >= 10:
-        _covered = {g for g, ls in state.listings.items()
-                    if any((l.get("qty") or 0) > 0 for l in ls)}
-        if _worst_g not in _covered:
-            _cands = []
-            for cid, cd in state.coops.items():
-                if cid == coop:
-                    continue
-                _rid = cd.get("recipe_intent") or cd.get("trade") or ""
-                _rec = state.recipes.get(_rid) or {}
-                if _worst_g in (_rec.get("outputs") or {}) and len(cd.get("members") or []) < len(c.get("members") or []):
-                    _cands.append((len(cd.get("members") or []), cid))
-            if _cands:
-                _cands.sort()
-                return [
-                    _tx(tick, who, "LEAVE_COOP", {"coop_id": coop}, v),
-                    _tx(tick, who, "JOIN_COOP", {"coop_id": _cands[0][1]}, v),
-                ]
+        # No 'not listed anywhere' check: a chronically short good is often
+        # listed in dribbles (fishery listed fish ~1/tick while 181/181
+        # citizens went unmet) — 'listed sometimes' is not 'served'. The
+        # personal streak >= 10 IS the unserved-demand evidence. Pick the
+        # least-membered producer below the cap; the engine's max_coop_members
+        # bounds the pile-up, and members spreading across several producers
+        # (least-first) keeps the flow from oscillating.
+        _cap = params.get("max_coop_members", 12)
+        _cands = []
+        for cid, cd in state.coops.items():
+            if cid == coop:
+                continue
+            if len(cd.get("members") or []) >= _cap:
+                continue
+            _rid = cd.get("recipe_intent") or cd.get("trade") or ""
+            _rec = state.recipes.get(_rid) or {}
+            if _worst_g in (_rec.get("outputs") or {}):
+                _cands.append((len(cd.get("members") or []), cid))
+        if _cands:
+            _cands.sort()
+            return [
+                _tx(tick, who, "LEAVE_COOP", {"coop_id": coop}, v),
+                _tx(tick, who, "JOIN_COOP", {"coop_id": _cands[0][1]}, v),
+            ]
     # produce if the coop has inputs and labor for its first recipe
     if c["labor_pool_hours"] >= 2:
         for rid, r in state.recipes.items():
