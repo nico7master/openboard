@@ -469,6 +469,9 @@ def _validate_join_coop(state: WorldState, tx: Transaction, params: dict[str, An
 def _apply_join_coop(state: WorldState, tx: Transaction) -> dict[str, Any]:
     coop = state.coops[tx.payload["coop_id"]]
     coop["members"].append(tx.sender)
+    # D18 mobility: membership tenure — the flap guard reads this (a
+    # citizen must stay 40+ ticks before they may switch again)
+    coop.setdefault("member_since", {})[tx.sender] = tx.tick
     return {
         "tick": tx.tick,
         "sender": tx.sender,
@@ -779,6 +782,12 @@ def _vwap_unit_cost(state: WorldState, coop_id: str, good: str) -> int:
 
 def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
     coop = state.coops[tx.payload["coop_id"]]
+    # D18 mobility signal: durable, window-independent record of when this
+    # coop last produced (the bot-layer event-scan alternative read a
+    # 400-event slice of a ~3,800-event tick — always stale, and the
+    # resulting 'not producing' misclassification cascaded the whole
+    # economy). State-level fields make mobility checks exact.
+    coop["last_produce_tick"] = tx.tick
     recipe = state.recipes[tx.payload["recipe_id"]]
     runs = tx.payload["runs"]
     inventory = coop["inventory"]

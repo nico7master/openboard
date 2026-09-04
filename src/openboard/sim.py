@@ -33,6 +33,41 @@ def make_specialist(
         if coop_id is None:
             return []
         c = state.coops[coop_id]
+        # D18 seated mobility, engine-signal edition. The previous attempt
+        # cascaded because its 'is my coop producing?' test read a 400-event
+        # slice of a ~3,800-event tick (always stale -> everyone read as
+        # 'not producing' -> the miners coop emptied). Now the decision
+        # reads EXACT state fields with two structural guards:
+        #   IDLE GUARD: my coop has not produced for 20+ ticks — healthy
+        #     producers never leak members, stuck ones do.
+        #   TENURE GUARD: I joined my coop 40+ ticks ago — a fresh joiner
+        #     cannot chain-switch, which killed the join/leave flap by
+        #     construction (founders flapped join/leave EVERY tick).
+        _lpt = c.get("last_produce_tick")
+        _tenure = (c.get("member_since") or {}).get(who)
+        if _lpt is not None and _tenure is not None and (tick - _lpt) >= 20 and (tick - _tenure) >= 40:
+            _my_streaks = state.unmet_needs.get(who, {})
+            _worst_g, _worst_t = None, 0
+            for _g in sorted(_my_streaks):
+                _t = int(_my_streaks[_g] or 0)
+                if _t > _worst_t:
+                    _worst_g, _worst_t = _g, _t
+            if _worst_g is not None and _worst_t >= 10:
+                _cap_m = params.get("max_coop_members", 12)
+                _cands = []
+                for _cid, _cd in state.coops.items():
+                    if _cid == coop_id or len(_cd.get("members") or []) >= _cap_m:
+                        continue
+                    _rid = _cd.get("recipe_intent") or _cd.get("trade") or ""
+                    _rec = state.recipes.get(_rid) or {}
+                    if _worst_g in (_rec.get("outputs") or {}):
+                        _cands.append((len(_cd.get("members") or []), _cid))
+                if _cands:
+                    _cands.sort()
+                    return [
+                        _tx(tick, who, "LEAVE_COOP", {"coop_id": coop_id}, v),
+                        _tx(tick, who, "JOIN_COOP", {"coop_id": _cands[0][1]}, v),
+                    ]
         recipe = state.recipes[recipe_id]
         active_id = recipe_id
         # Cold-start fallback (Stage 4): when the declared recipe needs
