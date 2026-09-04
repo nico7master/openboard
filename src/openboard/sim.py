@@ -251,7 +251,28 @@ def make_specialist(
         # sized to at most one production run beyond the target
         if want_produce:
             out_units = sum(recipe["outputs"].values())
-            runs_wanted = max(1, (stock_target - stock + out_units - 1) // out_units)
+            # D18 joint-output sizing: the gate used to watch only the
+            # PRIMARY output (livestock's declared trade is meat) — when
+            # meat stock sat at target, runs collapsed to the minimum and
+            # the JOINT outputs (milk/eggs) trickled at ~10/tick against
+            # 120/tick citizen demand (gate-world probe: 17,539 applied
+            # milk buys vs 981 sold in 100 ticks, streak 37 while both
+            # livestock coops were healthy and producing). Production
+            # sizing must consider EVERY output's market gap: list the
+            # worst gap across outputs (inventory + live listings vs
+            # target), so unmet joint-output demand drives runs like
+            # primary-good demand does.
+            runs_wanted = 1
+            for _og in sorted(recipe["outputs"].keys()):
+                _listed_og = sum(
+                    e["qty"] for e in state.listings.get(_og, [])
+                    if e["coop_id"] == coop_id
+                )
+                _stock_og = c["inventory"].get(_og, 0) + _listed_og
+                _gap_og = max(0, stock_target - _stock_og)
+                _rw = max(1, (_gap_og + out_units - 1) // out_units)
+                runs_wanted = max(runs_wanted, _rw)
+            runs_wanted = max(runs_wanted, (stock_target - stock + out_units - 1) // out_units)
             for good, want_per_run in sorted(buys.items()):
                 have = c["inventory"].get(good, 0)
                 need = max(0, runs_wanted * want_per_run - have)
