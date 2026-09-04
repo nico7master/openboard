@@ -1015,12 +1015,25 @@ def _validate_bid_for_coop(state: WorldState, tx: Transaction, params: dict[str,
 
 def _apply_bid_for_coop(state: WorldState, tx: Transaction) -> dict[str, Any]:
     payload = tx.payload
+    # D18 escrow: a registered bid that moves no money is a promise, and
+    # an indebted coop cannot honor promises made before its wage bill
+    # (observed: 60 miner bids registered, wages drew 9,600u, at clearing
+    # treasury 0 -> every machine bid unpayable -> capital chain starved).
+    # With bid_escrow, max exposure (price x qty) is RESERVED from the
+    # coop treasury at submission and either spent at clearing or
+    # refunded end-of-tick. Opt-in param: old worlds replay identical.
+    escrow = 0
+    if (state.active_ruleset_params().get("bid_escrow") or {}).get("enabled"):
+        coop = state.coops[payload["coop_id"]]
+        escrow = min(payload["max_price"] * payload["qty"], coop.get("treasury", 0))
+        coop["treasury"] = coop.get("treasury", 0) - escrow
     state.bids.append({
         "bidder": tx.sender,
         "coop_id": payload["coop_id"],
         "good": payload["good"],
         "max_price": payload["max_price"],
         "qty": payload["qty"],
+        "escrowed": escrow,
     })
     return {
         "tick": tx.tick,
@@ -1213,9 +1226,14 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                         continue  # no self-dealing (wash guard)
                     take = min(entry["qty"], want)
                     price = entry.get("price", entry["floor"])
-                    if coop.get("treasury", 0) < take * price:
+                    need = take * price
+                    if coop.get("treasury", 0) + bid.get("escrowed", 0) < need:
                         break
-                    coop["treasury"] -= take * price
+                    # escrow pays first (already out of the treasury),
+                    # treasury covers any remainder
+                    from_esc = min(bid.get("escrowed", 0), need)
+                    bid["escrowed"] = bid.get("escrowed", 0) - from_esc
+                    coop["treasury"] -= need - from_esc
                     entry["qty"] -= take
                     seller = state.coops[entry["coop_id"]]
                     seller["treasury"] = seller.get("treasury", 0) + take * price
@@ -1311,7 +1329,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             # exposure: multiple winning bids by one payer must jointly fit
             key = bid["coop_id"] if bid["coop_id"] is not None else bid["bidder"]
             if bid["coop_id"] is not None:
-                funds = state.coops[bid["coop_id"]].get("treasury", 0)
+                funds = state.coops[bid["coop_id"]].get("treasury", 0) + bid.get("escrowed", 0)
             else:
                 funds = state.balances[bid["bidder"]]
             if funds - committed.get(key, 0) < take * bid["max_price"]:
@@ -1368,7 +1386,9 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             payment = w["take"] * clearing
             if bid["coop_id"] is not None:
                 coop = state.coops[bid["coop_id"]]
-                coop["treasury"] = max(0, coop.get("treasury", 0) - payment)
+                from_esc = min(bid.get("escrowed", 0), payment)
+                bid["escrowed"] = bid.get("escrowed", 0) - from_esc
+                coop["treasury"] = max(0, coop.get("treasury", 0) - (payment - from_esc))
                 inv = coop["inventory"]
                 if vwap_on:
                     _vwap_add(state, bid["coop_id"], good, inv.get(good, 0) - w["take"], w["take"], clearing)
@@ -1424,6 +1444,16 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             "pool_after": state.surplus_pool,
         })
 
+    # D18 escrow refund: unserved (or partially served) coop bids get
+    # their remaining reservation back before the book is dropped —
+    # escrow is a hold, never a burn.
+    for bid in state.bids:
+        esc = bid.get("escrowed", 0) if isinstance(bid, dict) else 0
+        if esc > 0 and bid.get("coop_id") is not None:
+            coop = state.coops.get(bid["coop_id"])
+            if coop is not None:
+                coop["treasury"] = coop.get("treasury", 0) + esc
+            bid["escrowed"] = 0
     state.listings = {g: ls for g, ls in state.listings.items() if any(e["qty"] > 0 for e in ls)}
     state.bids = []
     return events
@@ -1728,20 +1758,33 @@ def _wage_debt_repay_phase(state: WorldState, tick: int, params: dict[str, Any])
     mc = params.get("money_cap") or {}
     if not mc.get("enabled"):
         return []
+    # D18 wage-debt spiral fix: repayment must leave working capital.
+    # Paying the FULL treasury into debt each tick meant an indebted coop
+    # could never accumulate inputs money -> no production -> no income
+    # -> debt never shrinks (observed: miners treasury 0 with 2.3M units
+    # owed, machine bids all INSUFFICIENT_FUNDS, gate seed42 bread
+    # streak 529). Debt service is now capped at repay_bp of the
+    # treasury per tick (votable, default 50%); the rest stays as
+    # operating capital for input/capital bids.
+    wdr = params.get("wage_debt_repay") or {}
+    repay_bp = int(wdr.get("repay_bp", 5_000)) if isinstance(wdr, dict) else 5_000
+    repay_bp = max(1_000, min(10_000, repay_bp))
     events: list[dict[str, Any]] = []
     for cid in sorted(state.coops.keys()):
         coop = state.coops[cid]
         wd = coop.get("wage_debt") or {}
         if not wd or coop.get("treasury", 0) <= 0:
             continue
+        budget = coop["treasury"] * repay_bp // 10_000
         for who in sorted(wd.keys()):
-            if coop.get("treasury", 0) <= 0:
+            if budget <= 0:
                 break
             owed = wd[who]
-            pay = min(owed, coop["treasury"])
+            pay = min(owed, budget)
             if pay <= 0:
                 continue
             coop["treasury"] -= pay
+            budget -= pay
             wd[who] = owed - pay
             state.balances[who] = state.balances.get(who, 0) + pay
             if wd[who] <= 0:

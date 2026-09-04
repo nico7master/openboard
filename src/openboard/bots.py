@@ -110,7 +110,7 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
                 target = cands[0][1]
                 return [_tx(tick, who, "JOIN_COOP", {"coop_id": target}, v)]
         return []
-    out = [_work(tick, who, coop, 8, v)]
+    out = []
     c = state.coops[coop]
     # produce if the coop has inputs and labor for its first recipe
     if c["labor_pool_hours"] >= 2:
@@ -127,6 +127,61 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
         if g in ESSENTIALS and c["inventory"][g] > 15:
             out.append(_tx(tick, who, "LIST_GOOD", {"coop_id": coop, "good": g, "qty": c["inventory"][g] - 15}, v))
             break
+    # D18: buy the recipe's missing INPUTS (incl. capital goods) from the
+    # treasury. Under fixed supply the wage-debt cap leaves working
+    # capital in the treasury, but no bot ever converted it into input
+    # bids: producers waited passively for the capital backstop while
+    # affordable machines sat listed (miners: 12,561u treasury, machines
+    # 10,058u listed, ZERO bids in 50 ticks -> ratchet + gate failure).
+    # One BID per tick for the scarcest missing input, priced at floor+1.
+    rid = c.get("recipe_intent") or c.get("trade")
+    recipe = state.recipes.get(rid) or {}
+    inputs = recipe.get("inputs") or {}
+    # which recipes does this coop actually run? prefer proven history
+    for r_id, r in sorted(state.recipes.items()):
+        ins = r.get("inputs") or {}
+        if ins and all(c["inventory"].get(g, 0) >= q for g, q in ins.items()):
+            break  # already runnable — no purchase needed
+    treasury = c.get("treasury", 0)
+    for g in sorted(inputs.keys()):
+        q = inputs[g]
+        have = c["inventory"].get(g, 0)
+        if have >= q:
+            continue
+        floor = state.good_cost_baseline.get(g, 1)
+        price = floor + 1
+        qty = min(q - have, max(1, treasury // max(1, price)))
+        if qty <= 0 or treasury < price:
+            continue
+        # Working-capital reserve: keep 20% of the treasury unspent for
+        # consumable inputs. CAPITAL goods are the exception — buying the
+        # machine is what unlocks production and refills the treasury, so
+        # up to 95% may be committed (the 80% cap made an affordable
+        # machine mathematically unpurchasable: 12,561*0.8=10,048 <
+        # price 10,058 -> qty 0 -> the bid never fired, ratchet + gate
+        # starved forever, observed 2026-09-04).
+        _capital = g in ("machines", "hand_tools")
+        reserve_bp = 9_500 if _capital else 8_000
+        if price * qty > treasury * reserve_bp // 10_000:
+            qty = (treasury * reserve_bp // 10_000) // price
+            if qty <= 0:
+                continue
+        # BID_FOR_COOP: validated against the COOP treasury (not the
+        # citizen balance) and tagged with coop_id so the clearing engine
+        # routes it through the producer-input-priority pass — the
+        # designed channel for coop input purchases.
+        # ORDER MATTERS: the bid is emitted BEFORE the WORK transactions
+        # so it validates against the treasury BEFORE wages are drawn.
+        # Work-first ordering made every bid INSUFFICIENT_FUNDS: 12
+        # miners' wages (9,600u/tick) drained the treasury inside the
+        # same batch before the machine bid validated (observed: 40
+        # rejections, ratchet + gate starved, 2026-09-04).
+        out.append(_tx(tick, who, "BID_FOR_COOP", {
+            "coop_id": coop, "good": g, "max_price": price, "qty": qty,
+        }, v))
+        break  # one input purchase per tick — gradual, deterministic
+    # work last: wages draw from whatever the treasury still holds
+    out.append(_work(tick, who, coop, 8, v))
     return out
 
 

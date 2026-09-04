@@ -93,10 +93,31 @@ def test_wage_debt_repaid_from_sales():
     s.surplus_pool = state_pool_before - 250
     supply_before = _supply(s)
     ev = _wage_debt_repay_phase(s, 5, s.active_ruleset_params())
-    assert ev and ev[0]["paid"] == 250
-    assert coop["wage_debt"]["c0"] == 150
-    assert s.balances["c0"] == 50_000 + 250
+    # D18 spiral fix: debt service is capped at repay_bp (default 50%) of
+    # the treasury so the coop keeps operating capital — full-treasury
+    # seizure made indebted coops unable to ever bid for inputs again.
+    assert ev and ev[0]["paid"] == 125
+    assert coop["wage_debt"]["c0"] == 400 - 125
+    assert coop["treasury"] == 125  # working capital retained
+    assert s.balances["c0"] == 50_000 + 125
     assert _supply(s) == supply_before  # pure transfer
+
+
+def test_wage_debt_repay_leaves_working_capital():
+    """Debt service must never consume the whole treasury: an indebted
+    coop must retain capital to buy inputs, or it can never earn its way
+    out (the observed miners spiral: treasury 0, 2.3M units owed)."""
+    s = _world(_params())
+    led = Ledger()
+    apply_tick(s, led, [Transaction(tick=1, sender="c0", action="FOUND_COOP",
+        payload={"coop_id": "bakery", "name": "bakery", "members": ["c0", "c1"]},
+        ruleset_version=1)], current_tick=1)
+    coop = s.coops["bakery"]
+    coop["wage_debt"] = {"c0": 1_000_000}
+    coop["treasury"] = 10_000
+    ev = _wage_debt_repay_phase(s, 5, s.active_ruleset_params())
+    assert coop["treasury"] == 5_000  # 50% retained for inputs/capital
+    assert ev[0]["paid"] == 5_000
 
 
 def test_birth_stake_pool_only_never_mints():

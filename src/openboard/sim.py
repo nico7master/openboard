@@ -90,7 +90,46 @@ def make_specialist(
             if e["coop_id"] == coop_id
         )
         stock = c["inventory"].get(output_good, 0) + listed
-        want_produce = stock < stock_target
+        # D18 demand-starvation fix: when unsold stock piles up past 2x
+        # the produce target, the produce gate (stock < target) stays
+        # false forever -> no production -> no income -> wage-debt spiral
+        # (observed: miners 262 coal vs target 120, debt 2.2M, machine
+        # DELIVERED via escrow but still zero produce). The designed tool
+        # is WP1.1 clearance: dump the WHOLE output stock at up to 30%
+        # below floor, converting dead inventory into treasury -> debt
+        # service -> production resumes when demand absorbs the pile.
+        _clr = (params.get("sub_floor_clearance") or {})
+        # Distress liquidation: an indebted coop sitting on unsold stock
+        # above its produce target dumps the whole output stock at
+        # clearance prices — the economy's bankruptcy-liquidation
+        # mechanism. Trigger is debt+overstock, not a fixed 2x multiple:
+        # the seed-42 window opened with coal at 234 vs 2x-target 240 —
+        # 6 units short of the dump trigger, then 50 ticks of ~1.5/tick
+        # dribble sales never crossed either gate (dead zone 120<stock<240
+        # -> ratchet promise missed, observed 2026-09-04 04:41). With debt
+        # outstanding the dump is bounded: once debt clears, normal
+        # stock-target behavior resumes — no pathological loop.
+        if (
+            _clr.get("enabled")
+            and stock > stock_target
+            and c.get("wage_debt")
+            and c["inventory"].get(output_good, 0) > 0
+        ):
+            out.append(_tx(tick, who, "LIST_GOOD", {
+                "coop_id": coop_id, "good": output_good,
+                "qty": c["inventory"][output_good], "clearance": True,
+            }, v))
+        # D18 distress production: an indebted coop keeps producing even
+        # through overstock — a bankrupt workshop doesn't halt the line
+        # because the warehouse is full; it produces AND liquidates,
+        # because sales income is what services the wage debt. Observed:
+        # miners liquidated 234->175 coal over the window but clearance
+        # income (~dribble) could never outpace the 9,600u/tick wage bill
+        # while the produce gate stayed shut -> debt 2.0M, zero produce
+        # runs, ratchet promise missed. Minimal runs only: distress
+        # production is income-focused, not stock-building.
+        _in_debt = bool(c.get("wage_debt"))
+        want_produce = stock < stock_target or _in_debt
 
         # Stage 5 FIX: energy maintenance runs ALWAYS, not only when
         # producing (observed: steelworks froze with full ore/coal and
@@ -271,12 +310,22 @@ def make_specialist(
         # solvency guard: estimate the NEXT run's input cost at bid prices
         # (book baseline + 1). Producing while unable to restock inputs is
         # the insolvency death spiral observed at t~800 (millers at 0).
-        next_run_cost = recipe.get("energy", 0) * (state.good_cost_baseline.get("electricity", 2) + 1)
-        next_run_cost += sum(
-            q * (state.good_cost_baseline.get(g, 1) + 1)
-            for g, q in recipe["inputs"].items()
-            if g != "electricity"
-        )
+        # D18 solvency-guard fix: restock cost covers what the coop will
+        # actually need to BUY again — consumables burned by the run and
+        # any capital shortfall. Demanding cash for capital goods the coop
+        # ALREADY HOLDS double-counted them: with machines baseline ~10k
+        # the guard demanded ~2x machine price before every coal run, and
+        # an indebted-but-solvent coop (treasury oscillating 0<->11k, all
+        # inputs on hand) was judged insolvent forever -> zero produce
+        # events, wage-debt spiral, ratchet promise missed (observed t320:
+        # treasury 11,295, all inputs held, no PRODUCE emitted).
+        _restock = 0
+        for g, q in recipe["inputs"].items():
+            if g == "electricity":
+                continue
+            _short = max(0, q - c["inventory"].get(g, 0))
+            _restock += _short * (state.good_cost_baseline.get(g, 1) + 1)
+        next_run_cost = recipe.get("energy", 0) * (state.good_cost_baseline.get("electricity", 2) + 1) + _restock
         # produce when feasible, demand says so, and we can restock after
         if (
             want_produce
@@ -293,6 +342,8 @@ def make_specialist(
             # (divided across members so everyone acts, not just the
             # first mover). Engine applies runs atomically per tx.
             gap_runs = max(1, -(-(stock_target - stock) // out_units))
+            if stock >= stock_target and _in_debt:
+                gap_runs = 1  # distress production: service the debt, don't pile stock
             members = max(1, len(c["members"]))
             labor_runs = c["labor_pool_hours"] // recipe["labor_hours"]
             energy_runs = (

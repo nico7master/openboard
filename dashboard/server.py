@@ -776,6 +776,13 @@ class Run:
         # coop treasuries == 21,000,000 credits, forever.
         params["money_cap"] = {"enabled": True, "total": 2_100_000_000,
                                "units_per_credit": 100}
+        params["bid_escrow"] = {"enabled": True}
+        # WP1.1 clearance must be ON for new worlds: the specialist bots'
+        # overstock-dump path (D18 demand-starvation fix) depends on it,
+        # and honest price discovery in both directions was the point of
+        # the feature. Without it, an oversupplied coop can never shed
+        # dead inventory -> produce gate stays false -> wage-debt spiral.
+        params["sub_floor_clearance"] = {"enabled": True, "max_discount_bp": 3_000}
         # Stage 4 fix: producer input priority — coops buy their inputs
         # at cost BEFORE the citizen essential pass (share-capped), so
         # downstream producers (kitchen/meals, household goods, capital
