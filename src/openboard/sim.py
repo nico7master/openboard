@@ -157,7 +157,15 @@ def make_specialist(
                 # bidders (observed: livestock priced power at 1 vs floor 2,
                 # 1,192 bids, chronically starved -> meat shortage)
                 e_price = (min(floors) + 2 if floors else state.good_cost_baseline.get("electricity", 1))
-                e_qty = min(e_short, c.get("treasury", 0) // e_price) if e_price > 0 else e_short
+                # D18: buy ahead with a 3-run buffer — a just-in-time bid
+                # for exactly one run's energy loses a single auction and
+                # the day's PRODUCE dies NOT_ENOUGH_ENERGY (fishery ran
+                # 0.29 runs/tick on a 1-run/day capacity). Within-tick
+                # ordering means the protected reserve funds this bid;
+                # the buffer is bounded by what the reserve can cover.
+                e_buffer = e_need * 3
+                e_want = max(e_short, min(e_buffer, e_buffer - e_have + e_need))
+                e_qty = min(e_want, c.get("treasury", 0) // e_price) if e_price > 0 else e_want
                 if e_qty > 0:
                     out.append(_tx(tick, who, "BID_FOR_COOP", {
                         "coop_id": coop_id, "good": "electricity",
