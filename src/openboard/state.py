@@ -66,6 +66,15 @@ class WorldState:
     # debt-free, zero PRODUCE in 50 ticks, ratchet promise missed).
     # Recent sales ARE demand: produce to replace what sold.
     recent_sales: dict[str, int] = field(default_factory=dict)
+    # D18 unserved-bid signal: good -> coop bid volume that wanted to buy
+    # in the producer-input pass but went unserved (tick-scoped). The
+    # replacement-rate loop equates production to sales, and sales can
+    # never exceed production — a stable fixed point at ANY level (the
+    # trickle equilibrates: gate 23 bread 59/tick, grain 52/tick, no
+    # growth). Unserved bids are the GROWTH signal: livestock bid 2,050
+    # grain per 100 ticks against 52/tick supply; a farmer producing to
+    # replace sales alone never scales. Unserved demand is unmet demand.
+    unserved_bids: dict[str, int] = field(default_factory=dict)
     # Circular flow (2026-08-21 milestone)
     unmet_needs: dict[str, dict[str, int]] = field(default_factory=dict)  # citizen -> good -> ticks unmet
     consumed_totals: dict[str, int] = field(default_factory=dict)  # good -> lifetime units consumed

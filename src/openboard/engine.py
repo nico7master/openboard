@@ -1363,6 +1363,11 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                 # them through the only channel they sell on.
                 _pip_sold = sum(int(x.get("qty") or 0) for x in served)
                 state.recent_sales[good] = state.recent_sales.get(good, 0) + _pip_sold
+                # D18 growth channel: unserved bid volume = demand that
+                # WANTED inputs this tick and got nothing — the signal a
+                # producer needs to scale beyond its current sales level.
+                _pip_wanted = sum(int(b.get("qty") or 0) for b in pbids)
+                state.unserved_bids[good] = state.unserved_bids.get(good, 0) + max(0, _pip_wanted - _pip_sold)
                 events.append({
                     "tick": tick,
                     "action": "PRODUCER_INPUT_CLEAR",

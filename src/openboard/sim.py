@@ -223,6 +223,7 @@ def make_specialist(
         # never produced again once equity injection removed their debt)
         _recent_demand = any(
             state.recent_sales.get(_og, 0) > 0
+            or state.unserved_bids.get(_og, 0) > 0
             for _og in recipe["outputs"]
         )
         want_produce = _any_output_short or _in_debt or _recent_demand
@@ -475,7 +476,10 @@ def make_specialist(
             # replacement runs: at least enough to replace what sold last
             # tick across all outputs (sold units leave the market, the
             # coop's inventory is the source)
-            _replace_units = sum(state.recent_sales.get(_og, 0) for _og in recipe["outputs"])
+            _replace_units = sum(
+                state.recent_sales.get(_og, 0) + state.unserved_bids.get(_og, 0)
+                for _og in recipe["outputs"]
+            )
             _replace_runs = max(1, -(-_replace_units // out_units)) if _replace_units else 1
             gap_runs = max(1, -(-max(_worst_gap, stock_target - stock) // out_units), _replace_runs)
             if _worst_gap <= 0 and stock >= stock_target and _in_debt:
