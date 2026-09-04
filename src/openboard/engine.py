@@ -1351,6 +1351,8 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                 total_sold += got
                 sold_records.append({"bidder": buyer["bidder"], "qty": got, "paid": paid})
 
+        # D18 replacement-rate signal: record this tick's sold volume
+        state.recent_sales[good] = total_sold
         events.append({
             "tick": tick,
             "action": "MARKET_CLEAR_ESSENTIAL",
@@ -1406,6 +1408,8 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
 
         clearing = min(w["bid"]["max_price"] for w in winners)
         total_sold = supply - remaining_supply
+        # D18 replacement-rate signal: record this tick's sold volume
+        state.recent_sales[good] = total_sold
         state.last_clearing[good] = clearing  # public price signal
         floor = state.good_cost_baseline.get(good, 1)
 

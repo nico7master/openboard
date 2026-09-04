@@ -58,6 +58,14 @@ class WorldState:
     crisis: dict[str, Any] = field(default_factory=dict)
     common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
     last_clearing: dict[str, int] = field(default_factory=dict)  # good -> last auction clearing price (public price signal)
+    # D18 replacement-rate signal: good -> units sold in the most recent
+    # clearing (rebuilt every tick by the market phase). Stock-based
+    # produce gates cannot see flow demand: a coop selling 4 coal/tick
+    # steadily holds 278 (> target 120) and reads as 'no demand' — so it
+    # never produces again (observed: miners rich, machines delivered,
+    # debt-free, zero PRODUCE in 50 ticks, ratchet promise missed).
+    # Recent sales ARE demand: produce to replace what sold.
+    recent_sales: dict[str, int] = field(default_factory=dict)
     # Circular flow (2026-08-21 milestone)
     unmet_needs: dict[str, dict[str, int]] = field(default_factory=dict)  # citizen -> good -> ticks unmet
     consumed_totals: dict[str, int] = field(default_factory=dict)  # good -> lifetime units consumed
