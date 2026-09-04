@@ -70,7 +70,19 @@ def make_specialist(
                     ]
         recipe = state.recipes[recipe_id]
         active_id = recipe_id
-        # Cold-start fallback (Stage 4): when the declared recipe needs
+        recipe = state.recipes[recipe_id]
+        active_id = recipe_id
+        # D18 member equity injection: an idle (10+ ticks, engine-signal
+        # last_produce_tick) and insolvent (treasury below one run's input
+        # cost) coop is rescued by its worker-owners — the real-world
+        # cooperative practice of recapitalizing the firm from member
+        # savings (observed: fishery dead at treasury 1 since t204 while
+        # its 4 members held ~58k each and the Society Pool was at zero in
+        # the unequal world — no public rescuer existed, so production
+        # died for 1,760 ticks and 181 citizens went unmet on fish).
+        # Bounded: at most 10% of the member's balance per injection,
+        # sized to the next run's input cost (inputs + energy), so the
+                # Cold-start fallback (Stage 4): when the declared recipe needs
         # capital (tools/machines) the coop lacks and cannot buy (nothing
         # listed, or nothing affordable), bridge to a labor-only primitive
         # recipe so extraction can begin from bare hands. The bridge
@@ -102,6 +114,34 @@ def make_specialist(
                 recipe = state.recipes[fallback_recipe_id]
                 active_id = fallback_recipe_id
         out = []
+        # D18 member equity injection: an idle (10+ ticks, engine-signal
+        # last_produce_tick) and insolvent (treasury below one run's input
+        # cost) coop is rescued by its worker-owners — the real-world
+        # cooperative practice of recapitalizing the firm from member
+        # savings (observed: fishery dead at treasury 1 from t204 while
+        # its 4 members held ~58k each and the Society Pool was at zero in
+        # the unequal world — no public rescuer existed, so production
+        # died for 1,760 ticks and 181 citizens went unmet on fish).
+        # Bounded: at most 10% of the member's balance per injection,
+        # sized to the next run's input cost. The member STILL WORKS this
+        # tick — the injection adds capital, it never replaces labor.
+        _lpt_e = c.get("last_produce_tick")
+        if _lpt_e is not None and (tick - _lpt_e) >= 10:
+            _rid_e = c.get("recipe_intent") or c.get("trade") or ""
+            _rec_e = state.recipes.get(_rid_e) or {}
+            _run_cost = sum(
+                q * (state.good_cost_baseline.get(g, 1) + 2)
+                for g, q in (_rec_e.get("inputs") or {}).items()
+            )
+            _run_cost += int(_rec_e.get("energy", 0)) * (state.good_cost_baseline.get("electricity", 1) + 2)
+            _run_cost = _run_cost * 3 // 2
+            if _run_cost > 0 and c.get("treasury", 0) < _run_cost:
+                _bal = state.balances.get(who, 0)
+                _inj = min(max(_run_cost - c.get("treasury", 0), 0), _bal // 10)
+                if _inj > 0:
+                    out.append(_tx(tick, who, "TRANSFER", {
+                        "to": coop_id, "amount": _inj,
+                    }, v))
         # Right to work: citizens log hours freely; society mints the wage
         # (D4). Idle-pool wages act as the income floor that funds essential
         # consumption — recycled by wealth tax + dividends, NOT an exploit.

@@ -44,7 +44,12 @@ def _validate_transfer(state: WorldState, tx: Transaction, params: dict[str, Any
 
     if not _is_int(amount):
         return Reason.NON_INTEGER_AMOUNT
-    if to not in state.balances:
+    # D18 member equity injection: a TRANSFER may also target a COOP
+    # treasury — worker-owners recapitalizing their own insolvent firm
+    # from personal savings (observed: fishery dead 1,760 ticks at
+    # treasury 1 while its 4 members each held ~58k and the Society Pool
+    # was at zero in the unequal world — no public rescuer existed).
+    if to not in state.balances and to not in state.coops:
         return Reason.UNKNOWN_CITIZEN
     if amount <= 0:
         return Reason.RULE_VIOLATION
@@ -62,7 +67,11 @@ def _apply_transfer(state: WorldState, tx: Transaction) -> dict[str, Any]:
     amount = tx.payload["amount"]
     to = tx.payload["to"]
     state.balances[tx.sender] -= amount
-    state.balances[to] += amount
+    # member equity injection: coop targets land in the coop treasury
+    if to in state.coops:
+        state.coops[to]["treasury"] = state.coops[to].get("treasury", 0) + amount
+    else:
+        state.balances[to] += amount
     return {
         "tick": tx.tick,
         "sender": tx.sender,
