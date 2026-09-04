@@ -112,6 +112,40 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
         return []
     out = []
     c = state.coops[coop]
+    # D18 seated mobility: the jobless-join branch below only helps when a
+    # jobless citizen EXISTS. In the unequal world everyone is seated
+    # (observed: 2,826 JOIN_COOP attempts to the fishery over 2,000 ticks,
+    # all rejected ALREADY_IN_COOP; membership grew 4->6 only via births
+    # while 181/181 citizens went unmet on fish). An employed citizen who
+    # PERSONALLY lacks a chronically short good (streak >= 10, nothing
+    # listed) may switch to a producer of it that is smaller than their
+    # current coop -- labor flows toward understaffed producers of the
+    # goods people actually need. The smaller-than-mine condition makes
+    # the flow converge (the target grows, then stops attracting).
+    _my_streaks = state.unmet_needs.get(who, {})
+    _worst_g, _worst_t = None, 0
+    for g in sorted(_my_streaks):
+        t = int(_my_streaks[g] or 0)
+        if t > _worst_t:
+            _worst_g, _worst_t = g, t
+    if _worst_g is not None and _worst_t >= 10:
+        _covered = {g for g, ls in state.listings.items()
+                    if any((l.get("qty") or 0) > 0 for l in ls)}
+        if _worst_g not in _covered:
+            _cands = []
+            for cid, cd in state.coops.items():
+                if cid == coop:
+                    continue
+                _rid = cd.get("recipe_intent") or cd.get("trade") or ""
+                _rec = state.recipes.get(_rid) or {}
+                if _worst_g in (_rec.get("outputs") or {}) and len(cd.get("members") or []) < len(c.get("members") or []):
+                    _cands.append((len(cd.get("members") or []), cid))
+            if _cands:
+                _cands.sort()
+                return [
+                    _tx(tick, who, "LEAVE_COOP", {"coop_id": coop}, v),
+                    _tx(tick, who, "JOIN_COOP", {"coop_id": _cands[0][1]}, v),
+                ]
     # produce if the coop has inputs and labor for its first recipe
     if c["labor_pool_hours"] >= 2:
         for rid, r in state.recipes.items():
