@@ -661,10 +661,15 @@ def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
         for rid in sorted(_rids) or sorted(state.recipes.keys()):
             recipe = state.recipes.get(rid)
             inputs = recipe.get("inputs") if isinstance(recipe, dict) else getattr(recipe, "inputs", None)
-            if not inputs:
-                continue
-            cost = sum(q * (state.good_cost_baseline.get(g, 1) + 2)
-                       for g, q in sorted((inputs or {}).items()))
+            # energy is a per-run consumable like any input: fishing has an
+            # EMPTY inputs dict but burns 8 electricity per run — a reserve
+            # of inputs-only left the fishery's advance to be eaten by
+            # wages, then PRODUCE died on NOT_ENOUGH_ENERGY forever
+            # (observed: fish=0 across 2,000 ticks, 63 runs then starved).
+            energy = int(recipe.get("energy", 0)) if isinstance(recipe, dict) else 0
+            cost = energy * (state.good_cost_baseline.get("electricity", 1) + 2)
+            cost += sum(q * (state.good_cost_baseline.get(g, 1) + 2)
+                        for g, q in sorted((inputs or {}).items()))
             if cost > 0 and (reserve == 0 or cost < reserve):
                 reserve = cost
         available = max(0, coop.get("treasury", 0) - reserve)
@@ -2251,6 +2256,11 @@ def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -
                 # a permanent deadlock (books never produced, 1,000 ticks).
                 unit = state.good_cost_baseline.get(g, 1) + 2
                 cost += unit * q
+            # energy per run is part of the runnable cost (fishing: no
+            # inputs, 8 energy/run — inputs-only cost said 0 and the
+            # fishery was 'never deadlockable', so it starved on energy)
+            energy = int(recipe.get("energy", 0)) if isinstance(recipe, dict) else 0
+            cost += energy * (state.good_cost_baseline.get("electricity", 1) + 2)
             if best is None or cost < best:
                 best = cost
         if best is None or best <= 0:
