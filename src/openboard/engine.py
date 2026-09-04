@@ -1260,7 +1260,24 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             # triage ethos: producers of ESSENTIAL goods are served first
             # from the claimable share; breadth-chain producers share the
             # remainder, each group rotated by tick (fair within class).
-            _ess_out = {"bread", "water", "electricity", "meals"}
+            _ess_seed = {"bread", "water", "electricity", "meals"}
+            # D18 transitive closure: a coop one step UP the essential
+            # chain is essential too — millers make FLOUR (not bread), so
+            # gate 17 still classified them breadth and they kept losing
+            # the grain rotation to livestock (bakers starved of flour:
+            # 1-2 vs 5 needed, bread total unmet 3195). Any good that is
+            # an input of an essential recipe is itself essential.
+            _ess_out = set(_ess_seed)
+            _changed = True
+            while _changed:
+                _changed = False
+                for _rec in state.recipes.values():
+                    _o = set(_rec.get("outputs") or {})
+                    if _o & _ess_out:
+                        _add = set(_rec.get("inputs") or {}) - _ess_out
+                        if _add:
+                            _ess_out |= _add
+                            _changed = True
             def _chain_of(b: dict[str, Any]) -> int:
                 _c = state.coops.get(b.get("coop_id") or "")
                 if not _c:
