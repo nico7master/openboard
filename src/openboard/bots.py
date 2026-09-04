@@ -168,21 +168,37 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
                     if _add:
                         _target_goods |= _add
                         _changed = True
-        if not _cands:
-            for cid, cd in state.coops.items():
-                if cid == coop:
-                    continue
-                if len(cd.get("members") or []) >= _cap:
-                    continue
-                _rid = cd.get("recipe_intent") or cd.get("trade") or ""
-                _rec = state.recipes.get(_rid) or {}
-                if set(_rec.get("outputs") or {}) & _target_goods:
-                    _cands.append((len(cd.get("members") or []), cid))
-        if _cands:
-            _cands.sort()
+        # collect ALL chain candidates (direct + upstream), then rank by
+        # BOTTLENECK EVIDENCE, not seat availability. Gate runs 18/19 were
+        # identical (19/86): the upstream fallback only fired when direct
+        # producers were FULL, but bakers always had open seats (7/12) —
+        # their limit is FLOUR, not hands. The ledger already carries the
+        # evidence: a producer whose OUTPUT has chronically unfulfilled
+        # coop-bid pressure (bids minus cleared, 20-tick window) IS the
+        # bottleneck — millers under-serve bakers' flour bids, farmers
+        # under-serve millers' grain bids. Tier 0 = those producers.
+        _chain_cands = []
+        for cid, cd in state.coops.items():
+            if cid == coop:
+                continue
+            if len(cd.get("members") or []) >= _cap:
+                continue
+            _rid = cd.get("recipe_intent") or cd.get("trade") or ""
+            _rec = state.recipes.get(_rid) or {}
+            _outs = set(_rec.get("outputs") or {})
+            if not (_outs & _target_goods):
+                continue
+            _is_direct = _worst_g in _outs
+            _is_bottleneck = any(
+                _bid.get(_og, 0) - _cleared.get(_og, 0) >= 20 for _og in _outs
+            )
+            _tier = 0 if _is_bottleneck else (1 if _is_direct else 2)
+            _chain_cands.append((_tier, len(cd.get("members") or []), cid))
+        if _chain_cands:
+            _chain_cands.sort()
             return [
                 _tx(tick, who, "LEAVE_COOP", {"coop_id": coop}, v),
-                _tx(tick, who, "JOIN_COOP", {"coop_id": _cands[0][1]}, v),
+                _tx(tick, who, "JOIN_COOP", {"coop_id": _chain_cands[0][2]}, v),
             ]
     # produce if the coop has inputs and labor for its first recipe
     if c["labor_pool_hours"] >= 2:
