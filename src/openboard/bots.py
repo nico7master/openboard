@@ -128,35 +128,35 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
         t = int(_my_streaks[g] or 0)
         if t > _worst_t:
             _worst_g, _worst_t = g, t
+    # D18 society-level chain routing: the personal trigger can never
+    # reach INTERMEDIATE chain stages (nobody personally eats flour), and
+    # intermittent dribble service resets personal streaks — verified in
+    # the gate world: all 300 late-window joins came from 6 citizens
+    # whose personal worst was fruit, while milk/meat (society streak
+    # 86) mobilized nobody and the grain/flour stages stayed frozen at
+    # genesis membership. Two upgrades:
+    #   (a) society trigger — if ANY citizen's streak for a good is >= 15,
+    #       that good is a legitimate redeployment target for employed
+    #       citizens (their own coop producing none of its chain);
+    #   (b) in-chain members STAY: if your own coop already produces any
+    #       good in the target chain, switching away only deepens the
+    #       shortage (this also kills the orchard founder flap — leaving
+    #       a stalled producer of the good you lack never helps you get
+    #       that good).
+    if _worst_t < 15:
+        _soc_g, _soc_t = None, 0
+        for _cit, _st in state.unmet_needs.items():
+            for g, t in _st.items():
+                t = int(t or 0)
+                if t > _soc_t:
+                    _soc_g, _soc_t = g, t
+        if _soc_t >= 15:
+            _worst_g, _worst_t = _soc_g, _soc_t
     if _worst_g is not None and _worst_t >= 10:
-        # No 'not listed anywhere' check: a chronically short good is often
-        # listed in dribbles (fishery listed fish ~1/tick while 181/181
-        # citizens went unmet) — 'listed sometimes' is not 'served'. The
-        # personal streak >= 10 IS the unserved-demand evidence. Pick the
-        # least-membered producer below the cap; the engine's max_coop_members
-        # bounds the pile-up, and members spreading across several producers
-        # (least-first) keeps the flow from oscillating.
         _cap = params.get("max_coop_members", 12)
-        _cands = []
-        for cid, cd in state.coops.items():
-            if cid == coop:
-                continue
-            if len(cd.get("members") or []) >= _cap:
-                continue
-            _rid = cd.get("recipe_intent") or cd.get("trade") or ""
-            _rec = state.recipes.get(_rid) or {}
-            if _worst_g in (_rec.get("outputs") or {}):
-                _cands.append((len(cd.get("members") or []), cid))
-        # D18 chain-aware targeting: the DIRECT producer is not always the
-        # bottleneck. Late-run gate world: bread produced 48.6/tick vs
-        # ~180/tick demand for 181 citizens; citizens joined city_bakers
-        # (54x) and power_plant (36x) but NEVER the farmers — because the
-        # signal stops at the short good. The chain math: bread 48/tick <-
-        # flour 11.5/tick (millers, 3 members) <- grain 45/tick (13
-        # farmers). When nothing upstream of the short good is at capacity,
-        # the true bottleneck is UPSTREAM: also target producers of the
-        # shortage good's transitive inputs (direct producers still sort
-        # first — they are always the primary target when they have room).
+        _sc2 = state.coops[coop]
+        _my_rid2 = _sc2.get("recipe_intent") or _sc2.get("trade") or ""
+        _my_outs2 = set((state.recipes.get(_my_rid2) or {}).get("outputs") or {})
         _target_goods = {_worst_g}
         _changed = True
         while _changed:
@@ -168,51 +168,32 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
                     if _add:
                         _target_goods |= _add
                         _changed = True
-        # collect ALL chain candidates (direct + upstream), then rank by
-        # BOTTLENECK EVIDENCE, not seat availability. Gate runs 18/19 were
-        # identical (19/86): the upstream fallback only fired when direct
-        # producers were FULL, but bakers always had open seats (7/12) —
-        # their limit is FLOUR, not hands. The ledger already carries the
-        # evidence: a producer whose OUTPUT has chronically unfulfilled
-        # coop-bid pressure (bids minus cleared, 20-tick window) IS the
-        # bottleneck — millers under-serve bakers' flour bids, farmers
-        # under-serve millers' grain bids. Tier 0 = those producers.
-        _chain_cands = []
-        for cid, cd in state.coops.items():
-            if cid == coop:
-                continue
-            if len(cd.get("members") or []) >= _cap:
-                continue
-            _rid = cd.get("recipe_intent") or cd.get("trade") or ""
-            _rec = state.recipes.get(_rid) or {}
-            _outs = set(_rec.get("outputs") or {})
-            if not (_outs & _target_goods):
-                continue
-            _is_direct = _worst_g in _outs
-            # D18 throughput-deficit ranking: gate runs 18-20 were
-            # byte-identical (19/86) because bid deficits are cash-limited
-            # (starving bakers stop bidding) and never fired tier-0. The
-            # robust bottleneck signal is CAPACITY per member: a coop whose
-            # recipe transforms a large input volume but fields few members
-            # (millers: 3 members, 11.5 flour/tick vs ~24 needed) is the
-            # constraint. Rank by members per output-unit needed: the
-            # stage with the lowest labor-per-output density relative to
-            # the direct producer is the true bottleneck. Compute a simple
-            # deterministic capacity score: members / (labor_hours x
-            # runs_possible); the direct producer anchors tiering, the
-            # capacity score breaks ties ACROSS stages.
-            _labor_h = int(_rec.get("labor_hours") or 1)
-            _out_units = sum(int(x) for x in (_rec.get("outputs") or {}).values())
-            _cap_score = len(cd.get("members") or []) / max(1, _labor_h * max(1, _out_units // 10))
-            _tier = 0 if (not _is_direct and _cap_score < 0.5) else (1 if _is_direct else 2)
-            _chain_cands.append((_tier, len(cd.get("members") or []), cid, _cap_score))
-        if _chain_cands:
-            # sort by (tier, capacity score ASC = weakest stage first, members ASC, name)
-            _chain_cands.sort(key=lambda x: (x[0], x[3], x[1], x[2]))
-            return [
-                _tx(tick, who, "LEAVE_COOP", {"coop_id": coop}, v),
-                _tx(tick, who, "JOIN_COOP", {"coop_id": _chain_cands[0][2]}, v),
-            ]
+        if not (_my_outs2 & _target_goods):
+            # rank every chain producer by weakest capacity stage:
+            # members / (labor_hours x output-units/10) — the starved
+            # transform stage (millers: 3 members, big input volume)
+            # sorts first without needing cash-limited bid evidence.
+            _chain_cands = []
+            for cid, cd in state.coops.items():
+                if cid == coop:
+                    continue
+                if len(cd.get("members") or []) >= _cap:
+                    continue
+                _rid = cd.get("recipe_intent") or cd.get("trade") or ""
+                _rec = state.recipes.get(_rid) or {}
+                _outs = set(_rec.get("outputs") or {})
+                if not (_outs & _target_goods):
+                    continue
+                _labor_h = int(_rec.get("labor_hours") or 1)
+                _out_units = sum(int(x) for x in (_rec.get("outputs") or {}).values())
+                _cap_score = len(cd.get("members") or []) / max(1.0, float(_labor_h * max(1, _out_units // 10)))
+                _chain_cands.append((_cap_score, len(cd.get("members") or []), cid))
+            if _chain_cands:
+                _chain_cands.sort()
+                return [
+                    _tx(tick, who, "LEAVE_COOP", {"coop_id": coop}, v),
+                    _tx(tick, who, "JOIN_COOP", {"coop_id": _chain_cands[0][2]}, v),
+                ]
     # produce if the coop has inputs and labor for its first recipe
     if c["labor_pool_hours"] >= 2:
         for rid, r in state.recipes.items():
@@ -499,7 +480,12 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
         # field last_produce_tick is exact and window-independent.
         _sc_lpt = _sc.get("last_produce_tick")
         _produced_recent = _sc_lpt is not None and (tick - _sc_lpt) <= 10
-        if _shortage_goods and not _produced_recent and not (_shortage_goods & _my_goods and _produced_recent):
+        # D18 orchard-flap fix: leaving a coop that itself produces a
+        # shortage good never helps you GET that good — and a stalled
+        # producer needs its members to stay so production resumes when
+        # inputs arrive (the coop-to-coop demand signal now feeds it).
+        # Observed: 6 founders join/leave orchard_co 300x over 100 ticks.
+        if _shortage_goods and not _produced_recent and not (_shortage_goods & _my_goods):
             # 2026-09-02: early return DISCARDED the personal-needs buys
             # already collected in `out` — on leave ticks founders bought
             # nothing and went hungry (trace: unmet pinned at exactly 1 for
