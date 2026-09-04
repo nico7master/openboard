@@ -204,7 +204,19 @@ def make_specialist(
         # runs, ratchet promise missed. Minimal runs only: distress
         # production is income-focused, not stock-building.
         _in_debt = bool(c.get("wage_debt"))
-        want_produce = stock < stock_target or _in_debt
+        # D18 joint-output demand gate: stock above tracks the PRIMARY
+        # output only — when meat sat at target, want_produce went False
+        # and the JOINT outputs (milk/eggs) stopped flowing entirely while
+        # 102+ citizens starved for milk (gate-world probe: 17,539 applied
+        # buys vs 981 sold in 100 ticks, both livestock coops healthy).
+        # Demand is true when ANY output's market stock is below target.
+        _any_output_short = any(
+            (c["inventory"].get(_og, 0)
+             + sum(e["qty"] for e in state.listings.get(_og, []) if e["coop_id"] == coop_id))
+            < stock_target
+            for _og in sorted(recipe["outputs"].keys())
+        )
+        want_produce = _any_output_short or _in_debt
 
         # Stage 5 FIX: energy maintenance runs ALWAYS, not only when
         # producing (observed: steelworks froze with full ore/coal and
@@ -445,8 +457,14 @@ def make_specialist(
             # the stock gap, this member's labor share, and on-hand inputs
             # (divided across members so everyone acts, not just the
             # first mover). Engine applies runs atomically per tx.
-            gap_runs = max(1, -(-(stock_target - stock) // out_units))
-            if stock >= stock_target and _in_debt:
+            # D18 joint-output sizing: gap measured across EVERY output —
+            # the worst (deepest) gap drives runs, so unmet milk demand
+            # keeps livestock producing even when meat is at target
+            _worst_gap = max((max(0, stock_target - (c["inventory"].get(_og, 0)
+                                + sum(e["qty"] for e in state.listings.get(_og, []) if e["coop_id"] == coop_id)))
+                              for _og in recipe["outputs"]), default=stock_target - stock)
+            gap_runs = max(1, -(-max(_worst_gap, stock_target - stock) // out_units))
+            if _worst_gap <= 0 and stock >= stock_target and _in_debt:
                 gap_runs = 1  # distress production: service the debt, don't pile stock
             members = max(1, len(c["members"]))
             labor_runs = c["labor_pool_hours"] // recipe["labor_hours"]
