@@ -12,7 +12,19 @@ for t in range(2, 2001):
     if t % 200 == 0:
         import resource
         print(f't={t} rss_mb={resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024}', flush=True)
-    run._apply_batch(t, actions)
+    # D20 diagnosis: a pathological transaction payload explodes _sanitize
+    # (MemoryError, zero cgroup OOM-kills => single huge allocation). Name
+    # the offender before it kills the run.
+    try:
+        run._apply_batch(t, actions)
+    except MemoryError:
+        import sys as _sys
+        biggest = sorted(actions, key=lambda a: len(repr(getattr(a, 'payload', {}))), reverse=True)[:3]
+        for a in biggest:
+            print(f'BIG tx: action={a.action!r} sender={a.sender!r} payload_len={len(repr(a.payload))}', flush=True)
+            print(f'  head={repr(a.payload)[:2000]}', flush=True)
+        _sys.stdout.flush()
+        raise
     run._record_timeline()
     # Memory hygiene: the gate only reads final unmet streaks, but Run
     # accumulates every applied event + tx batch (~3.8k events/tick),
@@ -21,6 +33,16 @@ for t in range(2, 2001):
     run.state.applied.clear()
     run.batches.clear()
     run._last_events = []
+    # D20: the LEDGER itself was never pruned — every record of all 2000
+    # ticks stays resident (~2 MB/tick growth: 497 MB at t200 -> 3.87 GB
+    # at t1800 -> MemoryError in _apply_batch serialization; the trap
+    # proved payloads are tiny, so it is cumulative, not one big tx).
+    # Harness-only: keep the last 1000 records for same-tick readers;
+    # head_hash lives on the Ledger, chain integrity untouched. Engine
+    # code is NOT changed by this.
+    _recs = run.ledger.records
+    if len(_recs) > 4000:
+        del _recs[: len(_recs) - 1000]
 s = run.state
 ESSENTIALS = {"bread", "water", "electricity", "meals"}
 worst_ess, worst_breadth = 0, 0
