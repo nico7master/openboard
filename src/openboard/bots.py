@@ -58,6 +58,53 @@ def honest_worker(who, state, params, tick, rng) -> list[Transaction]:
         _cap = params.get("labor_pool_cap")
         if _cap is None or state.coops[coop]["labor_pool_hours"] + 6 <= _cap:
             out.append(_work(tick, who, coop, 6, v))
+    else:
+        # D19 join-only capacity routing: jobless citizens (incl. adults
+        # grown via demographics) fill the weakest-capacity producer of a
+        # chronically short ESSENTIAL good's chain. JOIN-only by design:
+        # nobody leaves a producing coop, so the floodgate failure mode
+        # (donor migration stripped producers, essentials collapsed to
+        # 1996) is structurally impossible. Throttles (memory 1Qojf06NmC):
+        # skip the bootstrap wave (t>=100) and stagger each citizen to one
+        # eligible tick in 20 (deterministic). Appends to out and
+        # CONTINUES to personal needs below — never an early return.
+        _jt = (tick + sum(ord(ch) for ch in who)) % 20
+        if tick >= 100 and _jt == 0:
+            _tri_j = params.get("triage_overrides") or {}
+            _ess_j = {g for g, _v in _tri_j.items() if _v == "essential"} | {"bread", "water", "electricity", "meals"}
+            _sg_j, _st_j = None, 0
+            for _cit, _d in state.unmet_needs.items():
+                for _g, _t in _d.items():
+                    _t = int(_t or 0)
+                    if _t > _st_j:
+                        _sg_j, _st_j = _g, _t
+            if _sg_j in _ess_j and _st_j >= 5:
+                _chain_j = {_sg_j}
+                _chg_j = True
+                while _chg_j:
+                    _chg_j = False
+                    for _rec in state.recipes.values():
+                        _o = set(_rec.get("outputs") or {})
+                        if _o & _chain_j:
+                            _add = set(_rec.get("inputs") or {}) - _chain_j
+                            if _add:
+                                _chain_j |= _add
+                                _chg_j = True
+                _cap_j = params.get("max_coop_members", 12)
+                _cands_j = []
+                for _cid, _cd in state.coops.items():
+                    if len(_cd.get("members") or []) >= _cap_j:
+                        continue
+                    _rid = _cd.get("recipe_intent") or _cd.get("trade") or ""
+                    _rec = state.recipes.get(_rid) or {}
+                    if not (set(_rec.get("outputs") or {}) & _chain_j):
+                        continue
+                    _lh = int(_rec.get("labor_hours") or 1)
+                    _ou = max(1, sum(int(x) for x in (_rec.get("outputs") or {}).values()) // 10)
+                    _cands_j.append((len(_cd.get("members") or []) / max(1.0, float(_lh * _ou)), len(_cd.get("members") or []), _cid))
+                if _cands_j:
+                    _cands_j.sort()
+                    out.append(_tx(tick, who, "JOIN_COOP", {"coop_id": _cands_j[0][2]}, v))
     # modest market bid on food, only when pantry is low (no slow hoarding)
     held_bread = state.citizen_inventory.get(who, {}).get("bread", 0)
     floor = state.good_cost_baseline.get("bread", 3)
