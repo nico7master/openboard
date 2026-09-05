@@ -409,10 +409,20 @@ def make_specialist(
         # production runs; if replenishment waits for a produce signal,
         # a burned-out coop can never restart (observed: miners stuck at
         # 0 machines forever because coal stock stayed above target).
+        # D19 wear-out cliff fix: durable goods die in BURSTS (1 unit per
+        # 20 runs), and maintenance that bids only when stock < need buys
+        # the replacement AFTER the worn unit died — a machine-less gap
+        # stalls production until the market lists a new one (observed:
+        # electricity streak 17 from ~t1790, bread 21 from ~t1950 — both
+        # late-run cascades). Keep a SPARE: hold need+1 for durables, so
+        # the replacement is bought while the old one still works.
+        _dc_m = params.get("durable_capital") or {}
+        _spare = 1 if _dc_m.get("enabled") else 0
         for cap_good in ("hand_tools", "machines"):
             cap_need = recipe["inputs"].get(cap_good, 0)
             if cap_need <= 0:
                 continue
+            cap_need += _spare
             # Stage 5 FIX: replenishment must run ALWAYS — previously it
             # skipped whenever want_produce was true, deferring to an input
             # loop that only buys MATERIAL inputs, never capital. Miners on

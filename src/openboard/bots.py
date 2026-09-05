@@ -152,7 +152,25 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
                     _soc_g, _soc_t = g, t
         if _soc_t >= 15:
             _worst_g, _worst_t = _soc_g, _soc_t
-    if _worst_g is not None and _worst_t >= 10:
+    # D19 routing-thrash fix: the society router fires on the LOUDEST
+    # society-wide shortage, which changes tick-to-tick as dribble
+    # service resets streaks (bread 21 <-> furniture 28 alternating).
+    # Without tenure protection, freshly-routed workers get poached out
+    # again the next tick — bakeries sat at 4/3 members for 2,000 ticks
+    # while ~59 bread/tick fed 181 citizens. Keep the tenure guard.
+    # D19 capacity-signal fix: fair ROTATION HIDES capacity shortages
+    # from streak triggers — bakers (4 members, ~59 bread/tick) serve 181
+    # citizens in rotating order, so every individual streak stays low
+    # while 2/3 of demand goes unserved each tick. ESSENTIAL goods have
+    # gate bound 0: any society peak >= 5 on an essential means capacity
+    # is short and routing is warranted (breadth goods keep the >= 15
+    # bar — their wobble is tolerable).
+    _soc_tenure = (state.coops[coop].get("member_since") or {}).get(who)
+    _soc_ok = _soc_tenure is None or (tick - _soc_tenure) >= 40
+    _tri = (params.get("triage_overrides") or {})
+    _ess_goods = {g for g, _v in _tri.items() if _v == "essential"} | {"bread", "water", "electricity", "meals"}
+    _route_thresh = 5 if (_worst_g in _ess_goods) else 15
+    if _worst_g is not None and _worst_t >= _route_thresh and _soc_ok:
         _cap = params.get("max_coop_members", 12)
         _sc2 = state.coops[coop]
         _my_rid2 = _sc2.get("recipe_intent") or _sc2.get("trade") or ""
