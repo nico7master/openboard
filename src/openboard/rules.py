@@ -40,7 +40,7 @@ OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_re
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
     "transfer_limit": 0,  # 0 = unlimited
-    "max_coop_members": 12,
+    "max_coop_members": 20,
     "min_coop_members": 2,
     "triage_overrides": {},
     "wage_multiplier_bp": 10_000,  # basis points: 10000 = 1.0x

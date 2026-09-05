@@ -9,6 +9,9 @@ for t in range(2, 2001):
     for name, meta in sorted(run.bots.items()):
         rng = random.Random(f"{seed}:{t}:{name}")
         actions.extend(meta["fn"](name, run.state, run.state.active_ruleset_params(), t, rng))
+    if t % 200 == 0:
+        import resource
+        print(f't={t} rss_mb={resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024}', flush=True)
     run._apply_batch(t, actions)
     run._record_timeline()
     # Memory hygiene: the gate only reads final unmet streaks, but Run

@@ -90,7 +90,7 @@ def honest_worker(who, state, params, tick, rng) -> list[Transaction]:
                             if _add:
                                 _chain_j |= _add
                                 _chg_j = True
-                _cap_j = params.get("max_coop_members", 12)
+                _cap_j = params.get("max_coop_members", 20)
                 _cands_j = []
                 for _cid, _cd in state.coops.items():
                     if len(_cd.get("members") or []) >= _cap_j:
@@ -218,7 +218,7 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
     _ess_goods = {g for g, _v in _tri.items() if _v == "essential"} | {"bread", "water", "electricity", "meals"}
     _route_thresh = 5 if (_worst_g in _ess_goods) else 15
     if _worst_g is not None and _worst_t >= _route_thresh and _soc_ok:
-        _cap = params.get("max_coop_members", 12)
+        _cap = params.get("max_coop_members", 20)
         _sc2 = state.coops[coop]
         _my_rid2 = _sc2.get("recipe_intent") or _sc2.get("trade") or ""
         _my_outs2 = set((state.recipes.get(_my_rid2) or {}).get("outputs") or {})
@@ -657,7 +657,7 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     # labor exactly where the chain is stuck. Founding is the last resort
     # for goods NO ONE produces. Without this, founders founded duplicates
     # (three brick coops) while iron_miners starved at 2 members.
-    _join_cap = params.get("max_coop_members", 12)
+    _join_cap = params.get("max_coop_members", 20)
     for good, _streak in candidates:
         _producers = sorted(
             (cid for cid, cdata in state.coops.items()

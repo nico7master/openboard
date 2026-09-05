@@ -53,7 +53,7 @@ def make_specialist(
                 if _t > _worst_t:
                     _worst_g, _worst_t = _g, _t
             if _worst_g is not None and _worst_t >= 10:
-                _cap_m = params.get("max_coop_members", 12)
+                _cap_m = params.get("max_coop_members", 20)
                 _cands = []
                 for _cid, _cd in state.coops.items():
                     if _cid == coop_id or len(_cd.get("members") or []) >= _cap_m:
