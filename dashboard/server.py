@@ -783,6 +783,13 @@ class Run:
         # the feature. Without it, an oversupplied coop can never shed
         # dead inventory -> produce gate stays false -> wage-debt spiral.
         params["sub_floor_clearance"] = {"enabled": True, "max_discount_bp": 3_000}
+        # D19 durable capital: machines/hand_tools are OWNED EQUIPMENT with
+        # wear (1 unit serves 20 runs), not ingredients consumed per run.
+        # Legacy model priced ~12.6 member-days of capital into every
+        # 24-coal run (machine baseline ~10,095u x 1/run): electricity was
+        # structurally unaffordable and the whole breadth economy was
+        # energy-rationed (power plant: 4.6 elec/tick for 181 citizens).
+        params["durable_capital"] = {"enabled": True, "goods": ["machines", "hand_tools"], "durability": 20}
         # Stage 4 fix: producer input priority — coops buy their inputs
         # at cost BEFORE the citizen essential pass (share-capped), so
         # downstream producers (kitchen/meals, household goods, capital

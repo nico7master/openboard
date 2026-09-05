@@ -490,9 +490,16 @@ def make_specialist(
                 c["inventory"].get("electricity", 0) // recipe["energy"]
                 if recipe.get("energy", 0) > 0 else None
             )
+            # D19 durable capital: equipment is owned stock, not an
+            # ingredient — 1 machine serves `durability` runs, so it must
+            # never cap run counts (min(inventory//q) over machines held
+            # runs at 1 and strangles the growth channel).
+            _dc = params.get("durable_capital") or {}
+            _dur_goods = set(_dc.get("goods", ("machines", "hand_tools"))) if _dc.get("enabled") else set()
+            _cons = [(g, q) for g, q in recipe["inputs"].items() if g not in _dur_goods]
             input_runs = (
-                min(c["inventory"].get(g, 0) // q for g, q in recipe["inputs"].items())
-                if recipe["inputs"] else None
+                min(c["inventory"].get(g, 0) // q for g, q in _cons)
+                if _cons else None
             )
             runs = min(gap_runs, labor_runs)
             if energy_runs is not None:

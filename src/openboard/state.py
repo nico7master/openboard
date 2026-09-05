@@ -75,6 +75,11 @@ class WorldState:
     # grain per 100 ticks against 52/tick supply; a farmer producing to
     # replace sales alone never scales. Unserved demand is unmet demand.
     unserved_bids: dict[str, int] = field(default_factory=dict)
+    # D19 durable capital: coop -> good -> runs of wear accumulated since
+    # the last unit of that capital good was consumed. Durable goods
+    # (machines, hand_tools) are EQUIPMENT, not ingredients: a coop holds
+    # 1 unit and wears it through N runs before replacing.
+    capital_wear: dict[str, dict[str, int]] = field(default_factory=dict)
     # Circular flow (2026-08-21 milestone)
     unmet_needs: dict[str, dict[str, int]] = field(default_factory=dict)  # citizen -> good -> ticks unmet
     consumed_totals: dict[str, int] = field(default_factory=dict)  # good -> lifetime units consumed

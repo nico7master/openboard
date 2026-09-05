@@ -753,9 +753,14 @@ def _validate_produce(state: WorldState, tx: Transaction, params: dict[str, Any]
     recipe = state.recipes[recipe_id]
     inventory = coop["inventory"]
 
-    # Material inputs × runs
+    # Material inputs × runs. D19 durable capital: equipment goods
+    # (machines, hand_tools) are OWNED stock — 1 unit in inventory serves
+    # any number of runs until it wears out; only consumables scale ×runs.
+    dc = params.get("durable_capital") or {}
+    dur_goods = set(dc.get("goods", ("machines", "hand_tools"))) if dc.get("enabled") else set()
     for good, qty in recipe["inputs"].items():
-        if inventory.get(good, 0) < qty * runs:
+        need = qty * runs if good not in dur_goods else min(1, qty)
+        if inventory.get(good, 0) < need:
             return Reason.NOT_ENOUGH_INPUTS
 
     # Energy × runs (electricity good)
@@ -801,9 +806,28 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     runs = tx.payload["runs"]
     inventory = coop["inventory"]
 
-    # Consume inputs
+    # Consume inputs. D19 durable capital: equipment is owned stock with
+    # WEAR, not an ingredient — 1 unit serves `durability` runs, then one
+    # unit is consumed (replacement demand persists, 20x less frequent
+    # and amortized). Coal at 1 machine/run priced ~12.6 member-days of
+    # capital into every 24-coal run: electricity was structurally
+    # unaffordable and the whole breadth economy energy-rationed.
+    dc = params.get("durable_capital") or {}
+    dur_goods = set(dc.get("goods", ("machines", "hand_tools"))) if dc.get("enabled") else set()
+    durability = max(1, int(dc.get("durability", 20)))
     for good, qty in recipe["inputs"].items():
-        inventory[good] -= qty * runs
+        if good in dur_goods:
+            # wear: accumulate runs on this coop's stock; consume 1 unit
+            # each time accumulated wear crosses `durability` runs
+            wear = state.capital_wear.setdefault(tx.payload["coop_id"], {})
+            wear[good] = wear.get(good, 0) + runs
+            while wear[good] >= durability and inventory.get(good, 0) >= 1:
+                wear[good] -= durability
+                inventory[good] -= 1
+            if inventory.get(good, 0) < 1:
+                wear[good] = 0  # stock gone: next validation fails naturally
+        else:
+            inventory[good] -= qty * runs
 
     # Consume energy
     energy_consumed = recipe["energy"] * runs
@@ -865,7 +889,8 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
         coop_id_ = tx.payload["coop_id"]
         energy_cost = energy_consumed * _vwap_unit_cost(state, coop_id_, "electricity") if energy_consumed else 0
         input_cost = sum(
-            qty * runs * _vwap_unit_cost(state, coop_id_, good) for good, qty in recipe["inputs"].items()
+            (qty * runs if good not in dur_goods else max(1, runs) / durability)
+            * _vwap_unit_cost(state, coop_id_, good) for good, qty in recipe["inputs"].items()
         )
         # Track capital consumption whenever capital goods are used as
         # inputs (Stage 3 gate metric: self-sustained capital). Was gated
@@ -878,7 +903,8 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     else:
         energy_cost = energy_consumed * params.get("energy_price", 2)
         input_cost = sum(
-            qty * runs * state.good_cost_baseline.get(good, 1) for good, qty in recipe["inputs"].items()
+            (qty * runs if good not in dur_goods else max(1, runs) / durability)
+            * state.good_cost_baseline.get(good, 1) for good, qty in recipe["inputs"].items()
         )
     total_units = sum(outputs_produced.values())
 
