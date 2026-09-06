@@ -619,6 +619,47 @@ def _memory_decay(state: WorldState, params: dict[str, Any]) -> None:
                 state.shortage_memory[key] = nv
 
 
+def _live_cost_restamp(state: WorldState, params: dict[str, Any]) -> None:
+    """Re-stamp every good's cost baseline from current recipe costs.
+
+    Simultaneous: all new baselines derive from the PRE-pass snapshot,
+    so multi-stage chains converge instead of oscillating. Per-unit
+    cost rounds UP (same law as PRODUCE stamping: production at cost
+    must not price below cost). Cheapest recipe per good wins — a good
+    is worth no more than its cheapest way to make it.
+    """
+    _mc_upc = (
+        int((params.get("money_cap") or {}).get("units_per_credit", 100))
+        if (params.get("money_cap") or {}).get("enabled")
+        else 1
+    )
+    _dc = params.get("durable_capital") or {}
+    _dur = set(_dc.get("goods", ("machines", "hand_tools"))) if _dc.get("enabled") else set()
+    _durability = int(_dc.get("durability", 20)) if _dc.get("enabled") else 1
+    _wage_unit = _mc_upc if _mc_upc else 1
+    old = dict(state.good_cost_baseline)
+    new: dict[str, int] = {}
+    for rec in state.recipes.values():
+        outs = rec.get("outputs") or {}
+        total_out = sum(int(v) for v in outs.values())
+        if total_out <= 0:
+            continue
+        labor = int(rec.get("labor_hours", 0)) * _wage_unit
+        energy = int(rec.get("energy", 0)) * old.get("electricity", 1)
+        cost = labor + energy
+        for g, q in (rec.get("inputs") or {}).items():
+            per_run = (q / _durability) if g in _dur else q
+            cost += int(old.get(g, 1) * per_run)
+        unit = max(1, -(-cost // total_out))
+        for og in outs:
+            cur = new.get(og)
+            if cur is None or unit < cur:
+                new[og] = unit
+    for g, v in new.items():
+        if v > old.get(g, 1):
+            state.good_cost_baseline[g] = v
+
+
 def _skill_decay(state: WorldState, params: dict[str, Any]) -> None:
     """Skills fade slowly when idle: 1% of hours lost per tick."""
     if not (params.get("skills") or {}).get("enabled"):
@@ -2931,6 +2972,19 @@ def apply_tick(
     _skill_decay(state, params)
     # WP1.4: shortage memories fade slowly (1%/tick)
     _memory_decay(state, params)
+    # D21d live-cost baselines (votable; absent => inert, replay-safe):
+    # a chronically dead producer keeps a STALE, too-low baseline (it was
+    # stamped when inputs were cheap, and PRODUCE only re-stamps when
+    # production runs — a dead coop never runs). The stale baseline priced
+    # the fishery's output below its true current cost (63u vs wage bill
+    # 3,200/tick + live electricity), locking a death-rescue cadence.
+    # Fix: recompute every good's baseline from its CHEAPEST recipe's
+    # CURRENT costs, simultaneously from the PRE-tick snapshot to avoid
+    # same-tick feedback oscillation. Baselines may RISE to true cost;
+    # they never silently shrink (that would let at-cost listings
+    # underprice).
+    if (params.get("live_cost_baselines") or {}).get("enabled"):
+        _live_cost_restamp(state, params)
     if params is None:  # pragma: no cover — defensive
         raise RuntimeError(f"ruleset v{version_for_tick} missing from state")
 

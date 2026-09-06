@@ -847,6 +847,9 @@ class Run:
         # costs (VWAP), not book values (hard core A1).
         params["cost_accounting"] = {"method": "vwap"}
         params["honest_wages"] = {"enabled": True}
+        # D21d: baselines track TRUE current costs even when a producer
+        # barely runs — kills the stale-baseline death spiral (fishery).
+        params["live_cost_baselines"] = {"enabled": True}
         # Progressive wealth tax: savings above 5,000 pay 4%/tick into the
         # pool (recycled via dividends) — caps savings concentration.
         # Stage 6 sweep evidence (2026-09-01): 200bp is UNSTABLE (Gini trend
