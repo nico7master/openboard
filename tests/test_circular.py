@@ -267,12 +267,21 @@ class TestDashboardCircular:
         assert s.consumed_totals.get("bread", 0) > 50
         assert s.consumed_totals.get("water", 0) > 50
         assert s.dividends_paid > 0 or s.services_paid > 0
-        # exact money invariant: initial + minted - retired
+        # exact money invariant. D15 fixed-supply worlds: the FULL cap
+        # exists at genesis (citizen stakes + Society Pool) and no minting
+        # ever follows — total must equal the cap exactly, forever.
+        # Legacy (uncapped) worlds keep the phase-1 law: initial + minted - retired.
         total = (sum(s.balances.values()) + s.surplus_pool + s.capital_fund
                  + sum(c.get("treasury", 0) for c in s.coops.values()))
-        from server import BASELINE_TREASURIES
-        initial = 500 * len(s.balances) + sum(BASELINE_TREASURIES.values())
-        assert total == initial + s.money_minted - s.money_retired
+        mc = s.active_ruleset_params().get("money_cap") or {}
+        if mc.get("enabled"):
+            assert total == int(mc.get("total", 2_100_000_000)), (
+                f"fixed-supply invariant broken: {total} != {mc.get('total')}"
+            )
+        else:
+            from server import BASELINE_TREASURIES
+            initial = 500 * len(s.balances) + sum(BASELINE_TREASURIES.values())
+            assert total == initial + s.money_minted - s.money_retired
 
     def test_analytics_has_circular_sections(self):
         r = server.Run(seed=42)

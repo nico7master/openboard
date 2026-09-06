@@ -93,6 +93,15 @@ class TestDemocracyFlow:
             "p1": 500,
         }
         s = genesis_state(balances, ruleset_params=params)
+        # D15: fixed-supply genesis standardizes opening stakes (the full
+        # cap is placed by the engine, custom balances are not honored),
+        # so the inequality this scenario needs is created post-genesis —
+        # the same layering the dashboard's unequal scenario uses.
+        # magnitude must survive the surplus-dividend flood long enough
+        # for the first election window (t10): ~2k/tick each compresses
+        # small differentials below the 5x trigger within a few ticks
+        s.balances.update({"e1": 900_000, "e2": 900_000, "e3": 500,
+                           "l1": 500, "l2": 500, "p1": 500})
         led = Ledger()
 
         def idle(who, state, params, tick, rng):
