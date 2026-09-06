@@ -311,7 +311,7 @@ def make_specialist(
                 # bidding the raw floor loses every tie-break to floor+2
                 # bidders (observed: livestock priced power at 1 vs floor 2,
                 # 1,192 bids, chronically starved -> meat shortage)
-                e_price = (min(floors) + 2 if floors else state.good_cost_baseline.get("electricity", 1))
+                e_price = int(min(floors) + 2 if floors else state.good_cost_baseline.get("electricity", 1))
                 # D18: buy ahead with a 3-run buffer — a just-in-time bid
                 # for exactly one run's energy loses a single auction and
                 # the day's PRODUCE dies NOT_ENOUGH_ENERGY (fishery ran
@@ -357,7 +357,7 @@ def make_specialist(
                 have = c["inventory"].get(good, 0)
                 need = max(0, runs_wanted * want_per_run - have)
                 floor = state.good_cost_baseline.get(good, 1)
-                price = floor + 2
+                price = int(floor) + 2
                 treasury = c.get("treasury", 0)
                 # affordability-capped: buy what we can now, more next tick
                 # (all-or-nothing froze coops forever when a full top-up
@@ -374,7 +374,7 @@ def make_specialist(
                 have = c["inventory"].get(good, 0)
                 need = max(0, runs_wanted * want_per_run - have)
                 floor = state.good_cost_baseline.get(good, 1)
-                price = floor + 2
+                price = int(floor) + 2
                 treasury = c.get("treasury", 0)
                 qty = min(need, treasury // price) if price > 0 else need
                 if qty > 0:
@@ -395,7 +395,7 @@ def make_specialist(
 
                 floor_e = state.good_cost_baseline.get("electricity", 1)
 
-                price_e = floor_e + 2
+                price_e = int(floor_e) + 2
 
                 qty_e = min(need_e, c.get("treasury", 0) // price_e) if price_e > 0 else need_e
 
@@ -436,7 +436,7 @@ def make_specialist(
                         continue
                     _cap_short = True
                     floors = [e["floor"] for e in state.listings.get(cap_good, ()) if e["qty"] > 0]
-                    cap_price = (min(floors) if floors else state.good_cost_baseline.get(cap_good, 1)) + 2
+                    cap_price = int(min(floors) if floors else state.good_cost_baseline.get(cap_good, 1)) + 2
                     cap_qty = min(short, c.get("treasury", 0) // cap_price) if cap_price > 0 else short
                     if cap_qty > 0:
                         out.append(_tx(tick, who, "BID_FOR_COOP", {
@@ -452,7 +452,7 @@ def make_specialist(
                     if mat_short <= 0:
                         continue
                     floors = [e["floor"] for e in state.listings.get(mat_good, ()) if e["qty"] > 0]
-                    mat_price = (min(floors) if floors else state.good_cost_baseline.get(mat_good, 1)) + 2
+                    mat_price = int(min(floors) if floors else state.good_cost_baseline.get(mat_good, 1)) + 2
                     mat_qty = min(mat_short, c.get("treasury", 0) // mat_price) if mat_price > 0 else mat_short
                     if mat_qty > 0:
                         out.append(_tx(tick, who, "BID_FOR_COOP", {
@@ -492,7 +492,7 @@ def make_specialist(
             cap_have = c["inventory"].get(cap_good, 0)
             if cap_have < cap_need:
                 cap_floor = state.good_cost_baseline.get(cap_good, 1)
-                cap_price = cap_floor + 2
+                cap_price = int(cap_floor) + 2
                 cap_treasury = c.get("treasury", 0)
                 cap_qty = min(cap_need - cap_have, cap_treasury // cap_price) if cap_price > 0 else cap_need - cap_have
                 if cap_qty > 0:
