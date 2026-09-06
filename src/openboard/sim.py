@@ -137,7 +137,11 @@ def make_specialist(
             _run_cost = _run_cost * 3 // 2
             if _run_cost > 0 and c.get("treasury", 0) < _run_cost:
                 _bal = state.balances.get(who, 0)
-                _inj = min(max(_run_cost - c.get("treasury", 0), 0), _bal // 10)
+                # int-cast: baselines are floats (true division); the
+                # engine rejects NON_INTEGER_AMOUNT — the D18 rescue was
+                # silently rejected every tick it tried to fire (observed
+                # 34 rejections in 20 ticks at the fishery, t515-520).
+                _inj = int(min(max(_run_cost - c.get("treasury", 0), 0), _bal // 10))
                 if _inj > 0:
                     out.append(_tx(tick, who, "TRANSFER", {
                         "to": coop_id, "amount": _inj,

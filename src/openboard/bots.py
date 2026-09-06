@@ -340,6 +340,34 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
             "coop_id": coop, "good": g, "max_price": price, "qty": qty,
         }, v))
         break  # one input purchase per tick — gradual, deterministic
+    # D21b equity injection (ported from sim.py's strategic_producer):
+    # an idle (10+ ticks, engine-signal last_produce_tick) and insolvent
+    # (treasury below 1.5x one run's input+energy cost) coop is rescued
+    # by its worker-owners — the real-world cooperative practice of
+    # recapitalizing the firm from member savings. Observed: the fishery
+    # dead at treasury 1 since t403 (1,600 ticks, fish streak 47) while
+    # its 4 members held 309k-397k each — the D18 rescue never fired
+    # because these citizens run honest_worker, and the rescue existed
+    # only in the specialist layer (same two-layer class as D19).
+    # Bounded: at most 10% of the member's balance per injection, sized
+    # to the run cost gap. The member STILL WORKS this tick.
+    _lpt = c.get("last_produce_tick")
+    if _lpt is not None and (tick - _lpt) >= 10:
+        _rid = c.get("recipe_intent") or c.get("trade") or ""
+        _rec = state.recipes.get(_rid) or {}
+        _run_cost = sum(
+            q * (state.good_cost_baseline.get(g, 1) + 2)
+            for g, q in (_rec.get("inputs") or {}).items()
+        )
+        _run_cost += int(_rec.get("energy", 0)) * (state.good_cost_baseline.get("electricity", 1) + 2)
+        _run_cost = _run_cost * 3 // 2
+        if _run_cost > 0 and c.get("treasury", 0) < _run_cost:
+            _bal = state.balances.get(who, 0)
+            _inj = int(min(max(_run_cost - c.get("treasury", 0), 0), _bal // 10))
+            if _inj > 0:
+                out.append(_tx(tick, who, "TRANSFER", {
+                    "to": coop, "amount": _inj,
+                }, v))
     # work last: wages draw from whatever the treasury still holds
     out.append(_work(tick, who, coop, 8, v))
     return out
