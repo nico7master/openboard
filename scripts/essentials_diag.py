@@ -24,6 +24,9 @@ for t in range(2, 2001):
     run.state.applied.clear()
     run.batches.clear()
     run._last_events = []
+    _recs = run.ledger.records
+    if len(_recs) > 4000:
+        del _recs[: len(_recs) - 1000]
 for g, v in sorted(per_good_peak.items(), key=lambda kv: -kv[1]):
     tag = "ESSENTIAL" if g in ESSENTIALS else "breadth"
     if v >= (1 if g in ESSENTIALS else 30):

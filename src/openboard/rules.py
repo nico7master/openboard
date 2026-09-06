@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -331,7 +331,12 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             return Reason.INVALID_RULESET
         for key in ("per_machine_used", "per_tool_used"):
             v = cr[key]
-            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 5_000:
+            # D21: fixed-supply worlds scale money params x100 at assembly
+            # (units per credit); the 5_000 credit-era cap rejected every
+            # scaled world (observed: capital_rent 150_000 valid in-world,
+            # INVALID_RULESET in validate_params -> policy proposals,
+            # forks, and adopts all failed). Cap scales with it.
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 500_000:
                 return Reason.INVALID_RULESET
 
     if "extended_catalog" in params:
@@ -373,6 +378,11 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
         if fe is not None and not isinstance(fe, bool):
             return Reason.INVALID_RULESET
 
+    if "honest_wages" in params:
+        hw = params["honest_wages"]
+        if not isinstance(hw, dict) or set(hw.keys()) != {"enabled"} or not isinstance(hw["enabled"], bool):
+            return Reason.INVALID_RULESET
+
     if "cost_accounting" in params:
         ca = params["cost_accounting"]
         if not isinstance(ca, dict) or set(ca.keys()) != {"method"} or ca["method"] != "vwap":
@@ -395,7 +405,9 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             return Reason.INVALID_RULESET
         for key in ("threshold", "rate_bp"):
             v = wt[key]
-            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 1_000_000:
+            # D21: threshold scales x100 under fixed supply (50M base units
+            # = 500k credits); the 1M credit-era cap rejected scaled worlds.
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 100_000_000:
                 return Reason.INVALID_RULESET
         if wt["rate_bp"] > 10_000:
             return Reason.INVALID_RULESET

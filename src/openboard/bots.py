@@ -56,8 +56,21 @@ def honest_worker(who, state, params, tick, rng) -> list[Transaction]:
     out: list[Transaction] = []
     if coop is not None:
         _cap = params.get("labor_pool_cap")
-        if _cap is None or state.coops[coop]["labor_pool_hours"] + 6 <= _cap:
-            out.append(_work(tick, who, coop, 6, v))
+        # D21 honest wages: supply the hours the coop's plan consumes
+        # (shared 1-run buffer with make_specialist), not a flat 6 —
+        # paid-but-unconsumed hours were the structural debt machine.
+        if (params.get("honest_wages") or {}).get("enabled"):
+            _c = state.coops[coop]
+            _rec = state.recipes.get(_c.get("recipe_intent") or _c.get("trade") or "") or {}
+            _lh = max(1, int(_rec.get("labor_hours") or 1))
+            # honest workers are members, not planners: cover one run's
+            # hours plus keep a small pool buffer alive for the plan
+            _need = _lh + 2 - _c.get("labor_pool_hours", 0)
+            _hours = min(6, max(0, _need))
+        else:
+            _hours = 6
+        if _hours > 0 and (_cap is None or state.coops[coop]["labor_pool_hours"] + _hours <= _cap):
+            out.append(_work(tick, who, coop, _hours, v))
     else:
         # D19 join-only capacity routing: jobless citizens (incl. adults
         # grown via demographics) fill the weakest-capacity producer of a

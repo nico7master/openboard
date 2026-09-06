@@ -156,8 +156,66 @@ def make_specialist(
         # at 1-in-7 (-14% throughput) and the ratchet gate failed.
         _rests = ((sum(ord(ch) for ch in who) + tick) % 10) == 0
         _cap = params.get("labor_pool_cap")
-        if not _rests and (_cap is None or c["labor_pool_hours"] + 8 <= _cap):
-            out.append(_tx(tick, who, "WORK", {"coop_id": coop_id, "hours": 8}, v))
+        # D21 honest wages: the flat 8h/day was a structural debt machine.
+        # WORK pays hours x wage and banks ALL hours into the pool, while
+        # PRODUCE consumes only recipe.labor_hours x runs — the plant was
+        # paid ~3,200/tick for hours it never used, sold electricity at
+        # true consumed-cost (at-cost listing), and drowned (wage debt
+        # 200,827 = 167 ticks x 1,200 shortfall; coal 0; 12,944 unserved
+        # electricity bids; bread 96/tick vs ~181 needed). Honest mode:
+        # supply the hours the production PLAN needs (replacement demand
+        # capped by on-hand inputs/energy), plus a 1-run pool buffer —
+        # PRODUCE sorts before WORK within a tick, so the pool must hold
+        # at least one run's hours when the batch applies. Gated param:
+        # legacy worlds and tests replay byte-identical.
+        _hw = (params.get("honest_wages") or {}).get("enabled")
+        if _hw:
+            _rid_w = c.get("recipe_intent") or c.get("trade") or ""
+            _rec_w = state.recipes.get(_rid_w) or {}
+            _lh_w = max(1, int(_rec_w.get("labor_hours") or 1))
+            _outs_w = _rec_w.get("outputs") or {output_good: 1}
+            _out_units_w = max(1, sum(_outs_w.values()))
+            _replace_w = sum(
+                state.recent_sales.get(_og, 0) + state.unserved_bids.get(_og, 0)
+                for _og in _outs_w
+            )
+            # D21 ratchet lesson: replacement-only planning thinned the
+            # serial capital chain — machine_works planned 1 run while early
+            # machine sales were ~0, held ZERO stock, listed nothing, and
+            # the miners' 50-tick recovery promise died (flat-8 pools had
+            # accidentally buffered the chain). Plan from the SAME signal
+            # the produce gate uses: the stock-target gap (plus replace).
+            # The pool then self-regulates: gap closes -> plan shrinks to
+            # replacement -> hours stop flowing. No mountains, no famine.
+            _gap_w = 0
+            for _og in _outs_w:
+                _listed_w = sum(e["qty"] for e in state.listings.get(_og, [])
+                                if e["coop_id"] == coop_id)
+                _stock_w = c["inventory"].get(_og, 0) + _listed_w
+                _gap_w = max(_gap_w, max(0, stock_target - _stock_w))
+            _gap_runs = max(1, -(-_gap_w // _out_units_w))
+            _plan_runs = max(_gap_runs, max(1, -(-_replace_w // _out_units_w)))
+            _dc_w = params.get("durable_capital") or {}
+            _dur_w = set(_dc_w.get("goods", ("machines", "hand_tools"))) if _dc_w.get("enabled") else set()
+            _in_runs = None
+            for _g, _q in (_rec_w.get("inputs") or {}).items():
+                if _g in _dur_w:
+                    continue
+                _r = (c["inventory"].get(_g, 0) // _q) if _q else None
+                _in_runs = _r if (_in_runs is None or (_r is not None and _r < _in_runs)) else _in_runs
+            _en_runs = (c["inventory"].get("electricity", 0) // _rec_w["energy"]) if _rec_w.get("energy") else None
+            for _lim in (_in_runs, _en_runs):
+                if _lim is not None:
+                    _plan_runs = min(_plan_runs, max(1, _lim))
+            _members_w = max(1, len(c.get("members") or [1]))
+            _consumed = _lh_w * _plan_runs
+            _pool_now = c.get("labor_pool_hours", 0)
+            _need_total = max(0, _consumed - _pool_now) + _lh_w  # refill + 1-run buffer
+            _hours = min(8, max(1, -(-_need_total // _members_w)))
+        else:
+            _hours = 8
+        if not _rests and (_cap is None or c["labor_pool_hours"] + _hours <= _cap):
+            out.append(_tx(tick, who, "WORK", {"coop_id": coop_id, "hours": _hours}, v))
 
 
         listed = sum(
