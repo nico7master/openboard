@@ -117,6 +117,12 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <button :class="view === 'chronicle' ? 'tab active' : 'tab'" @click="setView('chronicle')">📜 Chronicle</button>
     <button :class="view === 'break' ? 'tab active' : 'tab'" @click="setView('break')">⚔️ Break It</button>
   </div>
+  <div x-show="questStep < 4" class="panel" style="display:flex; gap:10px; align-items:center; padding:7px 12px; margin:0 12px 6px; font-size:12.5px">
+    <span>🗺️ <strong>First-session quest</strong> (step <span x-text="questStep + 1"></span>/4):</span>
+    <strong x-text="questLabels[questStep] ?? 'complete'"></strong>
+    <button class="tab" style="margin-left:auto" @click="questStep = 3; try { localStorage.setItem('ob_quest', '3') } catch (e) {}">skip to last step</button>
+    <button class="tab" @click="questStep = 4; try { localStorage.setItem('ob_quest', '4') } catch (e) {}">dismiss</button>
+  </div>
   <div class="controls">
     <button class="primary" @click="tick()" :disabled="busy">▶ Tick</button>
     <button @click="toggleAutoplay()" :class="autoplay.running ? 'danger' : ''">
@@ -402,6 +408,8 @@ function dashboard() {
     // Break the System v2
     atk: { playbook: 'hoarder', player: '', ticks: 0, score: null, verdict: null,
            over: false, board: [], busy: false },
+    // Onboarding quest: 0 watch → 1 enact → 2 observe → 3 adopt → 4 done
+    questStep: parseInt(localStorage.getItem('ob_quest') ?? '0', 10) || 0,
     pollTimer: null,
 
     get jsonHint() {
@@ -492,6 +500,15 @@ function dashboard() {
     closeTour() {
       this.tourOpen = false;
       try { localStorage.setItem('ob_tour_done', '1'); } catch (e) {}
+    },
+
+    // ---- onboarding quest (watch → enact → observe → adopt) ----
+    questLabels: ['Watch your world run', 'Enact a rule in The Lab', 'Read what happened in the Chronicle', 'Adopt another law to shape the future'],
+    questAdvance() {
+      if (this.questStep >= 4) return;
+      this.questStep++;
+      try { localStorage.setItem('ob_quest', String(this.questStep)); } catch (e) {}
+      if (this.questStep === 4) this.showToast('🏅 First-session quest complete — the world is yours now.');
     },
 
     initHeroCharts() {
@@ -788,7 +805,7 @@ function dashboard() {
         this.loadAvailability();
         this.$nextTick(() => { this.loadFlows(); this.startCanvas(); this.initHeroCharts(); });
       }
-      if (v === 'chronicle') this.loadChronicle();
+      if (v === 'chronicle') { this.loadChronicle(); if (this.questStep === 2) this.questAdvance(); }
       if (v === 'policy') this.loadPolicyKnobs();
       if (v === 'break') this.attackLoadBoard();
       if (v === 'seat') {
@@ -814,6 +831,8 @@ function dashboard() {
         else {
           this.reign.adopted++;
           this.showToast('⚖️ Law changed: ' + optLabel + ' — takes effect in 2 days');
+          if (this.questStep === 1) this.questAdvance();
+          else if (this.questStep === 3) this.questAdvance();
           await this.loadPolicyKnobs();
         }
       } catch (e) { this.policyError = 'adoption failed: ' + e.message; }
@@ -883,6 +902,7 @@ function dashboard() {
     async toggleAutoplay() {
       this.autoplay.running = !this.autoplay.running;
       await this.api('/api/autoplay', { method: 'POST', body: { running: this.autoplay.running, interval: this.autoplay.interval } });
+      if (this.autoplay.running && this.questStep === 0) this.questAdvance();
     },
 
     async setAutoplay() {
