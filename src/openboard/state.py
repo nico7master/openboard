@@ -75,6 +75,7 @@ class WorldState:
     # grain per 100 ticks against 52/tick supply; a farmer producing to
     # replace sales alone never scales. Unserved demand is unmet demand.
     unserved_bids: dict[str, int] = field(default_factory=dict)
+    demand_ema: dict[str, float] = field(default_factory=dict)  # D21f: smoothed demand signal (ephemeral)
     # D19 durable capital: coop -> good -> runs of wear accumulated since
     # the last unit of that capital good was consumed. Durable goods
     # (machines, hand_tools) are EQUIPMENT, not ingredients: a coop holds

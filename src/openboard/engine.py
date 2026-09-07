@@ -1217,6 +1217,17 @@ def _apply_buy_essential(state: WorldState, tx: Transaction) -> dict[str, Any]:
     }
 
 
+def _update_demand_ema(state: WorldState, good: str, observed: int, alpha_bp: int = 4000) -> None:
+    """D21f cobweb fix: exponential moving average of observed demand.
+    Producers planning from RAW last-tick sales chase their own lumpy
+    echo (sold = min(listed, demand) with lumpy listings -> runs swing
+    3<->21, whole-village 1-day misses rotate forever). An EMA plans
+    toward AVERAGE demand; total input use is unchanged (same average),
+    so no neighbor stage is starved (unlike the input-buffer attempt)."""
+    prev = state.demand_ema.get(good)
+    state.demand_ema[good] = observed if prev is None else (prev * (10_000 - alpha_bp) + observed * alpha_bp) // 10_000
+
+
 def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger) -> list[dict[str, Any]]:
     """End-of-tick market clearing. Deterministic (spec §9).
 
@@ -1430,6 +1441,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                 # them through the only channel they sell on.
                 _pip_sold = sum(int(x.get("qty") or 0) for x in served)
                 state.recent_sales[good] = state.recent_sales.get(good, 0) + _pip_sold
+                _update_demand_ema(state, good, state.recent_sales[good])
                 # D18 growth channel: unserved bid volume = demand that
                 # WANTED inputs this tick and got nothing — the signal a
                 # producer needs to scale beyond its current sales level.
@@ -1476,6 +1488,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
 
         # D18 replacement-rate signal: record this tick's sold volume
         state.recent_sales[good] = total_sold
+        _update_demand_ema(state, good, total_sold)
         events.append({
             "tick": tick,
             "action": "MARKET_CLEAR_ESSENTIAL",
@@ -1533,6 +1546,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         total_sold = supply - remaining_supply
         # D18 replacement-rate signal: record this tick's sold volume
         state.recent_sales[good] = total_sold
+        _update_demand_ema(state, good, total_sold)
         state.last_clearing[good] = clearing  # public price signal
         floor = state.good_cost_baseline.get(good, 1)
 

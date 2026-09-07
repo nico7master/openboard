@@ -856,6 +856,13 @@ class Run:
         # outbid others 3x at once: smoothing at one stage starves a
         # neighbor stage. Kept votable (default OFF) as a policy experiment
         # for the Lab; NOT enabled by default. Evidence 2026-09-07.
+        # D21f demand_smoothing TRIED and REJECTED by the gate:
+        # essentials 1->2, breadth 5->12 (all seeds identical). Smoothing
+        # the demand signal changes WHERE production lands but not the
+        # burst cadence of INPUT arrivals; the market-socialist economy's
+        # remaining 1-tick bread miss is structural (fair-rotation of a
+        # thin supply margin), not a planning-signal artifact. Kept
+        # votable (default OFF) as a Lab policy experiment. 2026-09-07.
         # Progressive wealth tax: savings above 5,000 pay 4%/tick into the
         # pool (recycled via dividends) — caps savings concentration.
         # Stage 6 sweep evidence (2026-09-01): 200bp is UNSTABLE (Gini trend

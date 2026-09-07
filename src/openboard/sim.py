@@ -183,6 +183,15 @@ def make_specialist(
                 state.recent_sales.get(_og, 0) + state.unserved_bids.get(_og, 0)
                 for _og in _outs_w
             )
+            # D21f cobweb fix: plan from SMOOTHED demand when votable
+            # demand_smoothing is on — raw last-tick sales make production
+            # chase its own lumpy echo (runs swung 3<->21, whole-village
+            # 1-day bread misses rotated forever). EMA = average demand.
+            if (params.get("demand_smoothing") or {}).get("enabled"):
+                _ema_vals = [state.demand_ema.get(_og) for _og in _outs_w if state.demand_ema.get(_og) is not None]
+                if _ema_vals:
+                    _unserved_w = sum(state.unserved_bids.get(_og, 0) for _og in _outs_w)
+                    _replace_w = int(sum(_ema_vals) / len(_ema_vals)) + _unserved_w
             # D21 ratchet lesson: replacement-only planning thinned the
             # serial capital chain — machine_works planned 1 run while early
             # machine sales were ~0, held ZERO stock, listed nothing, and
@@ -565,6 +574,12 @@ def make_specialist(
                 state.recent_sales.get(_og, 0) + state.unserved_bids.get(_og, 0)
                 for _og in recipe["outputs"]
             )
+            # D21f cobweb fix: smoothed demand signal (see honest-wages note)
+            if (params.get("demand_smoothing") or {}).get("enabled"):
+                _ema_vals = [state.demand_ema.get(_og) for _og in recipe["outputs"] if state.demand_ema.get(_og) is not None]
+                if _ema_vals:
+                    _unserved_b = sum(state.unserved_bids.get(_og, 0) for _og in recipe["outputs"])
+                    _replace_units = int(sum(_ema_vals) / len(_ema_vals)) + _unserved_b
             _replace_runs = max(1, -(-_replace_units // out_units)) if _replace_units else 1
             gap_runs = max(1, -(-max(_worst_gap, stock_target - stock) // out_units), _replace_runs)
             if _worst_gap <= 0 and stock >= stock_target and _in_debt:
