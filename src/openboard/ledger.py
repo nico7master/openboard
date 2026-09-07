@@ -111,15 +111,29 @@ class LedgerRecord:
         }
 
     def record_hash(self) -> str:
-        """Hash over the full record content — this is what chains.
+        """Chain hash over the record's identity + linkage fields.
 
-        Memoized: records are immutable append-only entries; caching the
-        digest is pure dedup and produces byte-identical results."""
+        The tx CONTENT is committed separately by tx_hash (computed once
+        from the Transaction at accept/reject time); verify_chain() checks
+        every record's tx against its tx_hash, so tampering with content
+        still breaks the chain — but appending no longer re-serializes the
+        full tx dict per record. Memoized: records are immutable.
+        (v2 format, pre-anchor window: hash VALUES differ from v1.)"""
         cached = self.__dict__.get("_record_hash")
         if cached is None:
-            cached = sha256_hex(canonical_json(self.to_dict()))
+            cached = sha256_hex(canonical_json(self._chaining_fields()))
             object.__setattr__(self, "_record_hash", cached)
         return cached
+
+    def _chaining_fields(self) -> dict[str, Any]:
+        return {
+            "seq": self.seq,
+            "tick": self.tick,
+            "accepted": self.accepted,
+            "reason": self.reason,
+            "prev_hash": self.prev_hash,
+            "tx_hash": self.tx_hash,
+        }
 
 
 class Ledger:
@@ -164,12 +178,18 @@ class Ledger:
         return rec
 
     def verify_chain(self) -> bool:
-        """Recompute the whole chain; any tampering anywhere breaks it."""
+        """Recompute the whole chain; any tampering anywhere breaks it.
+
+        Two checks per record: (1) content — the record's tx dict must
+        hash to its committed tx_hash; (2) linkage — chaining fields must
+        recompute record_hash, and prev links must line up."""
         expected_prev = GENESIS_HASH
         for i, rec in enumerate(self.records):
             if rec.seq != i or rec.prev_hash != expected_prev:
                 return False
-            if sha256_hex(canonical_json(rec.to_dict())) != rec.record_hash():
+            if sha256_hex(canonical_json(rec.tx)) != rec.tx_hash:
+                return False
+            if rec.record_hash() != sha256_hex(canonical_json(rec._chaining_fields())):
                 return False
             expected_prev = rec.record_hash()
         return self._head_hash == expected_prev
