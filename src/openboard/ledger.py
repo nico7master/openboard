@@ -59,13 +59,20 @@ class Transaction:
     ruleset_version: int = 1
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "tick": self.tick,
-            "sender": self.sender,
-            "action": self.action,
-            "payload": _sanitize(self.payload),
-            "ruleset_version": self.ruleset_version,
-        }
+        # Memoized: frozen tx => dict is immutable and this is called several
+        # times per tx per tick (sort_key -> content_hash, ledger accept,
+        # batch records). Pure dedup; byte-identical output.
+        cached = self.__dict__.get("_to_dict_cache")
+        if cached is None:
+            cached = {
+                "tick": self.tick,
+                "sender": self.sender,
+                "action": self.action,
+                "payload": _sanitize(self.payload),
+                "ruleset_version": self.ruleset_version,
+            }
+            object.__setattr__(self, "_to_dict_cache", cached)
+        return cached
 
     def content_hash(self) -> str:
         # Memoized: frozen tx => hash is immutable. Pure dedup; identical bytes.
