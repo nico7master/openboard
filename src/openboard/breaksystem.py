@@ -20,6 +20,42 @@ PLAYBOOKS: dict[str, str] = {
     "wage_mint": "free_rider",          # idle-labor income pumping
 }
 
+# B2 v2: timed rounds — a round ends when the system stops you (8 flags or
+# essentials streak 30) OR you survive the full tick budget.
+ROUND_TICKS = 200
+STOP_FLAGS = 8
+STOP_UNMET = 30
+
+
+def round_verdict(state: WorldState, playbook: str, start_tick: int) -> dict[str, Any]:
+    """Final/interim verdict for a timed round: damage you caused and how
+    the round ends. Damage = flags_caused*100 + worst_unmet_streak*10
+    (flags are the system catching you; unmet is real harm to citizens)."""
+    score = attack_score(state)
+    ticks_played = score["tick"] - start_tick
+    flags_caused = score["flags"]
+    stopped = flags_caused >= STOP_FLAGS or score["worst_unmet_streak"] >= STOP_UNMET
+    survived = ticks_played >= ROUND_TICKS and not stopped
+    damage = flags_caused * 100 + score["worst_unmet_streak"] * 10
+    if stopped:
+        outcome = "stopped_by_system"
+    elif survived:
+        outcome = "survived_full_round"
+    else:
+        outcome = "round_in_progress"
+    return {
+        "playbook": playbook,
+        "ticks_played": ticks_played,
+        "round_ticks": ROUND_TICKS,
+        "flags_caused": flags_caused,
+        "flag_kinds": score["flag_kinds"],
+        "worst_unmet_streak": score["worst_unmet_streak"],
+        "gini_bp": score["gini_bp"],
+        "damage": damage,
+        "outcome": outcome,
+        "invariant_ok": score["invariant_ok"],
+    }
+
 
 def capture_baseline(state: WorldState) -> int:
     """Total money stock at game start; conservation is measured against

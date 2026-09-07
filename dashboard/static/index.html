@@ -115,6 +115,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <button :class="view === 'world' ? 'tab active' : 'tab'" @click="setView('world')">🌍 The World</button>
     <button :class="view === 'policy' ? 'tab active' : 'tab'" @click="setView('policy')">🧪 The Lab</button>
     <button :class="view === 'chronicle' ? 'tab active' : 'tab'" @click="setView('chronicle')">📜 Chronicle</button>
+    <button :class="view === 'break' ? 'tab active' : 'tab'" @click="setView('break')">⚔️ Break It</button>
   </div>
   <div class="controls">
     <button class="primary" @click="tick()" :disabled="busy">▶ Tick</button>
@@ -282,6 +283,78 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   </div>
 </div>
 
+<div x-show="view === 'break'" style="max-width: 760px; margin: 0 auto; padding: 0 12px">
+  <div class="panel">
+    <h3 style="margin-top:0">⚔️ Break the System <span class="muted">— try to beat the ledger</span></h3>
+    <p class="muted" style="font-size:12.5px; margin-top:0">
+      You are one citizen with the full adversary toolkit. The system's defenses — oversight flags,
+      wealth tax, constitution, the money invariant — are live opponents. You have 200 ticks to do
+      as much damage as you can before the system stops you. The ledger records everything:
+      cheating is played, not possible.
+    </p>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px">
+      <select x-model="atk.playbook" class="tab" style="min-width:140px">
+        <option value="hoarder">hoarder — corner essentials</option>
+        <option value="wash_trade">wash_trade — manipulate prices</option>
+        <option value="faction">faction — capture the vote</option>
+        <option value="wage_mint">wage_mint — pump idle income</option>
+      </select>
+      <input x-model="atk.player" placeholder="your name" maxlength="24"
+             style="background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 8px; color:var(--fg)">
+      <button class="primary" @click="attackStart()" :disabled="atk.busy">New round</button>
+      <button class="primary" @click="attackAct(10)" :disabled="atk.busy || atk.over || !atk.score">Attack ×10</button>
+      <button class="primary" @click="attackAct(1)" :disabled="atk.busy || atk.over || !atk.score">Attack ×1</button>
+    </div>
+    <template x-if="atk.score">
+      <div style="display:flex; gap:18px; flex-wrap:wrap; font-size:13px; margin:8px 0">
+        <span>tick <strong x-text="atk.score.tick"></strong></span>
+        <span>flags <strong :style="atk.score.flags ? 'color:var(--red)' : ''" x-text="atk.score.flags"></strong></span>
+        <span>worst unmet <strong x-text="atk.score.worst_unmet_streak"></strong></span>
+        <span>gini <strong x-text="(atk.score.gini_bp / 100).toFixed(2)"></strong></span>
+        <span :style="atk.score.invariant_ok ? 'color:var(--green)' : 'color:var(--red)'"
+              x-text="atk.score.invariant_ok ? 'ledger ✓' : 'INVARIANT BROKEN'"></span>
+      </div>
+    </template>
+    <template x-if="atk.verdict && atk.over">
+      <div style="border:1px solid var(--accent); border-radius:8px; padding:10px; margin:10px 0">
+        <strong style="font-size:14px" x-text="atk.verdict.outcome === 'stopped_by_system'
+          ? '🛑 The system stopped you.' : '💥 You survived the full round.'"></strong>
+        <div style="font-size:13px; margin-top:4px">
+          Damage score: <strong x-text="atk.verdict.damage"></strong>
+          (<span x-text="atk.verdict.flags_caused"></span> flags,
+          worst unmet streak <span x-text="atk.verdict.worst_unmet_streak"></span>,
+          <span x-text="atk.verdict.ticks_played"></span> ticks)
+        </div>
+      </div>
+    </template>
+    <div class="muted" style="font-size:12px; margin-top:6px" x-show="!atk.score">
+      Pick a playbook and start a round — then hammer Attack and watch the oversight machinery respond.
+    </div>
+  </div>
+  <div class="panel" style="margin-top:14px">
+    <h3 style="margin-top:0">🏆 Hall of Damage <button class="tab" style="float:right" @click="attackLoadBoard()">refresh</button></h3>
+    <table>
+      <thead><tr><th>#</th><th>player</th><th>playbook</th><th>damage</th><th>flags</th><th>ticks</th><th>outcome</th></tr></thead>
+      <tbody>
+        <template x-for="(e, i) in atk.board" :key="i + e.player + e.at">
+          <tr>
+            <td x-text="i + 1"></td>
+            <td x-text="e.player"></td>
+            <td x-text="e.playbook"></td>
+            <td><strong x-text="e.damage"></strong></td>
+            <td x-text="e.flags_caused"></td>
+            <td x-text="e.ticks_played"></td>
+            <td style="font-size:12px" x-text="e.outcome === 'stopped_by_system' ? 'stopped' : 'survived'"></td>
+          </tr>
+        </template>
+        <tr x-show="!atk.board.length"><td colspan="7" class="muted" style="text-align:center; padding:10px">
+          No rounds recorded yet — be the first to try.
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <!-- first-visit tour -->
 <div x-show="tourOpen" x-transition style="position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:60; display:flex; align-items:center; justify-content:center" @click.self="closeTour()">
   <div class="panel" style="max-width:420px; margin:0">
@@ -326,6 +399,9 @@ function dashboard() {
     newBot: { name: '', archetype: 'honest_worker', coop: 'farmers' },
     action: { sender: '', type: 'WORK', payload: {}, json: '{}' },
     seat: {}, seatWho: '', seatHist: { t: [], v: [] },
+    // Break the System v2
+    atk: { playbook: 'hoarder', player: '', ticks: 0, score: null, verdict: null,
+           over: false, board: [], busy: false },
     pollTimer: null,
 
     get jsonHint() {
@@ -714,6 +790,7 @@ function dashboard() {
       }
       if (v === 'chronicle') this.loadChronicle();
       if (v === 'policy') this.loadPolicyKnobs();
+      if (v === 'break') this.attackLoadBoard();
       if (v === 'seat') {
         this.$nextTick(() => this.initSeatChart());
         this.loadSeat();
@@ -1013,6 +1090,51 @@ function dashboard() {
       this._updatePie('moneyPieChart', a?.money_pie);
       this._updatePie('prodPieChart', a?.produced_pie);
       this._updatePie('buyPieChart', a?.bought_pie);
+    },
+
+    // ---- Break the System v2 ----
+    async attackStart() {
+      this.atk.busy = true;
+      try {
+        const d = await this.api('/api/attack/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playbook: this.atk.playbook, player: this.atk.player || 'anon' }),
+        });
+        if (d.ok) {
+          this.atk.ticks = 0;
+          this.atk.score = d.score;
+          this.atk.verdict = null;
+          this.atk.over = false;
+          this.showToast('Round started — you have ' + d.round_ticks + ' ticks. Break it.');
+        }
+      } catch (e) { /* server restarting */ }
+      this.atk.busy = false;
+    },
+    async attackAct(n = 1) {
+      if (this.atk.over || this.atk.busy) return;
+      this.atk.busy = true;
+      try {
+        for (let i = 0; i < n; i++) {
+          const d = await this.api('/api/attack/act', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playbook: this.atk.playbook }),
+          });
+          if (!d.ok) break;
+          this.atk.score = d.score;
+          this.atk.verdict = d.verdict;
+          this.atk.over = !!d.over;
+          if (d.over) { this.attackLoadBoard(); break; }
+        }
+      } catch (e) { /* server restarting */ }
+      this.atk.busy = false;
+    },
+    async attackLoadBoard() {
+      try {
+        const d = await this.api('/api/attack/leaderboard');
+        this.atk.board = d.board ?? [];
+      } catch (e) { /* server restarting */ }
     },
 
     // ------------------------------------------------------------ helpers

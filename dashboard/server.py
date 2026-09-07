@@ -24,7 +24,7 @@ from flask import Flask, jsonify, request, send_from_directory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from openboard.bots import ARCHETYPES  # noqa: E402
-from openboard.breaksystem import PLAYBOOKS, attack_score, attack_tick, capture_baseline, invariants_ok  # noqa: E402
+from openboard.breaksystem import PLAYBOOKS, ROUND_TICKS, STOP_FLAGS, STOP_UNMET, attack_score, attack_tick, capture_baseline, invariants_ok, round_verdict  # noqa: E402
 from openboard.accounts import Accounts  # noqa: E402
 from openboard.story import build_story  # noqa: E402
 from openboard.flows import build_flows  # noqa: E402
@@ -1881,14 +1881,20 @@ def api_account_me():
 
 @app.post("/api/attack/start")
 def api_attack_start():
-    """Fresh governance-live world; you are the attacker."""
+    """Fresh governance-live world; you are the attacker. Timed round:
+    200 ticks to do as much damage as you can before the system stops you."""
     data = request.get_json(force=True, silent=True) or {}
     playbook = data.get("playbook", "hoarder")
     if playbook not in PLAYBOOKS:
         return jsonify({"ok": False, "error": f"unknown playbook; choose from {sorted(PLAYBOOKS)}"}), 400
+    player = str(data.get("player") or "anon")[:24]
     game = Run(seed=99, governance=True)
     app.attack_game = game
+    app.attack_round = {"playbook": playbook, "player": player,
+                        "start_tick": game.state.tick}
     return jsonify({"ok": True, "playbook": playbook,
+                    "player": player,
+                    "round_ticks": ROUND_TICKS,
                     "attacker": sorted(game.state.balances.keys())[0],
                     "score": attack_score(game.state)})
 
@@ -1896,7 +1902,8 @@ def api_attack_start():
 @app.post("/api/attack/act")
 def api_attack_act():
     """Advance one tick of the attack game: your playbook acts, the world
-    (bots + democracy) responds, invariants are asserted."""
+    (bots + democracy) responds, invariants are asserted. Timed round:
+    returns the final verdict + leaderboard entry when the round ends."""
     import random
 
     game = _attack_game()
@@ -1906,6 +1913,9 @@ def api_attack_act():
     playbook = data.get("playbook", "hoarder")
     if playbook not in PLAYBOOKS:
         return jsonify({"ok": False, "error": "unknown playbook"}), 400
+    rnd = getattr(app, "attack_round", None) or {"playbook": playbook,
+                                                 "player": "anon",
+                                                 "start_tick": game.state.tick}
     with game.lock:
         s = game.state
         t = s.tick + 1
@@ -1913,11 +1923,54 @@ def api_attack_act():
         for atx in atxs:
             game.queue_action(atx.sender, atx.action, atx.payload)
         game.tick()  # attacker acts AND the world (bots, democracy, oversight) responds in one advance
-        score = attack_score(s)
-        over = score["flags"] >= 8 or score["worst_unmet_streak"] >= 30
-    return jsonify({"ok": True, "tick": score["tick"], "score": score,
-                    "system_response": "flagged" if score["flags"] > 0 else "none",
-                    "over": bool(over)})
+        verdict = round_verdict(s, rnd["playbook"], rnd["start_tick"])
+        over = verdict["outcome"] != "round_in_progress"
+        entry = None
+        if over:
+            entry = _leaderboard_record(rnd["player"], verdict)
+    return jsonify({"ok": True, "tick": attack_score(s)["tick"],
+                    "score": attack_score(s), "verdict": verdict,
+                    "system_response": "flagged" if verdict["flags_caused"] > 0 else "none",
+                    "over": bool(over), "leaderboard_entry": entry})
+
+
+# ---- B2 v2: persistent leaderboard (top damage before the system stops you)
+
+LEADERBOARD_PATH = Path(__file__).resolve().parent / "saves" / "attack_leaderboard.json"
+
+
+def _leaderboard_load() -> list[dict[str, Any]]:
+    try:
+        return json.loads(LEADERBOARD_PATH.read_text())
+    except Exception:
+        return []
+
+
+def _leaderboard_record(player: str, verdict: dict[str, Any]) -> dict[str, Any]:
+    """Record a finished round in the persistent leaderboard (top 20)."""
+    import time as _time
+
+    LEADERBOARD_PATH.parent.mkdir(parents=True, exist_ok=True)
+    board = _leaderboard_load()
+    entry = {
+        "player": player,
+        "playbook": verdict["playbook"],
+        "damage": verdict["damage"],
+        "flags_caused": verdict["flags_caused"],
+        "worst_unmet_streak": verdict["worst_unmet_streak"],
+        "ticks_played": verdict["ticks_played"],
+        "outcome": verdict["outcome"],
+        "at": int(_time.time()),
+    }
+    board.append(entry)
+    board.sort(key=lambda e: -e["damage"])
+    LEADERBOARD_PATH.write_text(json.dumps(board[:20], indent=1))
+    return entry
+
+
+@app.get("/api/attack/leaderboard")
+def api_attack_leaderboard():
+    return jsonify({"ok": True, "board": _leaderboard_load()[:10]})
 
 
 @app.get("/api/attack/score")
