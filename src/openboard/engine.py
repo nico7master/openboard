@@ -3023,6 +3023,53 @@ def apply_tick(
         state.applied.extend(credit_events)
 
     seen: set[str] = set()
+    # Dispatch tables: built ONCE per tick (closures over this tick's
+    # state/params), not once per transaction. Determinism unchanged —
+    # same validators, same order, same args.
+    validators = {
+        "TRANSFER": _validate_transfer,
+        "RULE_CHANGE": _validate_rule_change,
+        "FOUND_COOP": _validate_found_coop,
+        "JOIN_COOP": _validate_join_coop,
+        "LEAVE_COOP": _validate_leave_coop,
+        "WORK": _validate_work,
+        "PRODUCE": _validate_produce,
+        "LIST_GOOD": _validate_list_good,
+        "BID": _validate_bid,
+        "BID_FOR_COOP": _validate_bid_for_coop,
+        "BUY_ESSENTIAL": _validate_buy_essential,
+        "PROPOSE": _validate_propose,
+        "VOTE": _validate_vote,
+        "ROLLBACK": _validate_rollback,
+        "INTERVENE": _validate_intervene,
+        "CRISIS_VOTE": _validate_crisis_vote,
+        "LOAN": _validate_loan,
+        "REPAY": _validate_repay,
+        "DELEGATE": _validate_delegate,
+    }
+    # Apply-dispatch: same once-per-tick treatment. Every lambda preserves
+    # the original call signature for its action exactly.
+    appliers = {
+        "RULE_CHANGE": lambda t: _apply_rule_change(state, t, ledger),
+        "FOUND_COOP": lambda t: _apply_found_coop(state, t, params),
+        "WORK": lambda t: _apply_work(state, t, params),
+        "PRODUCE": lambda t: _apply_produce(state, t, params),
+        "PROPOSE": lambda t: _apply_propose(state, t, params),
+        "ROLLBACK": lambda t: _apply_rollback(state, t, params),
+        "INTERVENE": lambda t: _apply_intervene(state, t, params),
+        "CRISIS_VOTE": lambda t: _apply_crisis_vote(state, t),
+        "LOAN": lambda t: _apply_loan(state, t, params),
+        "TRANSFER": lambda t: _apply_transfer(state, t),
+        "JOIN_COOP": lambda t: _apply_join_coop(state, t),
+        "LEAVE_COOP": lambda t: _apply_leave_coop(state, t),
+        "LIST_GOOD": lambda t: _apply_list_good(state, t),
+        "BID": lambda t: _apply_bid(state, t),
+        "BID_FOR_COOP": lambda t: _apply_bid_for_coop(state, t),
+        "BUY_ESSENTIAL": lambda t: _apply_buy_essential(state, t),
+        "VOTE": lambda t: _apply_vote(state, t),
+        "REPAY": lambda t: _apply_repay(state, t),
+        "DELEGATE": lambda t: _apply_delegate(state, t),
+    }
     for tx in sorted(actions, key=Transaction.sort_key):
         if tx.tick != tick:
             ledger.reject(tx, Reason.MALFORMED_TRANSACTION)
@@ -3048,67 +3095,15 @@ def apply_tick(
             ledger.reject(tx, Reason.DUPLICATE_TRANSACTION)
             continue
 
-        validator = {
-            "TRANSFER": lambda t: _validate_transfer(state, t, params),
-            "RULE_CHANGE": lambda t: _validate_rule_change(state, t, params),
-            "FOUND_COOP": lambda t: _validate_found_coop(state, t, params),
-            "JOIN_COOP": lambda t: _validate_join_coop(state, t, params),
-            "LEAVE_COOP": lambda t: _validate_leave_coop(state, t, params),
-            "WORK": lambda t: _validate_work(state, t, params),
-            "PRODUCE": lambda t: _validate_produce(state, t, params),
-            "LIST_GOOD": lambda t: _validate_list_good(state, t, params),
-            "BID": lambda t: _validate_bid(state, t, params),
-            "BID_FOR_COOP": lambda t: _validate_bid_for_coop(state, t, params),
-            "BUY_ESSENTIAL": lambda t: _validate_buy_essential(state, t, params),
-            "PROPOSE": lambda t: _validate_propose(state, t, params),
-            "VOTE": lambda t: _validate_vote(state, t, params),
-            "ROLLBACK": lambda t: _validate_rollback(state, t, params),
-            "INTERVENE": lambda t: _validate_intervene(state, t, params),
-            "CRISIS_VOTE": lambda t: _validate_crisis_vote(state, t, params),
-            "CRISIS_VOTE": lambda t: _validate_crisis_vote(state, t, params),
-            "LOAN": lambda t: _validate_loan(state, t, params),
-            "REPAY": lambda t: _validate_repay(state, t, params),
-            "DELEGATE": lambda t: _validate_delegate(state, t, params),
-        }[tx.action]
-
-        reason = validator(tx)
+        validator = validators[tx.action]
+        reason = validator(state, tx, params)
         if reason is not None:
             ledger.reject(tx, reason)
             continue
 
         seen.add(content_hash)
         ledger.accept(tx)
-        if tx.action == "RULE_CHANGE":
-            entry = _apply_rule_change(state, tx, ledger)
-        elif tx.action == "FOUND_COOP":
-            entry = _apply_found_coop(state, tx, params)
-        elif tx.action == "WORK":
-            entry = _apply_work(state, tx, params)
-        elif tx.action == "PRODUCE":
-            entry = _apply_produce(state, tx, params)
-        elif tx.action == "PROPOSE":
-            entry = _apply_propose(state, tx, params)
-        elif tx.action == "ROLLBACK":
-            entry = _apply_rollback(state, tx, params)
-        elif tx.action == "INTERVENE":
-            entry = _apply_intervene(state, tx, params)
-        elif tx.action == "CRISIS_VOTE":
-            entry = _apply_crisis_vote(state, tx)
-        elif tx.action == "LOAN":
-            entry = _apply_loan(state, tx, params)
-        else:
-            entry = {
-                "TRANSFER": _apply_transfer,
-                "JOIN_COOP": _apply_join_coop,
-                "LEAVE_COOP": _apply_leave_coop,
-                "LIST_GOOD": _apply_list_good,
-                "BID": _apply_bid,
-                "BID_FOR_COOP": _apply_bid_for_coop,
-                "BUY_ESSENTIAL": _apply_buy_essential,
-                "VOTE": _apply_vote,
-                "REPAY": _apply_repay,
-                "DELEGATE": _apply_delegate,
-            }[tx.action](state, tx)
+        entry = appliers[tx.action](tx)
         state.applied.append(entry)
 
     # Perishability: goods age at day start (WP1.2, opt-in)
