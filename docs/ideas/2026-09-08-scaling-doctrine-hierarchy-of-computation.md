@@ -94,6 +94,39 @@ guarantee: not one big simulation, but **anyone can verify any slice**.
 
 Combined target: today's ~4–5 min experiment → ~2–5 s.
 
+### 6a. Measured at-scale cost structure (2026-09-08, profile_scale.py)
+
+Profiled the REAL gate workload (966 citizens, 6 ticks, cProfile):
+~20,600 ledger records/tick — linear in population because every citizen's
+essential purchases are individual records **by design** (person = unit of
+claim). Cost shares:
+
+| Block | Share | Detail |
+|---|---|---|
+| Tamper-proof hash chain | ~35% | 2 sha256 + 2 full JSON serializations per record (content_hash + record_hash over the full tx dict) |
+| Bot cognition (sim.py + personal_needs) | ~30% | per-citizen Python decision logic per tick |
+| Market clearing (sorted + key lambda) | ~25% | ~10.8k sorts/tick at this size |
+| Rest (timeline, metrics, gini) | ~10% | |
+
+Optimization ladder (each its own fingerprint-verified change):
+1. **DONE** — memoize `Transaction.to_dict` (commit 08503a9): −11% wall,
+   byte-identical replay proven (head hash fingerprint match).
+2. **Hash-reuse `record_hash`** — hash
+   {seq, tick, accepted, reason, prev_hash, tx_hash} instead of re-serializing
+   the full tx dict; tx content stays tamper-chained via tx_hash. **Changes
+   hash values → must land BEFORE Week 4 anchors freeze the format**
+   (pre-anchor is the one free window). Est. ~12%.
+3. **Market sort bucketing** — sort per-good bid lists once instead of
+   ~10k small sorts; est. ~15–20%.
+4. **Batched bot cognition** — vectorize/aggregate per-tick bot decisions;
+   est. ~20–30%.
+5. **Structural (doctrine §3): regional markets** — turns the remaining
+   O(N)-per-tick global work into shards; this is what carries 10⁴+.
+
+Honest status: memoized engine ≈ 2.2 ticks/s at 966 citizens (from gate
+log 1.95 + memoization). Gate needs ≥5. Steps 2–4 close most of the gap;
+step 5 is the guarantee.
+
 ## 7. Order of work (folded into Week 4)
 
 1. Profile the 181 world — find where the 176 ms/tick goes
