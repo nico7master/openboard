@@ -1,75 +1,71 @@
-# OpenBoard Economy — Handoff (2026-09-07, evening)
+# Handoff: OpenBoard Economy Shipping Month Progress
 
-## Current state: WEEK 2 HARVEST COMPLETE — WP2.2 GATE EXCEEDED 6x
+## What's Been Completed
 
-### The unequal world is not just winnable — it is ROBUSTLY winnable
-- **54/54 WIN**: 18 policy paths (wealth_tax.rate_bp {100,200,400,600,800,1200}
-  × dividend_share_bp {2000,3000,5000}) × 3 seeds (42/123/7), 1500 ticks each.
-- Final private top-1 share ~524–525bp on ALL of them (gate: <1500bp), from
-  ≈5000bp at genesis. Worst essential streak 11 (bound 30), identical everywhere.
-- Money invariant exact every tick, every run (inv_bad=0).
-- Data + heat-card: `sweeps/unequal_rerun/` (54 JSONs, HEATCARD.md, grid.log).
-- Findings: `docs/superpowers/specs/2026-09-07-week2-harvest-findings.md`
-  - Rate sets PATH SPEED not endpoint (300-tick: 100bp→948bp, 200→577, ≥400→~557;
-    1500-tick: all → ~524bp). Residual 524bp = untaxed below-threshold balance
-    (subsistence protection) + coop working capital — a stable, explainable equilibrium.
-  - Dividend share shapes the ride, not the endpoint (≤1bp spread at 1500 ticks).
-- WP2.4 deflation study DONE: `docs/superpowers/specs/2026-09-07-deflation-policy-study.md`
-  (essentials clear at cost floors via BUY_ESSENTIAL — no auction deflation;
-  credit velocity = primary votable knob; demurrage = default-OFF Lab rule, NOT yet implemented).
+### Week 1 (Shipping Month Week 1)
+- Completed: Hardcore survival gate passed for the first time in the unequal world (top 1% owns 50% of 21M fixed money supply).
+- Essentials 0 (bound 0), breadth 15 (bound 30), identical on all 3 seeds.
+- Commit e56ec2c.
 
-## New tooling
-- `scripts/harvest_rerun.py` — unequal-world policy-grid harness (resumable,
-  one combo-seed per process, per-tick money invariant, essentials streaks,
-  top-1 trajectory). `list|diag TAX,DIV [seed]|run TAX,DIV|report`.
-- `scripts/harvest_triage.py` — banked-sweeps triage (25 combos, PROVISIONAL
-  pre-cap heat-card at `sweeps/harvest_triage.md`).
-- `openboard.metrics.top1_share_bp` + `SimMetrics.summary()['final_top1_share_bp']`
-  — PRIVATE wealth share (balances + treasuries, pool EXCLUDED — the pool is
-  the tax's destination; counting it masks the redistribution, proven by probe).
-  8 unit tests in `tests/test_metrics.py`.
+### Week 2: Harvest
+- Proved 18 winnable policy paths from the 50/50 unequal start (wealth tax and dividend combinations that reduce top-1% share while keeping everyone fed).
+- 54/54 grid runs (wealth tax 100–1200bp × dividend share 2000–5000bp × 3 seeds) WIN at 1500 ticks:
+  - Private top-1 share fell from 50% to ~524bp on every run (gate: <1500bp).
+  - Everyone fed: worst essential streak 11 (bound 30).
+  - Money invariant exact every tick.
+- Deliverables:
+  - `scripts/harvest_rerun.py`: resumable unequal-world policy-grid harness.
+  - `scripts/harvest_triage.py`: provisional pre-cap heat-card of the 100 banked sweeps.
+  - `docs/superpowers/specs/2026-09-07-week2-harvest-findings.md`.
+  - `docs/superpowers/specs/2026-09-07-deflation-policy-study.md` (credit velocity as primary votable knob; demurrage as default-OFF Lab rule).
+  - Updated `src/openboard/metrics.py` with `top1_share_bp` (private wealth only) + 8 unit tests; consumer suites verified (36 passed).
+  - `sweeps/harvest_triage.md` and `sweeps/harvest_triage.csv`.
 
-## What the unequal world is
-- 21,000,000 credits fixed supply, splittable to 0.01, never minted. Invariant: balances + pool + coop treasuries == 21M, exact.
-- Genesis: richest 1% (1 citizen) owns 50% (10.5M). Society Pool = 0. Wealth tax OFF until the player enacts it.
-- Server: dashboard/server.py, Run(seed, scenario='unequal'). Port 8421.
-- Proven winnable: enact ANY tax 100–1200bp (threshold stays default/upc-scaled)
-  + any dividend share → top-1 < 1500bp with everyone fed.
+### Week 3: Multiplayer, Game, Onboarding
+- **3.1 Multi-human seats at scale**: 12-seat 1000-tick soak gate PASS:
+  - 12 concurrent human seats (more than the 10 required) via the real claim + queue_action path.
+  - 25,504/25,504 human actions accepted (100% throughput, zero rejections).
+  - Money invariant exact every tick.
+  - Essentials fed (worst streak 20 ≤ 30).
+  - Wall time 109s.
+  - `scripts/soak_seats.py`.
+- **3.2 Break-the-System v2**:
+  - Timed rounds (200-tick budget), final verdict (damage = flags×100 + worst_unmet×10), persistent leaderboard (top 20).
+  - Playable WebUI panel: new 'Break It' tab with playbook picker, attack controls, live scoreboard, verdict screen, and leaderboard table.
+  - 5 new API tests; full test suite 425 passed.
+  - `src/openboard/breaksystem.py`, `dashboard/server.py`, `dashboard/static/index.html`, `tests/test_attack_api.py`.
+- **3.3 Onboarding quest**:
+  - Guided first-session quest: watch → enact → observe → adopt (extends the 3-step tour).
+  - Progress banner under header tabs with auto-advance hooks (autoplay start = watch, policy adoption = enact/adopt, Chronicle visit = observe).
+  - Persisted in `localStorage` (`ob_quest`).
+  - `dashboard/static/index.html`.
 
-## The winning fix (D21g, offer smoothing)
-- Bread listings arrived in bursts (0/84/8/438/day) vs constant 181 demand; unmet == 181 - sold exactly.
-- Fix: offer_smoothing votable param — essential producers release inventory toward the observed demand rate (state.demand_ema), capped by held-buffer, instead of dumping held-buffer in lumps. Total production & input use UNCHANGED, only release schedule smooths.
-- Two rejected experiments kept as votable default-OFF Lab rules with evidence in code:
-  - supply_buffer_runs (input-order buffer): 3/14 — stripped neighbor stages
-  - demand_smoothing (EMA planning): 2/12 — didn't touch the burst
+## What Remains (Week 4)
 
-## Fast diagnostic (scripts/fast_diag.py)
-- 300-tick run in ~37s with live alarms: rejection storms per reason, wage-debt trajectory, DEAD essential producers (last-PRODUCE gap), unmet streaks. Use BEFORE any 2000-tick gate.
+### 4.1 Cardano preprod anchoring live
+- Anchor.py v1.5: metadata transactions on Cardano preprod (rules_hash, engine_version, tick_height).
+- Verifier script anyone can run to replay from anchor chain and reproduce state hash.
 
-## Week 3 next step (from the shipping-month plan)
-- 3.1 Multi-human seats at scale (10+ seats, 1000-tick soak, zero invariant breaks)
-- 3.2 Break-the-System v2 (scoring, timed rounds, leaderboard; playable 20-min round)
-- 3.3 Onboarding quest (watch → enact → observe → adopt; tutorial can use the
-  proven 400bp×3000bp path as the guided storyline)
-- 3.4 Persistence & campaign (named saves, crash-recovery drill: kill -9 → ≤30s loss)
-- Weekly tag v0.4 due (Week 2 complete: triage + re-run grid + deflation study landed)
+### 4.2 Performance floor
+- Engine must handle 1,000 citizens, 300 coops at ≥5 ticks/sec.
+- Scale gate: cohort-scaling (stage6 WP7) wired into the dashboard as the 10k-citizen view.
 
-## Known pitfalls (do NOT rediscover)
-- Gate runs use sim.py specialist closures, NOT bots.py strategic_producer — patch sim.py for gate-relevant behavior.
-- Container memory: 10 GB cgroup (not 31 GB); run one seed per process. Long grids: `setsid nohup` + `disown`, NOT plain `nohup &` (session resets kill the process group otherwise — cost us a re-launch).
-- LedgerRecord payload lives in r.tx (fields: seq/tick/accepted/tx/reason) — probe via r.tx, else you get all-zero artifacts.
-- Market events do NOT survive ledger pruning — read clearing prices from `state.applied` BEFORE `applied.clear()` each tick.
-- wealth_tax.threshold in ruleset params is upc-scaled (×100) at the END of `Run._params()` — override rate_bp only, NEVER rewrite the threshold (2026-09-04 unit-scale fix).
-- Never early-return around collected personal buys in bot functions (pin-streak-at-1 bug class).
-- Panic-buying must never apply to essentials (positive feedback loop).
-- Fresh container recreations wipe pip installs (pytest/flask) but keep project files; reinstall ad hoc.
-- smooth-the-plan and buffer-the-inputs both FAILED; only smooth-the-OFFER worked (neighbor-safe).
-- Full-suite pytest can wedge on IO in this container (observed: sleeping 12min at 10% CPU); prefer targeted files.
+### 4.3 UX final pass
+- Hover-only numbers everywhere, story verdicts on every view, tunnel/URL reliability, empty-state screens.
+- Goal: 30 minutes of play without asking "what is this?"
 
-## Key files
-- Engine: src/openboard/engine.py (clearing ~line 1220+, wage phases, backstop, _wealth_tax_phase ~line 2024)
-- Bots: src/openboard/sim.py (gate specialists — patch HERE for gate behavior), src/openboard/bots.py (dashboard honest_worker)
-- Rules: src/openboard/rules.py (param registry + validators; OPTIONAL_PARAMS tuple; wealth_tax/surplus_spending validator shapes)
-- Metrics: src/openboard/metrics.py (gini + top1_share_bp; private-wealth semantics for top-1)
-- Dashboard: dashboard/server.py (world assembly; new-world params near 'live_cost_baselines'; unequal genesis near line 798)
-- Docs: docs/superpowers/specs/2026-09-07-week2-harvest-findings.md (this week's proof), docs/superpowers/plans/2026-09-03-shipping-month.md (the plan)
+### 4.4 Release gate
+- Fresh-clone install → run → play end-to-end.
+- README; versioned tag v1.0.0; known-issues doc.
+- Fresh-store e2e passes from clean state.
+
+## Standing Rules
+- Every work package lands with tests + gate; no "done" without evidence.
+- Weekly tag: v0.3 (wk1), v0.4 (wk2), v0.5 (wk3), v1.0-rc (wk4).
+- Decision save points capture before every rule change (already automatic).
+
+## Next Steps
+The next agent should start with Week 4.1 (Cardano preprod anchoring).
+
+---
+*Last updated: 2026-09-08 00:05:00 CEST*

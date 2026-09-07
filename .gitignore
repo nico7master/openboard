@@ -13,3 +13,4 @@ venv/
 # Secrets & local state
 .env
 *.secret
+dashboard/saves/
