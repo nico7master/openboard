@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -426,6 +426,11 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
     if "live_cost_baselines" in params:
         lcb = params["live_cost_baselines"]
         if not isinstance(lcb, dict) or set(lcb.keys()) != {"enabled"} or not isinstance(lcb["enabled"], bool):
+            return Reason.INVALID_RULESET
+
+    if "offer_smoothing" in params:
+        os_ = params["offer_smoothing"]
+        if not isinstance(os_, dict) or set(os_.keys()) != {"enabled"} or not isinstance(os_["enabled"], bool):
             return Reason.INVALID_RULESET
 
     if "demand_smoothing" in params:

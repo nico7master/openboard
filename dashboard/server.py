@@ -856,6 +856,10 @@ class Run:
         # outbid others 3x at once: smoothing at one stage starves a
         # neighbor stage. Kept votable (default OFF) as a policy experiment
         # for the Lab; NOT enabled by default. Evidence 2026-09-07.
+        # D21g: smooth the OFFER (release rate) — production lumps no
+        # longer pass straight into the market as 0/438 swings. Neighbor-
+        # safe: total production and input use unchanged.
+        params["offer_smoothing"] = {"enabled": True}
         # D21f demand_smoothing TRIED and REJECTED by the gate:
         # essentials 1->2, breadth 5->12 (all seeds identical). Smoothing
         # the demand signal changes WHERE production lands but not the

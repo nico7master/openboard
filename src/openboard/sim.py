@@ -660,8 +660,21 @@ def make_specialist(
             else:
                 buffer = min(10, max(0, stock_target - 2))
             if held > buffer:
+                # D21g offer smoothing: release toward the OBSERVED demand
+                # rate (EMA signal from D21f) instead of dumping the whole
+                # stock. Production lumps passed straight through as listing
+                # bursts (bread 0/84/8/438/day vs constant 181 demand) and
+                # thin days rotated 1-day misses across the village.
+                # Neighbor-safe: total production and input use are
+                # UNCHANGED — only the release schedule smooths. Excess
+                # above the reservoir simply accumulates for tomorrow.
+                _qty_out = held - buffer
+                if (params.get("offer_smoothing") or {}).get("enabled"):
+                    _ema_d = state.demand_ema.get(ogood)
+                    if _ema_d and _ema_d > 0:
+                        _qty_out = min(_qty_out, max(1, int(-(-int(_ema_d) // 1))))
                 out.append(_tx(tick, who, "LIST_GOOD", {
-                    "coop_id": coop_id, "good": ogood, "qty": held - buffer,
+                    "coop_id": coop_id, "good": ogood, "qty": _qty_out,
                 }, v))
 
         out.extend(personal_needs(who, state, params, tick))
