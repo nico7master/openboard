@@ -303,14 +303,29 @@ def strategic_producer(who, state, params, tick, rng) -> list[Transaction]:
         if ins and all(c["inventory"].get(g, 0) >= q for g, q in ins.items()):
             break  # already runnable — no purchase needed
     treasury = c.get("treasury", 0)
+    # D21e supply smoothing: bid for a multi-run input buffer instead of
+    # exactly the next run's shortage. Observed: bakers bought exactly one
+    # run of flour per arrival, so bread listings burst (0/84/8/438/day vs
+    # a constant 181-loaf demand) and thin days rotated 1-day misses across
+    # the whole village. A small buffer (votable supply_buffer_runs) makes
+    # essential producers bake EVERY day. Default 0 = off, old worlds
+    # byte-identical. Capital goods excluded (they are not consumed).
+    _buf_runs = 0
+    try:
+        _sbr = (params or {}).get("supply_buffer_runs") or {}
+        _buf_runs = int(_sbr.get("runs", 0)) if isinstance(_sbr, dict) else 0
+    except Exception:
+        _buf_runs = 0
     for g in sorted(inputs.keys()):
         q = inputs[g]
         have = c["inventory"].get(g, 0)
-        if have >= q:
+        _want = q + (q * _buf_runs if (_buf_runs and g not in ("machines", "hand_tools")) else 0)
+        if have >= _want:
             continue
+        q_target = _want if (_buf_runs and g not in ("machines", "hand_tools")) else q
         floor = state.good_cost_baseline.get(g, 1)
         price = floor + 1
-        qty = min(q - have, max(1, treasury // max(1, price)))
+        qty = min(q_target - have, max(1, treasury // max(1, price)))
         if qty <= 0 or treasury < price:
             continue
         # Working-capital reserve: keep 20% of the treasury unspent for

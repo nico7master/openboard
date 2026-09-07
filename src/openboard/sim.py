@@ -448,11 +448,24 @@ def make_specialist(
                             "max_price": cap_price, "qty": cap_qty,
                         }, v))
                 # material inputs of the primary recipe (steel, etc.)
+                # D21e supply smoothing: bid a multi-run buffer for
+                # consumed inputs (not capital) so essential producers
+                # bake EVERY day instead of bursting with input arrivals
+                # (observed: bread listings 0/84/8/438/day vs constant
+                # 181-loaf demand; thin days rotated 1-day misses).
+                _buf = 0
+                try:
+                    _sbr = (params or {}).get("supply_buffer_runs") or {}
+                    _buf = int(_sbr.get("runs", 0)) if isinstance(_sbr, dict) else 0
+                except Exception:
+                    _buf = 0
+                _buf = max(0, min(10, _buf))
                 for mat_good, mat_per_run in sorted(_prim["inputs"].items()):
                     if mat_good in ("machines", "hand_tools"):
                         continue
                     mat_have = c["inventory"].get(mat_good, 0)
-                    mat_short = max(0, mat_per_run - mat_have)
+                    _mat_target = mat_per_run + mat_per_run * _buf if _buf else mat_per_run
+                    mat_short = max(0, _mat_target - mat_have)
                     if mat_short <= 0:
                         continue
                     floors = [e["floor"] for e in state.listings.get(mat_good, ()) if e["qty"] > 0]

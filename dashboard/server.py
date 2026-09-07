@@ -850,6 +850,12 @@ class Run:
         # D21d: baselines track TRUE current costs even when a producer
         # barely runs — kills the stale-baseline death spiral (fishery).
         params["live_cost_baselines"] = {"enabled": True}
+        # D21e supply_buffer_runs TRIED at 3 runs and REJECTED by the gate:
+        # essentials 1->3, breadth 5->14 (all seeds identical) -- a 3-run
+        # input buffer makes millers strip grain from livestock and bakers
+        # outbid others 3x at once: smoothing at one stage starves a
+        # neighbor stage. Kept votable (default OFF) as a policy experiment
+        # for the Lab; NOT enabled by default. Evidence 2026-09-07.
         # Progressive wealth tax: savings above 5,000 pay 4%/tick into the
         # pool (recycled via dividends) — caps savings concentration.
         # Stage 6 sweep evidence (2026-09-01): 200bp is UNSTABLE (Gini trend
