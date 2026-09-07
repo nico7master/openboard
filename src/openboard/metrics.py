@@ -33,12 +33,31 @@ def gini(values: list[int]) -> int:
     return abs(diff_sum) * 10_000 // (n * total)
 
 
+def top1_share_bp(values: list[int]) -> int:
+    """Wealth share of the richest 1% x 10,000 (bp), exact integers.
+
+    The richest 1% = the top max(1, ceil(n/100)) entries; for small
+    populations this degrades to the single richest holder (the unequal
+    scenario's 1-in-100 case). The Society Pool counts as a holder.
+    """
+    n = len(values)
+    if n == 0:
+        return 0
+    vs = sorted(values, reverse=True)
+    total = sum(vs)
+    if total <= 0:
+        return 0
+    k = max(1, -(-n // 100))  # ceil(n/100)
+    return sum(vs[:k]) * 10_000 // total
+
+
 class SimMetrics:
     """Collects per-tick stability metrics from public state and events."""
 
     def __init__(self) -> None:
         self.ticks: list[int] = []
         self.gini_bp: list[int] = []
+        self.top1_share_bp: list[int] = []
         self.clearing_prices: dict[str, list[int]] = {}  # good -> prices
         self.unmet_essential_demand: list[int] = []
         self.flags_by_kind: dict[str, int] = {}
@@ -53,6 +72,13 @@ class SimMetrics:
         balances = list(state.balances.values())
         treasuries = [c.get("treasury", 0) for c in state.coops.values()]
         self.gini_bp.append(gini(balances + treasuries + [state.surplus_pool]))
+        # Top-1 share measures PRIVATE concentration: the Society Pool is
+        # public money (the wealth tax's destination), not a private holder.
+        # Counting it would mask exactly the redistribution the WP2.2 gate
+        # measures (unequal scenario: top 1% owns 50% of PRIVATE money).
+        self.top1_share_bp.append(
+            top1_share_bp(balances + treasuries)
+        )
         self.money_minted.append(state.money_minted)
         self.money_retired.append(state.money_retired)
 
@@ -81,6 +107,7 @@ class SimMetrics:
         return {
             "ticks": len(self.ticks),
             "final_gini_bp": self.gini_bp[-1] if self.gini_bp else 0,
+            "final_top1_share_bp": self.top1_share_bp[-1] if self.top1_share_bp else 0,
             "flags": dict(self.flags_by_kind),
             "rejections": dict(self.rejected_by_reason),
             "price_variance_bp": {
