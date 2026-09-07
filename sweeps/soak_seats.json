@@ -1,0 +1,31 @@
+{
+ "ticks": 1000,
+ "seed": 42,
+ "n_seats": 12,
+ "seat_util_pct": {
+  "brickmaker_a": 70.5,
+  "brickmaker_b": 71.7,
+  "builder_a": 69.3,
+  "builder_b": 71.6,
+  "canner_a": 70.6,
+  "canner_b": 69.8,
+  "carer_a": 71.3,
+  "carer_b": 69.8,
+  "carpenter_a": 69.3,
+  "carpenter_b": 72.2,
+  "dairy_a": 69.5,
+  "dairy_b": 72.0
+ },
+ "actions_queued": 25504,
+ "human_accepted": 25504,
+ "human_rejected": 0,
+ "rejection_reasons": {},
+ "inv_bad": 0,
+ "worst_ess_streak": {
+  "bread": 12,
+  "electricity": 10,
+  "water": 9,
+  "meals": 20
+ },
+ "wall_s": 109.0
+}

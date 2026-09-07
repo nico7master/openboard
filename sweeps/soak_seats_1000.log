@@ -1,0 +1,12 @@
+soak: 12 human seats claimed, ticks=1000
+  t=100 alive inv_bad=0 actions=2487 ess_peak=3 top_bal=2,333cr
+  t=200 alive inv_bad=0 actions=5100 ess_peak=4 top_bal=4,303cr
+  t=300 alive inv_bad=0 actions=7760 ess_peak=6 top_bal=6,456cr
+  t=400 alive inv_bad=0 actions=10285 ess_peak=8 top_bal=8,033cr
+  t=500 alive inv_bad=0 actions=12806 ess_peak=10 top_bal=9,588cr
+  t=600 alive inv_bad=0 actions=15353 ess_peak=12 top_bal=12,093cr
+  t=700 alive inv_bad=0 actions=17906 ess_peak=14 top_bal=13,491cr
+  t=800 alive inv_bad=0 actions=20478 ess_peak=16 top_bal=15,047cr
+  t=900 alive inv_bad=0 actions=22995 ess_peak=18 top_bal=16,869cr
+  t=1000 alive inv_bad=0 actions=25468 ess_peak=20 top_bal=18,723cr
+SOAK PASS: inv_bad=0 ess=20 actions=25504 (acc=25504 rej=0) wall=109s -> /a0/usr/projects/openboard-economy/sweeps/soak_seats.json
