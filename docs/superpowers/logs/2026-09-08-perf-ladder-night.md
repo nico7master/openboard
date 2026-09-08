@@ -13,8 +13,10 @@ Gate target: **≥5 ticks/s at 1,000 citizens / 300 coops** (shipping month WP4.
 | + record_hash v2 (chaining fields only) | db608da | 1.02 → 1.10 | **+8%** | 109 tamper/chain tests; content+linkage double check |
 | + per-tick dispatch hoist (engine) | 3b1c1c1 | 1.10 → 1.20/1.21 | **+9%** | 425/425 suite + 30-tick fingerprint A/B identical (ab9c0543a2b5e98c) |
 | + cached JSONEncoder | d10b572 | 1.24/1.21 | ~+2% | 109 tests + fingerprint identical |
+| + no-op sort skip in _apply_work | e6f1460 | 1.30/1.28 | **+6%** | fingerprint identical + 28 WORK-path tests |
+| + personal_needs cleanup | 98602e2 | 1.32/1.32 | **+2%** | fingerprint identical + 19 tests (incl. demand-memory) |
 
-Net tonight vs same-harness start: **1.02 → ~1.22 ticks/s (+20%), zero behavior change.**
+Net tonight vs same-harness start: **1.02 → 1.32 ticks/s (+29%), zero behavior change.**
 
 ## What each change does
 

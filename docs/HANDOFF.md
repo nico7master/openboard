@@ -42,19 +42,25 @@
 
 ### Night session 2026-09-08 (WP4.2 perf ladder, byte-identical throughout)
 - Measured ladder at pop=966 (`scripts/bench_scale.py`, unprofiled, double-run):
-  1.02 → ~1.22 ticks/s (+20%) with zero behavior change:
+  **1.02 → 1.32 ticks/s (+29%)** with zero behavior change:
   - `db608da` record_hash v2 (chaining fields only; content stays committed by
     tx_hash; verify_chain checks both) — +8%; **v2 hash values differ from v1,
     landed inside the pre-anchor window; anchors unaffected (use tx_hash)**
   - `3b1c1c1` per-tick dispatch hoist in apply_tick (was: 20-lambda validator
     dict + 10-entry apply dict rebuilt per tx, ~18k txs/tick) — +9%
   - `d10b572` module-level cached JSONEncoder for canonical_json — ~+2%
+  - `e6f1460` skip no-op sort of 0/1-element recipe lists in _apply_work — +6%
+  - `98602e2` personal_needs: hoist loop-invariant demand_memory params,
+    reuse triage lookup — +2%
 - Negative result kept: pure-Python JSON fast path was SLOWER than CPython's
   C encoder (1.07 vs 1.20) — reverted; cached-encoder kept instead.
+- Measured attribution CORRECTION: market clearing itself made only 199
+  sorted() calls per 6 ticks — sort bucketing there is a dead end; the real
+  volume is per-citizen work (sim.py 35,341, _apply_work 12,138).
 - Full evidence: `docs/superpowers/logs/2026-09-08-perf-ladder-night.md`.
 - Remaining to the ≥5 ticks/s gate (algorithmic, per scaling doctrine):
-  batched bot cognition (~30% of profile), market sort bucketing, regional
-  markets (structural).
+  **batched bot cognition** (~30% of profile — next lever), then structural
+  regional markets.
 
 ## What Remains (Week 4)
 
