@@ -64,6 +64,24 @@
   **batched bot cognition** (~30% of profile — next lever), then structural
   regional markets.
 
+### Fidelity rung measured (2026-09-08 night, `9f388c9`)
+- **Equity transfers across population**: 181-citizen unequal world vs banked
+  986-citizen harvest run, same law (tax0400 × div3000), 1500 ticks: top-1
+  trajectories near-identical (≤5bp apart after t=100, both end 524bp).
+  First measured rung of the billions ladder.
+- **Stability is roster-sized**: the default 181-world starves (bread+meals
+  unmet for all 181, worst streak 1499, zero listings) while the 986 world
+  feeds everyone — `scale_world`'s coop cloning is what repairs it. Coop
+  counts per-capita are already adequate at 181, so the gap is per-coop
+  labor/chain depth, NOT coop counts — **open thread: diagnose why the 2
+  flour_to_bread + 1 meal_service coops produce nothing at 181** (labor
+  staffing? upstream flour/energy?). essentials_diag.py / fast_diag.py are
+  the tools.
+- Cohort-K world proven denomination-only (delta=0 vs 1:1) — surrogate
+  claims need reduced AGENTS with proportionally REBUILT rosters.
+- Evidence: `sweeps/fidelity_181_verdict.json`, probes
+  `scripts/cohort_fidelity.py` + `scripts/fidelity_181.py`.
+
 ## What Remains (Week 4)
 
 ### 4.1 Cardano preprod anchoring live
