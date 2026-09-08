@@ -149,3 +149,16 @@ The next agent should start with Week 4.1 (Cardano preprod anchoring).
 ### Working state
 - HEAD a07495b, worktree clean, all 425 tests green, no stale processes.
 - bench at 966: ~1.23-1.31 ticks/s (needs >=5 for gate; structural work pending).
+
+
+### UPDATE 2026-09-08 18:25 CEST - 966 gate collapse ROOT-CAUSED + fixed
+- Incident: two A0 backend freezes caused by my bare probes; brief + memrun.sh
+  committed (4f3e4b9); project instructions hardened (never bare, one world
+  process, per-tick applied.clear, wait-then-relaunch). ALL probes now via memrun.
+- Gate FAIL root cause: scale_world clones coops with treasury+pantry but NO
+  capital -> cloned power coops spawned 0 machines (base has 2) -> grid trickle
+  -> total electricity collapse t=955 (966/966 unmet; water 650, bread 68).
+- FIX 9a7d5da: clones inherit CAPITAL_BOOTSTRAP goods of their base coop
+  (verified: power_plant_x1/x2 spawn machines=2; 16 capital injections).
+- Official gate re-running via memrun (/tmp/scale_gate_bootstrap.log).
+  PASS criterion unchanged: inv_bad=0, worst_streak<=50, wall<=7200s, rss<=8192MB.
