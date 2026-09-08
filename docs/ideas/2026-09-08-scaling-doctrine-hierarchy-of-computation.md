@@ -141,3 +141,19 @@ step 5 is the guarantee.
 4. Local anchor verifier (Cardano-optional half of WP4.1)
 5. Release gate v1.0.0
 6. Post-v1.0: FEDERATE action, regional markets, zkVM endgame
+## Cohort fidelity: measured correction (2026-09-08 night)
+
+Measured tonight (scripts/cohort_fidelity.py, 150 ticks, seed 42,
+fingerprint-exact harness): the existing `stage6_cohort.py` K=100 world
+produces a top-1 trajectory IDENTICAL to the 1:1 world (delta = 0 bp on
+every checkpoint, inv_bad = 0). Reason: it runs the SAME agents with a
+`cohort_k` label and scales only an (off-by-default) cap — it is
+denomination scaling, NOT agent reduction.
+
+Implication for the ladder: cohort fidelity must be measured with
+REDUCED agent worlds (fewer agents, same per-capita law), e.g. the
+default 181-citizen unequal world vs the 986-citizen harvest run of the
+same policy. First such probe: `scripts/fidelity_181.py`
+(tax0400 x div3000, 1500-tick window, same series sampling as the
+harvest). Agent-reduction surrogates remain the honest path to cheap
+prediction at population scale.
