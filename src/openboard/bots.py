@@ -780,6 +780,8 @@ def personal_needs(who, state, params, tick):
     cycles = params.get("needs_cycle") or {}
     inv = state.citizen_inventory.get(who, {})
     balance = state.balances.get(who, 0)
+    # Loop-invariant: params cannot change while this citizen decides.
+    _dm_all = (state.active_ruleset_params().get("demand_memory") or {})
     for good in sorted(needs.keys()):
         quota = needs[good]
         if quota <= 0:
@@ -805,7 +807,7 @@ def personal_needs(who, state, params, tick):
         # WP1.4 demand memory: remembered pain keeps the pantry deeper
         # AFTER recovery too (pre-buying before the next cycle). Market
         # goods only — essentials keep the flat ceiling (no hoard spiral).
-        _dm = (state.active_ruleset_params().get("demand_memory") or {})
+        _dm = _dm_all
         if _dm.get("enabled") and _triage not in ("essential", "emergency"):
             mem = state.shortage_memory.get(f"{who}|{good}", 0)
             if mem > 0:
@@ -816,7 +818,7 @@ def personal_needs(who, state, params, tick):
             continue
         want = min(quota, _ceiling - held)
         floor = state.good_cost_baseline.get(good, 1)
-        triage = state.effective_triage(good) if good in state.goods else "market"
+        triage = _triage  # identical to the _triage computed above (same inputs)
         if triage in ("essential", "emergency"):
             eq = params.get("essential_need_quota", {}).get(good, 0)
             qty = min(want, eq) if eq > 0 else 0
