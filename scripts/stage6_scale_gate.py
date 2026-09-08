@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "dashboard"))
 
 from server import (  # noqa: E402
-    BASELINE_BOTS, BASELINE_COOPS, SPECIALISTS, Run,
+    BASELINE_BOTS, BASELINE_COOPS, CAPITAL_BOOTSTRAP, SPECIALISTS, Run,
 )
 
 TARGET_CITIZENS = 1000
@@ -78,6 +78,7 @@ def scale_world(run, target):
     new_citizens = []
     founding = []
     treasury_seeds = []
+    capital_seeds = []
     tick1 = s.tick  # baseline world tick (1); founding applies at tick1+1
     proc = tick1 + 1  # transactions must carry their PROCESSING tick
     for role, members in sorted(role_map.items()):
@@ -124,6 +125,15 @@ def scale_world(run, target):
             # proportional treasury seed (base avg 600) + pantry;
             # treasury waits until the coop exists (post-founding)
             treasury_seeds.append((coop_id, 600))
+            # 2026-09-08 gate finding (t=955 electricity collapse, 966/966
+            # unmet): clones got treasury+pantry but NO capital - cloned
+            # power coops spawned with zero machines (base has 2) and zero
+            # coal bids, so the scaled grid ran at a trickle until a
+            # transient tipped it into total collapse. Clones inherit the
+            # same CAPITAL_BOOTSTRAP goods their base coop received.
+            _boot = CAPITAL_BOOTSTRAP.get(base_coop)
+            if _boot:
+                capital_seeds.append((coop_id, dict(_boot)))
             for n in names:
                 run._inject({"after_tick": tick1, "op": "pantry", "citizen": n,
                              "goods": {"bread": 3, "water": 3, "electricity": 3}})
@@ -135,6 +145,9 @@ def scale_world(run, target):
     for coop_id, amount in treasury_seeds:
         run._inject({"after_tick": proc, "op": "treasury",
                      "coop": coop_id, "amount": amount})
+    for coop_id, goods in capital_seeds:
+        run._inject({"after_tick": proc, "op": "capital",
+                     "coop": coop_id, "goods": goods})
     return len(run.bots)
 
 
