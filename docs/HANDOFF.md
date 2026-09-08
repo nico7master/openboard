@@ -111,3 +111,41 @@ The next agent should start with Week 4.1 (Cardano preprod anchoring).
 
 ---
 *Last updated: 2026-09-08 00:05:00 CEST*
+
+
+## Session Snapshot 2026-09-08 ~15:45 CEST (mid-day)
+
+### Landed this session (after the overnight summary above)
+- fix(sim) b31b47e: int-cast BID_FOR_COOP qtys (3rd float-poisoning occurrence) - food chain alive at 181
+- docs 050beeb: refreshed fidelity verdict - equity AND stability transfer 181<->986
+- perf 288a98a: bid bucketing per good (byte-identical, ~neutral at 966)
+- fix(engine) 8e64665: VWAP-branch durable division - THE float source (4th occurrence).
+  Trap-probe: zero float baseline writes; post-t6 state fully int (was 6 baselines,
+  181/181 balances, 4 treasuries, pool all floats). Full suite 425 passed after fix.
+- perf(bots) a07495b: triage-override hoist in personal_needs (byte-identical vs HEAD)
+- gate diagnostics add85e5: worst_streak now prints tick, citizens, per-good histogram
+
+### OPEN: 966-citizen gate FAILS on stability with the float fix IN
+- Run 1 (pre-float-fix): FAIL worst_streak=379, inv_bad=0, wall 1697s, rss 1327MB
+- Run 2 (float fix in, diagnostics added): FAILING WORSE - streak 248@t250, 498@t500
+  (pre-fix was 157@250, 118@500). Hypothesis REJECTED that float bug alone caused it.
+- The float fix changed economics: clean integer floors now bind differently; buyers
+  who previously over-paid float floors now pay exact int floors; something starves
+  at scale. WAIT for final worst_streak_detail in /tmp/scale_gate_floatfix.log.
+- 181-world under same policy is PERFECT (streak 13, 0 unmet, equity 519bp).
+  => scale-specific starvation: coop-cloning (scale_world) + D18 mobility +
+  producer_input_priority interplay suspected. Needs the offender detail + a
+  fast_diag-style probe at 966 with per-good unmet tracking.
+
+### Next steps (priority order)
+1. Read /tmp/scale_gate_floatfix.log final worst_streak_detail -> identify starving
+   goods/citizens at 966.
+2. Probe: 300-tick 966-world run with per-good unmet tracking + BID/BUY_ESSENTIAL
+   reject reasons (INVALID_QTY vs INSUFFICIENT_FUNDS vs NOTHING_LISTED).
+3. Fix the starvation mechanism, re-gate. THE GATE IS THE BLOCKER for WP4.2.
+4. Batched cognition (spec drafted, sub-steps 1-2 in progress) - perf lever, after gate.
+5. Anchor verifier (scripts/verify_anchor_chain.py) - independent of gate, defer.
+
+### Working state
+- HEAD a07495b, worktree clean, all 425 tests green, no stale processes.
+- bench at 966: ~1.23-1.31 ticks/s (needs >=5 for gate; structural work pending).
