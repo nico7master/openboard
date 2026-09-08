@@ -42,7 +42,7 @@
 
 ### Night session 2026-09-08 (WP4.2 perf ladder, byte-identical throughout)
 - Measured ladder at pop=966 (`scripts/bench_scale.py`, unprofiled, double-run):
-  **1.02 → 1.32 ticks/s (+29%)** with zero behavior change:
+  **1.02 → 1.34 ticks/s (+31%)** with zero behavior change (6 perf commits):
   - `db608da` record_hash v2 (chaining fields only; content stays committed by
     tx_hash; verify_chain checks both) — +8%; **v2 hash values differ from v1,
     landed inside the pre-anchor window; anchors unaffected (use tx_hash)**
@@ -52,6 +52,8 @@
   - `e6f1460` skip no-op sort of 0/1-element recipe lists in _apply_work — +6%
   - `98602e2` personal_needs: hoist loop-invariant demand_memory params,
     reuse triage lookup — +2%
+  - `f66dfb2` _consume_phase: hoist needs order + demographics import out of
+    the per-citizen loop — +2%
 - Negative result kept: pure-Python JSON fast path was SLOWER than CPython's
   C encoder (1.07 vs 1.20) — reverted; cached-encoder kept instead.
 - Measured attribution CORRECTION: market clearing itself made only 199
