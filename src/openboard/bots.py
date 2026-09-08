@@ -782,6 +782,12 @@ def personal_needs(who, state, params, tick):
     balance = state.balances.get(who, 0)
     # Loop-invariant: params cannot change while this citizen decides.
     _dm_all = (state.active_ruleset_params().get("demand_memory") or {})
+    # WP4.2 cognition invariants (spec 2026-09-08 sub-step 2): the triage
+    # overrides map is params-derived and constant within this decision;
+    # inline the effective_triage lookup (rule override > catalog default)
+    # instead of calling state.effective_triage() once per (citizen, good)
+    # - each of those re-resolved active_ruleset_params().
+    _triage_overrides = state.active_ruleset_params().get("triage_overrides", {})
     for good in sorted(needs.keys()):
         quota = needs[good]
         if quota <= 0:
@@ -801,7 +807,7 @@ def personal_needs(who, state, params, tick):
         # the seed-42 gate as dairy streaks 3-7 despite adequate supply.
         # Essentials are society's guarantee (BUY_ESSENTIAL at cost); the
         # ceiling stays 2x (smooths cycle-day bursts, no hoarding bonus).
-        _triage = state.effective_triage(good) if good in state.goods else "market"
+        _triage = _triage_overrides.get(good, state.goods[good]["triage"]) if good in state.goods else "market"
         _panic = _triage not in ("essential", "emergency") and _streak >= 3
         _ceiling = (3 if _panic else 2) * quota
         # WP1.4 demand memory: remembered pain keeps the pantry deeper
