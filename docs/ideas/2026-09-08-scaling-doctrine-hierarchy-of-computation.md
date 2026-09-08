@@ -157,3 +157,24 @@ same policy. First such probe: `scripts/fidelity_181.py`
 (tax0400 x div3000, 1500-tick window, same series sampling as the
 harvest). Agent-reduction surrogates remain the honest path to cheap
 prediction at population scale.
+## Reduced-agent fidelity: MEASURED (2026-09-08 night)
+
+`scripts/fidelity_181.py` (181 citizens) vs the banked 986-citizen
+harvest run, same law (tax0400 x div3000), 1500 ticks, seed 42
+(evidence: `sweeps/fidelity_181_verdict.json`):
+
+- **Equity TRANSFERRED**: top-1 trajectories near-identical (<=5bp
+  difference after t=100, 0bp at t=1500 — both worlds end at 524bp).
+  The same law produces the same normalized equity outcome at 5.4x
+  different population — first measured rung of the billions ladder.
+- **Stability did NOT transfer**: the default 181-world starves (bread
+  + meals unmet for all, worst streak 1499) because its coop roster is
+  sized below demand; the 986 world works because `scale_world` clones
+  coops. Doctrine consequence: **roster sizing is part of the law's
+  boundary conditions** — a world must be built with production chains
+  sized to its population (cloning, not trimming). Agent-reduction
+  surrogates are only valid when rosters are proportionally rebuilt.
+
+This refines the cohort ladder: rungs compare worlds with population-
+proportional rosters, and the equity metric is the invariant that
+transfers; stability must be re-checked per roster configuration.
