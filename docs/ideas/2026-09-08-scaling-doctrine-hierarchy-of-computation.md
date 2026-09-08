@@ -118,6 +118,12 @@ Optimization ladder (each its own fingerprint-verified change):
    (pre-anchor is the one free window). Est. ~12%.
 3. **Market sort bucketing** — sort per-good bid lists once instead of
    ~10k small sorts; est. ~15–20%.
+   **CORRECTION (measured 2026-09-08, night session): caller attribution
+   shows market clearing itself made only 199 sorted() calls in 6 ticks —
+   bucketing there is a dead end. The real sort volume is per-citizen
+   work: sim.py bot cognition 35,341, _apply_work 12,138 (no-op sort of a
+   0/1-element recipe list — fixed), per-citizen phases ~6.8k each. The
+   lever is batching cognition, not re-sorting markets.**
 4. **Batched bot cognition** — vectorize/aggregate per-tick bot decisions;
    est. ~20–30%.
 5. **Structural (doctrine §3): regional markets** — turns the remaining

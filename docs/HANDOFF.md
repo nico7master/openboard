@@ -40,6 +40,22 @@
   - Persisted in `localStorage` (`ob_quest`).
   - `dashboard/static/index.html`.
 
+### Night session 2026-09-08 (WP4.2 perf ladder, byte-identical throughout)
+- Measured ladder at pop=966 (`scripts/bench_scale.py`, unprofiled, double-run):
+  1.02 → ~1.22 ticks/s (+20%) with zero behavior change:
+  - `db608da` record_hash v2 (chaining fields only; content stays committed by
+    tx_hash; verify_chain checks both) — +8%; **v2 hash values differ from v1,
+    landed inside the pre-anchor window; anchors unaffected (use tx_hash)**
+  - `3b1c1c1` per-tick dispatch hoist in apply_tick (was: 20-lambda validator
+    dict + 10-entry apply dict rebuilt per tx, ~18k txs/tick) — +9%
+  - `d10b572` module-level cached JSONEncoder for canonical_json — ~+2%
+- Negative result kept: pure-Python JSON fast path was SLOWER than CPython's
+  C encoder (1.07 vs 1.20) — reverted; cached-encoder kept instead.
+- Full evidence: `docs/superpowers/logs/2026-09-08-perf-ladder-night.md`.
+- Remaining to the ≥5 ticks/s gate (algorithmic, per scaling doctrine):
+  batched bot cognition (~30% of profile), market sort bucketing, regional
+  markets (structural).
+
 ## What Remains (Week 4)
 
 ### 4.1 Cardano preprod anchoring live

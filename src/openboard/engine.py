@@ -711,7 +711,7 @@ def _apply_work(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
         reserve = 0
         _intent = coop.get("recipe_intent")
         _rids = [_intent] if isinstance(_intent, str) and _intent in state.recipes else []
-        for rid in sorted(_rids) or sorted(state.recipes.keys()):
+        for rid in (_rids if len(_rids) <= 1 else sorted(_rids)) or sorted(state.recipes.keys()):
             recipe = state.recipes.get(rid)
             inputs = recipe.get("inputs") if isinstance(recipe, dict) else getattr(recipe, "inputs", None)
             # energy is a per-run consumable like any input: fishing has an
