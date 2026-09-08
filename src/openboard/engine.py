@@ -1744,17 +1744,21 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
     cycles = params.get("needs_cycle") or {}
 
     events: list[dict[str, Any]] = []
+    # Loop invariants: needs order and the demographics helpers cannot
+    # change within this phase — hoisted out of the per-citizen loop
+    # (was: identical sorted() + import executed once per citizen).
+    _needs_order = sorted(needs.keys())
+    from .demographics import is_child, child_need_pct
     for citizen in sorted(state.balances.keys()):
         inv = state.citizen_inventory.setdefault(citizen, {})
         consumed: dict[str, int] = {}
         unmet: dict[str, bool] = {}
         # Stage 5 - demographics: children consume a scaled integer share
         # of each quota (child_need_pct). Inert without demographics.
-        from .demographics import is_child, child_need_pct
         _scale_bp = 10_000
         if is_child(state, citizen, params):
             _scale_bp = child_need_pct(params) * 100
-        for good in sorted(needs.keys()):
+        for good in _needs_order:
             quota = needs[good]
             if quota <= 0:
                 continue
