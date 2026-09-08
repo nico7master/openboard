@@ -167,13 +167,18 @@ harvest run, same law (tax0400 x div3000), 1500 ticks, seed 42
   difference after t=100, 0bp at t=1500 — both worlds end at 524bp).
   The same law produces the same normalized equity outcome at 5.4x
   different population — first measured rung of the billions ladder.
-- **Stability did NOT transfer**: the default 181-world starves (bread
-  + meals unmet for all, worst streak 1499) because its coop roster is
-  sized below demand; the 986 world works because `scale_world` clones
-  coops. Doctrine consequence: **roster sizing is part of the law's
-  boundary conditions** — a world must be built with production chains
-  sized to its population (cloning, not trimming). Agent-reduction
-  surrogates are only valid when rosters are proportionally rebuilt.
+- **Stability TRANSFERRED too (after the float-qty fix, same day)**:
+  the starvation was NOT roster sizing — it was the third occurrence of
+  the float-poisoning bug class (D21c float TRANSFERs, D21b float bid
+  prices, now float BID_FOR_COOP qtys). The unequal world's float
+  treasuries made `treasury // price` a float, which the integer-only
+  validator rejected — millers/bakers could never buy inputs and the
+  food chain was dead from tick 1 in the DEFAULT world (the 986 world
+  only worked because scale_world's cloned coops bypassed the broken
+  path via bots.py's integer listing). After int-casting all four
+  BID_FOR_COOP qty sites: worst_streak 1499 -> 13, unmet=0 throughout,
+  equity holds (519bp end). Both equity AND stability transfer across
+  5.4x population — the billions ladder's rung 1 is fully measured.
 
 This refines the cohort ladder: rungs compare worlds with population-
 proportional rosters, and the equity metric is the invariant that

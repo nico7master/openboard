@@ -333,7 +333,7 @@ def make_specialist(
                 # the buffer is bounded by what the reserve can cover.
                 e_buffer = e_need * 3
                 e_want = max(e_short, min(e_buffer, e_buffer - e_have + e_need))
-                e_qty = min(e_want, c.get("treasury", 0) // e_price) if e_price > 0 else e_want
+                e_qty = int(min(e_want, c.get("treasury", 0) // e_price)) if e_price > 0 else int(e_want)
                 if e_qty > 0:
                     out.append(_tx(tick, who, "BID_FOR_COOP", {
                         "coop_id": coop_id, "good": "electricity",
@@ -375,7 +375,7 @@ def make_specialist(
                 # affordability-capped: buy what we can now, more next tick
                 # (all-or-nothing froze coops forever when a full top-up
                 # cost slightly more than the treasury held)
-                qty = min(need, treasury // price) if price > 0 else need
+                qty = int(min(need, treasury // price)) if price > 0 else int(need)
                 if qty > 0:
                     out.append(_tx(tick, who, "BID_FOR_COOP", {
                         "coop_id": coop_id, "good": good, "max_price": price, "qty": qty,
@@ -389,7 +389,7 @@ def make_specialist(
                 floor = state.good_cost_baseline.get(good, 1)
                 price = int(floor) + 2
                 treasury = c.get("treasury", 0)
-                qty = min(need, treasury // price) if price > 0 else need
+                qty = int(min(need, treasury // price)) if price > 0 else int(need)
                 if qty > 0:
                     out.append(_tx(tick, who, "BID_FOR_COOP", {
                         "coop_id": coop_id, "good": good, "max_price": price, "qty": qty,
@@ -410,7 +410,7 @@ def make_specialist(
 
                 price_e = int(floor_e) + 2
 
-                qty_e = min(need_e, c.get("treasury", 0) // price_e) if price_e > 0 else need_e
+                qty_e = int(min(need_e, c.get("treasury", 0) // price_e)) if price_e > 0 else int(need_e)
 
                 if qty_e > 0:
 
