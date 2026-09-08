@@ -1251,14 +1251,25 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
     essential_buyers: dict[str, list[dict[str, Any]]] = {}
     auction_bids: dict[str, list[dict[str, Any]]] = {}
 
-    for bid in sorted(
-        state.bids,
-        key=lambda b: (b["bidder"], str(b["coop_id"]), b["good"], b["qty"], b["max_price"]),
-    ):
+    # WP4.2 perf bucketing: classify bids per good first, then sort each
+    # bucket by the legacy 5-tuple key minus the (constant within-bucket)
+    # good field. Within-bucket order is identical to the old global
+    # sort (good compared equal inside a bucket; sort is stable), so
+    # clearing results and replay bytes are unchanged - the cross-good
+    # O(B log B) 5-tuple sort (string compare on every comparison)
+    # collapses into small per-good 4-tuple sorts. Pass 2 and the
+    # producer-input pass re-sort with their own keys anyway; their
+    # stable sorts inherit this exact pre-order as tie-break.
+    for bid in state.bids:
         if bid.get("essential"):
             essential_buyers.setdefault(bid["good"], []).append(bid)
         else:
             auction_bids.setdefault(bid["good"], []).append(bid)
+    _bucket_key = lambda b: (b["bidder"], str(b["coop_id"]), b["qty"], b["max_price"])
+    for _bucket in essential_buyers.values():
+        _bucket.sort(key=_bucket_key)
+    for _bucket in auction_bids.values():
+        _bucket.sort(key=_bucket_key)
 
     # --- Pass 1: essentials FCFS at the cost floor (D8: need first)
     # Common-pool draw first: reclaimed hoard goods at cost (§6.4).
