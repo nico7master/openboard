@@ -929,9 +929,20 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     if vwap_on:
         coop_id_ = tx.payload["coop_id"]
         energy_cost = energy_consumed * _vwap_unit_cost(state, coop_id_, "electricity") if energy_consumed else 0
+        # D21g-4 (float-poisoning class, VWAP branch): max(1, runs) /
+        # durability was true division - with any durable input
+        # (hand_tools/machines) input_cost turned float and the baseline
+        # stamp below wrote whole floats (515.0) into good_cost_baseline,
+        # which floors/prices then spread into every balance, treasury
+        # and the pool (observed: unequal world t=6, all 181 balances
+        # float). Same integer-native form as the non-VWAP branch.
         input_cost = sum(
-            (qty * runs if good not in dur_goods else max(1, runs) / durability)
-            * _vwap_unit_cost(state, coop_id_, good) for good, qty in recipe["inputs"].items()
+            (
+                qty * runs * _vwap_unit_cost(state, coop_id_, good)
+                if good not in dur_goods
+                else max(1, runs) * _vwap_unit_cost(state, coop_id_, good) // durability
+            )
+            for good, qty in recipe["inputs"].items()
         )
         # Track capital consumption whenever capital goods are used as
         # inputs (Stage 3 gate metric: self-sustained capital). Was gated
@@ -942,16 +953,31 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
         if burned:
             state.capital_burned[coop_id_] = state.capital_burned.get(coop_id_, 0) + burned
     else:
-        energy_cost = energy_consumed * params.get("energy_price", 2)
+        energy_cost = int(energy_consumed * params.get("energy_price", 2))
+        # D21g-4 (float-poisoning class): max(1, runs) / durability is
+        # true division - any durable input (hand_tools/machines) turned
+        # input_cost float, and the unit_baseline stamp below then wrote
+        # whole floats (67.0, 195.0) into good_cost_baseline. Floors and
+        # clearing flows spread the float into every balance, treasury
+        # and the pool from the first PRODUCE with durable inputs
+        # (observed t=6, all 181 balances float). Integer replacement:
+        # (runs * baseline) // durability is value-identical whenever
+        # durability divides the product (the common case: exact whole
+        # floats were observed), and floors a sub-unit fraction instead
+        # of carrying binary-float dust.
         input_cost = sum(
-            (qty * runs if good not in dur_goods else max(1, runs) / durability)
-            * state.good_cost_baseline.get(good, 1) for good, qty in recipe["inputs"].items()
+            (
+                qty * runs * state.good_cost_baseline.get(good, 1)
+                if good not in dur_goods
+                else max(1, runs) * state.good_cost_baseline.get(good, 1) // durability
+            )
+            for good, qty in recipe["inputs"].items()
         )
     total_units = sum(outputs_produced.values())
 
     baselines_stamped: dict[str, int] = {}
     if total_units > 0:
-        unit_baseline = max(1, -(-(labor_cost + energy_cost + input_cost) // total_units))
+        unit_baseline = max(1, -(-int(labor_cost + energy_cost + input_cost) // total_units))
         for good in outputs_produced:
             state.good_cost_baseline[good] = unit_baseline
             baselines_stamped[good] = unit_baseline
