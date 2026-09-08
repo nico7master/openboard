@@ -165,6 +165,7 @@ def main():
     inv_bad = 0
     worst_streak = 0
     streak = 0
+    worst_detail = None
     t_drive0 = time.perf_counter()
     for t in range(run.state.tick + 1, ticks + 1):
         drive(run, seed, t, t)
@@ -175,7 +176,15 @@ def main():
                     if any(un.get(g) for g in ESSENTIALS))
         if unmet > 0:
             streak += 1
-            worst_streak = max(worst_streak, streak)
+            if streak > worst_streak:
+                worst_streak = streak
+                # offender diagnostics: which goods, how many citizens
+                good_hits = {}
+                for un in s.unmet_needs.values():
+                    for g in ESSENTIALS:
+                        if un.get(g):
+                            good_hits[g] = good_hits.get(g, 0) + 1
+                worst_detail = {'tick': t, 'citizens': unmet, 'goods': good_hits}
         else:
             streak = 0
         if t % 50 == 0:
@@ -191,6 +200,8 @@ def main():
     gini_ok = True
     print(f"final: pop={len(s.balances)} wall={wall:.0f}s rss={rss}MB "
           f"inv_bad={inv_bad} worst_streak={worst_streak}")
+    if worst_detail:
+        print(f"worst_streak_detail: {worst_detail}")
     ok = inv_bad == 0 and worst_streak <= 50 and wall <= 7200 and rss <= 8192
     print(f"GATE: {'PASS' if ok else 'FAIL'} "
           f"{{'invariant': {inv_bad == 0}, 'streak': {worst_streak <= 50}, "
