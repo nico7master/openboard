@@ -1,7 +1,7 @@
 {
  "experiment": "reduced-agent fidelity: 181 vs 986 citizens, same law (tax0400 x div3000), seed 42, 1500 ticks",
- "equity_verdict": "TRANSFERRED: trajectories near-identical \u2014 max delta 95bp (t=10, 2.3% of value), <=5bp after t=100, <=2bp after t=500, exactly 0 at t=1500 (both end 524bp). Normalized equity outcome is population-invariant under the same law.",
- "stability_verdict": "NOT TRANSFERRED: 181-world worst_ess_streak=1499 (bread+meals unmet for all 181 every tick; zero listings) while the 986 world feeds everyone (worst per-good 11/7/4). Root cause: the DEFAULT world's food chain (2 flour_to_bread, 1 meal_service coops) is sized below 181-citizen demand; scale_world repairs it by cloning coops for 986. Finding: equity is population-invariant; absolute production capacity (coop roster sizing) must scale with population. A fidelity surrogate must clone rosters, not just trim agents.",
+ "equity_verdict": "TRANSFERRED (re-confirmed post-fix): top-1 trajectories converge - 181-world ends 519bp vs 986-world 524bp (1% apart), unmet=0 throughout. The same law produces the same normalized equity AND stability outcome across a 5.4x population difference.",
+ "stability_verdict": "TRANSFERRED (after fix 2026-09-08 12:57): worst_ess_streak 13 (bound 30), unmet=0 at every checkpoint, inv_bad=0 - both worlds feed everyone. Root cause: third occurrence of the float-poisoning bug class - unequal-world treasuries are floats, so treasury // price in sim.py BID_FOR_COOP sites yielded float qtys, rejected INVALID_QTY by the integer-only validator; millers/bakers could never buy grain/flour and the food chain was dead from tick 1. Fixed by int-casting all four BID_FOR_COOP qty sites. Post-fix PRODUCE successes in 90 ticks: bakers 213, millers 118, kitchen 71 (was zero everywhere).",
  "series": [
   {
    "t": 10,
