@@ -14,3 +14,6 @@ venv/
 .env
 *.secret
 dashboard/saves/
+
+# Python build artifacts
+*.egg-info/
