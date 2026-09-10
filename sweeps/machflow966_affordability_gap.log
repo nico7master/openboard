@@ -1,0 +1,9 @@
+t=80 powerBIDS ok=0 rej=0 {} | auction sold=145 prices=[5583, 5634, 5665] | mw_stock=184 power_stock=6 power_PRODUCE=12224 elec_unmet=0
+t=130 powerBIDS ok=0 rej=0 {} | auction sold=63 prices=[5414, 5631] | mw_stock=340 power_stock=6 power_PRODUCE=14346 elec_unmet=0
+t=180 powerBIDS ok=0 rej=0 {} | auction sold=28 prices=[5614] | mw_stock=479 power_stock=6 power_PRODUCE=13728 elec_unmet=0
+t=230 powerBIDS ok=0 rej=0 {} | auction sold=0 prices=[] | mw_stock=601 power_stock=6 power_PRODUCE=12764 elec_unmet=0
+t=280 powerBIDS ok=2 rej=26 {'INSUFFICIENT_FUNDS': 26} | auction sold=93 prices=[5453, 5643] | mw_stock=770 power_stock=6 power_PRODUCE=13953 elec_unmet=0
+t=330 powerBIDS ok=1 rej=15 {'INSUFFICIENT_FUNDS': 15} | auction sold=83 prices=[5669, 5677] | mw_stock=938 power_stock=6 power_PRODUCE=13279 elec_unmet=387
+t=380 powerBIDS ok=3 rej=28 {'INSUFFICIENT_FUNDS': 28} | auction sold=18 prices=[5471] | mw_stock=1102 power_stock=6 power_PRODUCE=13691 elec_unmet=0
+t=430 powerBIDS ok=4 rej=32 {'INSUFFICIENT_FUNDS': 32} | auction sold=0 prices=[] | mw_stock=1253 power_stock=6 power_PRODUCE=12830 elec_unmet=0
+t=480 powerBIDS ok=11 rej=43 {'INSUFFICIENT_FUNDS': 43} | auction sold=22 prices=[5684] | mw_stock=1422 power_stock=6 power_PRODUCE=14725 elec_unmet=475

@@ -218,3 +218,34 @@ delivery) may be cheaper than capacity growth - measure first.
 Performance state: ~1.3 ticks/s at 966 (gate needs 5) - batched-cognition spec
 + regional markets (doctrine sect 3) remain the ladder. Gate evidence ladder
 953 -> 96 -> 156 -> 53 -> 73 banked in sweeps/ with logs.
+
+
+### UPDATE 2026-09-10 17:00 CEST - DELIVERY-PATH DIAGNOSIS COMPLETE: AFFORDABILITY GAP
+
+machflow966 probe (500 ticks, banked in sweeps/machflow966_affordability_gap.log):
+- t=80-230: power coops issue ZERO machine bids (ok=0 rej=0) while auctions sell
+  machines at ~5,500-5,700cr and machine_works stock piles 184 -> 601
+- t=280+: first bids appear, but 26/28+ rejected INSUFFICIENT_FUNDS - power coop
+  treasuries (~500-32k but consumed by wages/energy) cannot cover ~5,600/machine
+- power_stock pinned at 6 machines total across 6 power coops (2/coop); the grid
+  oscillates boom-bust on that thin, non-replenishing capital stock
+
+ROOT CHAIN (complete): cloned power coops start with 2 machines (fixed), wear
+them (1 per 20 runs per coop), and CANNOT REBUY because the machine price
+(~5,600 = amortized labor at scale) exceeds what a small power coop can save
+while paying wages+energy. The auction has sellers and demand intent, but the
+price floor of a capital good exceeds small-coop affordability -> no flow ->
+boom-bust on remaining stock.
+
+NEXT SESSION (fresh context recommended): capital-goods affordability at scale.
+Options measured against doctrine + D18/D19: (a) credit union rule (exists,
+votable) extended to machine purchases for essential-chain coops; (b) capital
+fund / society-funded machine grants to understaffed essential coops (capital_rent
+already charges society for machine use - recycle it into replacement grants);
+(c) machine-leasing coops (rent per run instead of ownership); (d) price floor
+reform for capital goods (amortized-per-run sale units). Measure (b) first -
+the capital_rent pool already exists and recycles exactly this value.
+
+Also noted: probe shows elec_unmet=0 for long stretches THEN 387 at t=330 -
+the boom-bust is real and matches gate5's t=1975 dip. Fixing affordability
+should collapse the oscillation amplitude.
