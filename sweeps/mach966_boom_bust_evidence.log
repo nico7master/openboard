@@ -1,0 +1,25 @@
+pop=933 machine_coops=3 power_coops=6
+  machine_works: mem=3 treasury=53585 machines_stock=35 tools=0
+  machine_works_x1: mem=11 treasury=50008 machines_stock=0 tools=0
+  machine_works_x2: mem=2 treasury=50018 machines_stock=0 tools=0
+t=200 mach_prod=0 mach_stock=538 wear_total=228 elec_unmet=465
+t=400 mach_prod=0 mach_stock=1151 wear_total=184 elec_unmet=325
+t=600 mach_prod=0 mach_stock=1818 wear_total=236 elec_unmet=442
+t=800 mach_prod=0 mach_stock=2642 wear_total=312 elec_unmet=433
+t=1000 mach_prod=0 mach_stock=3324 wear_total=249 elec_unmet=0
+t=1200 mach_prod=0 mach_stock=3960 wear_total=207 elec_unmet=0
+t=1400 mach_prod=0 mach_stock=4699 wear_total=223 elec_unmet=444
+Traceback (most recent call last):
+  File "/tmp/mach966.py", line 30, in <module>
+    drive(run, 42, t, t)
+    ~~~~~^^^^^^^^^^^^^^^
+  File "/a0/usr/projects/openboard-economy/scripts/stage6_scale_gate.py", line 39, in drive
+    run._apply_batch(t, actions)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/a0/usr/projects/openboard-economy/dashboard/server.py", line 510, in _apply_batch
+    apply_tick(self.state, self.ledger, batch, current_tick=tick)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/a0/usr/projects/openboard-economy/src/openboard/engine.py", line 3145, in apply_tick
+    seen.add(content_hash)
+    ~~~~~~~~^^^^^^^^^^^^^^
+MemoryError

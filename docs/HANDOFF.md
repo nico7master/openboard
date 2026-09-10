@@ -192,3 +192,29 @@ Per scaling doctrine this is the capital-goods stage throttle; regional markets
 All five gate logs banked in sweeps/. Discipline held: every run via memrun,
 solo, per-tick applied.clear. HEAD 794a2c1 + pantry/inventory patches uncommitted
 (check git status).
+
+
+### UPDATE 2026-09-10 17:00 CEST - machine-chain probe: BOOM-BUST grid confirmed
+
+mach966 probe (died at cap rc=1 — ledger.records grows even with applied.clear;
+next probe must call trim_retention per tick too; pre-death data valid, banked in
+sweeps/mach966_boom_bust_evidence.log):
+- machine chain at 966: THREE coops (machine_works 3 mem, _x1 11 mem, _x2 2 mem)
+- electricity unmet OSCILLATES: 465 -> 325 -> 442 -> 433 -> 0 -> 0 -> 444
+  (boom-bust cycle, not monotonic decline) - matches gate5 t=1975 stochastic dip
+- machine stock piles up 538 -> 4,699 across windows; wear_total stays 184-312
+- probe bug to fix next time: mach_prod counted PRODUCE in applied[-20000:] AFTER
+  per-tick clearing, so it only saw the last tick (always 0). Count within the
+  drive loop per window instead.
+
+NEXT SESSION (priority): structural capital-chain fix at scale. Options measured
+against doctrine: (a) scale_world should clone machine_works with MORE weight
+(capacity-per-member is the throttle), (b) raise per-coop machine stock bootstrap,
+(c) D19 join-only routing into understaffed machine/power coops (genesis all
+seated, so only demographic adults or migration can rebalance), (d) votable
+max_coop_members raise. Boom-bust damping (inventory smoothing on machine
+delivery) may be cheaper than capacity growth - measure first.
+
+Performance state: ~1.3 ticks/s at 966 (gate needs 5) - batched-cognition spec
++ regional markets (doctrine sect 3) remain the ladder. Gate evidence ladder
+953 -> 96 -> 156 -> 53 -> 73 banked in sweeps/ with logs.
