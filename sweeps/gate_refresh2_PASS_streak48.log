@@ -1,0 +1,13 @@
+Stage 6 scale gate: 2000 ticks, target 1000 citizens
+scaled population: 966
+  t=250 elapsed=132s rss=937MB inv_bad=0 streak=3
+  t=500 elapsed=249s rss=937MB inv_bad=0 streak=9
+  t=750 elapsed=386s rss=937MB inv_bad=0 streak=20
+  t=1000 elapsed=523s rss=937MB inv_bad=0 streak=1
+  t=1250 elapsed=666s rss=937MB inv_bad=0 streak=15
+  t=1500 elapsed=805s rss=937MB inv_bad=0 streak=1
+  t=1750 elapsed=943s rss=937MB inv_bad=0 streak=21
+  t=2000 elapsed=1082s rss=937MB inv_bad=0 streak=2
+final: pop=966 wall=1082s rss=937MB inv_bad=0 worst_streak=48
+worst_streak_detail: {'tick': 1118, 'citizens': 465, 'goods': {'water': 465}}
+GATE: PASS {'invariant': True, 'streak': True, 'wall': True, 'rss': True}

@@ -285,3 +285,28 @@ a small targeted fix (not a redesign) should close the gate.
 Performance state: ~1.3 ticks/s at 966 (gate needs 5) - batched-cognition
 spec + regional markets (doctrine sect 3) remain the ladder. Gate evidence
 ladder 953 -> 96 -> 156 -> 53 -> 73 banked in sweeps/ with logs.
+
+
+### UPDATE 2026-09-10 19:20 CEST - WP4.2 STABILITY GATE: PASS
+
+gate_refresh2 (HEAD+2 fixes): GATE: PASS - inv_bad=0, worst_streak=48 (<=50),
+wall=1082s, rss=937MB, pop=966, 2000 ticks. Worst detail: t=1118, 465 citizens
+water (mid-run dip, recovered by t=2000: streak=2).
+
+The complete fix chain (ladder 953 -> 96 -> 156 -> 53 -> 73 -> 48 -> PASS):
+1. 8e64665 float-poisoning repair (VWAP durable division int-native)
+2. 9a7d5da clones inherit CAPITAL_BOOTSTRAP
+3. full base-inventory inheritance (stage6_scale_gate.py)
+4. ramp-sized launch pantry 60/40/40
+5. THE DESIGNED LOOP ENABLED: capital_refresh ON in scale_world
+   (interval 10, tools 2, machines 2/coop) - society charges capital_rent
+   per machine-use into capital_fund and recycles it into replacement
+   stock ('public capital, private use'). Probe-verified: power machines
+   6 -> 150, elec_unmet 0 at t=400.
+6. (this commit) retirement accounting fix: _capital_refresh_phase must
+   record money_retired += cost ALWAYS - the money_cap skip left the fund
+   deduction unaccounted (money_delta -127,500 at first refresh). At 181
+   the rule ships OFF so the bug never fired before.
+
+Residual for perf work: ~1.3 ticks/s at 966 (gate needs 5) - batched
+cognition + regional markets remain. The stability half of WP4.2 is DONE.

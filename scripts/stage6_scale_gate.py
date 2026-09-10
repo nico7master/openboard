@@ -164,6 +164,21 @@ def scale_world(run, target):
     for coop_id, goods in capital_seeds:
         run._inject({"after_tick": proc, "op": "capital",
                      "coop": coop_id, "goods": goods})
+    # 2026-09-10 evidence ladder (machflow966 + refresh_probe): at scale the
+    # MARKET path for capital replacement is unaffordable - machine price
+    # (~5,600cr amortized labor) exceeds small-coop savings, power coops
+    # pinned at founding stock wear down with no rebuy, grid boom-busts
+    # (elec_unmet 0->0->387 oscillation; gate5 t=1975 dip 566/966).
+    # The DESIGNED answer already exists in the engine: capital_rent charges
+    # society per machine-use into capital_fund, and the capital_refresh
+    # rule recycles it into replacement stock ('public capital, private
+    # use', server.py). It ships but is OFF in the baseline (toolsmith
+    # chain was meant to replace it; at 181 the market path suffices).
+    # At 5.4x scale the public loop must be ON. Probe-verified: power
+    # machines 6 -> 150 (25/coop target), refresh events steady, fund
+    # flush, elec_unmet 0 by t=400.
+    _rsp = run.state.active_ruleset_params()
+    _rsp["capital_refresh"] = {"interval_ticks": 10, "hand_tools": 2, "machines": 2}
     return len(run.bots)
 
 

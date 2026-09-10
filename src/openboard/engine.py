@@ -2170,9 +2170,15 @@ def _capital_refresh_phase(state: WorldState, tick: int, params: dict[str, Any])
         for good, qty in top_up.items():
             inv[good] = inv.get(good, 0) + qty
         state.capital_fund -= cost
-        if not (params.get("money_cap") or {}).get("enabled"):
-            state.money_retired += cost  # legacy: destruction shrinks supply
-        # fixed supply: the pool paid, money stays in circulation (transfer)
+        # 2026-09-10 invariant fix (gate 6, inv_bad +1/tick under money_cap):
+        # the fund deduction REMOVES the cost from the tracked money sum
+        # (fund is part of it; the granted goods are not money), so the
+        # retirement MUST be recorded regardless of money_cap. The old
+        # money_cap skip called it a 'transfer' - but nothing received the
+        # money, so it was destruction without accounting. This never fired
+        # at 181 because capital_refresh ships OFF in the baseline; the
+        # scaled world enables it (capital_rent funds public maintenance).
+        state.money_retired += cost
         events.append({
             "tick": tick,
             "action": "CAPITAL_REFRESH",
