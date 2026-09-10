@@ -30,11 +30,15 @@ ESSENTIALS = ("bread", "water", "electricity", "meals")
 
 def drive(run, seed, t0, t1):
     for t in range(t0, t1 + 1):
+        # WP4.2 cognition invariants: params are tick-constant (the server's
+        # _tick already resolves once per tick); resolving per bot was 966
+        # O(rulesets) scans per tick at scale.
+        params = run.state.active_ruleset_params()
         actions = []
         for name, meta in sorted(run.bots.items()):
             rng = random.Random(f"{seed}:{t}:{name}")
             actions.extend(
-                meta["fn"](name, run.state, run.state.active_ruleset_params(), t, rng)
+                meta["fn"](name, run.state, params, t, rng)
             )
         run._apply_batch(t, actions)
         run._record_timeline()

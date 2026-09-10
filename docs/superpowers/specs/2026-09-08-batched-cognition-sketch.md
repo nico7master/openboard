@@ -1,7 +1,25 @@
 # WP4.2 Design Sketch — Batched Bot Cognition (v1 draft)
 
-Status: DRAFT — not yet approved for implementation. Per project rules,
-implementation starts only after this spec is reviewed.
+Status: APPROVED (user, 2026-09-10 "yes continue") — sub-steps 1+2 LANDED.
+
+## Implementation log (2026-09-10, Patch A)
+
+- `_my_coop` now reads a per-tick citizen->coop map cached on state
+  (lazy, keyed on state.tick, first-match order preserved = the scan's
+  exact semantics; membership mutates ONLY in apply_tick's JOIN/LEAVE/
+  FOUND handlers, cognition is a frozen-tick pure read).
+- personal_needs resolves active_ruleset_params once (was 2x/citizen).
+- sim.bot: duplicated recipe lookup removed (dead lines, zero effect).
+- drive() resolves params once per tick (was per bot = 966x).
+- PROOF: 30-tick fingerprint A/B byte-identical (96d0e0fa91804b61,
+  SEQ_SHA f732931b9f938ef1, 5,000 records, seq 509,842).
+- PERF (pinned 2-core nice-19 harness): 1.46 -> 1.52 ticks/s (+4%).
+  Smaller than the est. because the map build is once-per-tick and the
+  entrepreneur jobless scan is the dominant consumer of the old scan
+  cost - the map serves it O(1) now, but entrepreneur's own per-citizen
+  work remains. Next lever: coop-constant blocks in sim.bot (bridge
+  trigger rescans listings per member; equity _run_cost; honest-wages
+  _replace_w/EMA - all identical across a coop's members).
 
 ## Problem
 

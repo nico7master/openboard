@@ -70,8 +70,6 @@ def make_specialist(
                     ]
         recipe = state.recipes[recipe_id]
         active_id = recipe_id
-        recipe = state.recipes[recipe_id]
-        active_id = recipe_id
         # D18 member equity injection: an idle (10+ ticks, engine-signal
         # last_produce_tick) and insolvent (treasury below one run's input
         # cost) coop is rescued by its worker-owners — the real-world

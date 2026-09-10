@@ -33,10 +33,27 @@ def _bid(tick, who, good, max_price, qty, version):
 
 
 def _my_coop(state: WorldState, who: str) -> str | None:
-    for cid, c in state.coops.items():
-        if who in c["members"]:
-            return cid
-    return None
+    # WP4.2 cognition cache (spec 2026-09-08 sub-steps 1+2): the linear scan
+    # over every coop's members ran once per (citizen, call site, tick) -
+    # ~7 sites x 966 citizens x O(total members) at scale, and entrepreneur's
+    # jobless-scan made it O(citizens x members) ALONE. Membership mutates
+    # ONLY inside apply_tick (JOIN/LEAVE/FOUND handlers invalidate the cache
+    # explicitly), and every apply also advances state.tick; cognition is a
+    # pure read at a frozen tick. A per-tick citizen->coop map is therefore
+    # exact and byte-identical: insertion order preserves the scan's
+    # first-match semantics (a citizen in several coops binds to the first
+    # coop in state.coops order, exactly like the scan). Tick-scoped per the
+    # spec: replay forks never share a cache across ticks.
+    cache = getattr(state, "_coop_of", None)
+    if cache is None or cache[0] != state.tick:
+        member_map: dict[str, str] = {}
+        for cid, c in state.coops.items():
+            for member in c["members"]:
+                if member not in member_map:
+                    member_map[member] = cid
+        cache = (state.tick, member_map)
+        state._coop_of = cache
+    return cache[1].get(who)
 
 
 def _afford(state: WorldState, who: str, price: int, qty: int) -> bool:
@@ -781,13 +798,14 @@ def personal_needs(who, state, params, tick):
     inv = state.citizen_inventory.get(who, {})
     balance = state.balances.get(who, 0)
     # Loop-invariant: params cannot change while this citizen decides.
-    _dm_all = (state.active_ruleset_params().get("demand_memory") or {})
+    _params_resolved = state.active_ruleset_params()
+    _dm_all = (_params_resolved.get("demand_memory") or {})
     # WP4.2 cognition invariants (spec 2026-09-08 sub-step 2): the triage
     # overrides map is params-derived and constant within this decision;
     # inline the effective_triage lookup (rule override > catalog default)
     # instead of calling state.effective_triage() once per (citizen, good)
     # - each of those re-resolved active_ruleset_params().
-    _triage_overrides = state.active_ruleset_params().get("triage_overrides", {})
+    _triage_overrides = _params_resolved.get("triage_overrides", {})
     for good in sorted(needs.keys()):
         quota = needs[good]
         if quota <= 0:
