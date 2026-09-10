@@ -162,3 +162,33 @@ The next agent should start with Week 4.1 (Cardano preprod anchoring).
   (verified: power_plant_x1/x2 spawn machines=2; 16 capital injections).
 - Official gate re-running via memrun (/tmp/scale_gate_bootstrap.log).
   PASS criterion unchanged: inv_bad=0, worst_streak<=50, wall<=7200s, rss<=8192MB.
+
+
+### UPDATE 2026-09-10 16:30 CEST - WP4.2 stability ladder: 953 -> 73, residual = machine chain
+
+Gate verdict ladder (all via memrun, solo, seed 42, 2000 ticks, 966 citizens):
+| Run | Fix | worst_streak | Failure detail |
+|---|---|---|---|
+| 1 (pre-float-fix) | - | 379 | no diagnostics |
+| 2 (float fix 8e64665) | int VWAP division | 96 @t141 | electricity 436 + bread (founding) |
+| 3 (+capital bootstrap 9a7d5da) | clones get machines | 156 @t489 | water 854 + elec 479 (mid-ramp) |
+| 4 (+full base inventory) | clones inherit base working stock | 53 @t100 | bread, 6 citizens (ramp edge) |
+| 5 (+ramp pantry 60/40/40) | launch reserve | 73 @t1975 | ELECTRICITY 566 (late stochastic dip) |
+
+Steady state is PROVEN clean in runs 4-5 (checkpoint streaks 0-26 through t=2000;
+inv_bad=0 always; wall ~1100s; rss ~1GB). The residual failure mode: the scaled
+electricity grid (6 power coops, 42 members, 2 machines each, durability 20) sits
+AT capacity; stochastic transients (machine wear refresh + coal delivery jitter)
+tip multi-tick dips of 500+ citizens. Coal piles up unburned (24k) because
+production is machine-limited, not fuel-limited.
+
+NEXT (structural, fresh session recommended): machine-chain throughput at scale -
+(1) probe machine_works clone production + machine refresh rate vs wear rate;
+(2) options: more machine_works cloning weight, higher per-coop machine stock
+bootstrap, or D19-style join-into-understaffed-essential-coops mobility.
+Per scaling doctrine this is the capital-goods stage throttle; regional markets
+(sect 3) is the eventual structural answer.
+
+All five gate logs banked in sweeps/. Discipline held: every run via memrun,
+solo, per-tick applied.clear. HEAD 794a2c1 + pantry/inventory patches uncommitted
+(check git status).

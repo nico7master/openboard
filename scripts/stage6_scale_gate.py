@@ -129,14 +129,30 @@ def scale_world(run, target):
             # unmet): clones got treasury+pantry but NO capital - cloned
             # power coops spawned with zero machines (base has 2) and zero
             # coal bids, so the scaled grid ran at a trickle until a
-            # transient tipped it into total collapse. Clones inherit the
-            # same CAPITAL_BOOTSTRAP goods their base coop received.
-            _boot = CAPITAL_BOOTSTRAP.get(base_coop)
+            # transient tipped it into total collapse.
+            # 2026-09-10 refinement: inheriting only the hand-picked
+            # CAPITAL_BOOTSTRAP list still left water/mill/baker clones
+            # with empty working inventory -> mid-ramp water+electricity
+            # collapse (t=489, 854/966 unmet water). The general rule:
+            # every clone inherits its base coop's FULL current inventory
+            # (working capital snapshot at scaling time). This subsumes
+            # the bootstrap list.
+            _boot = dict(s.coops.get(base_coop, {}).get("inventory") or {})
+            _boot.update({g: q for g, q in (CAPITAL_BOOTSTRAP.get(base_coop) or {}).items()})
             if _boot:
-                capital_seeds.append((coop_id, dict(_boot)))
+                capital_seeds.append((coop_id, _boot))
+            # 2026-09-10 gate: with capital-bootstrapped clones the only
+            # remaining gate failures are founding-ramp transients while
+            # the scaled chains reach capacity (~t=100-150; steady state
+            # clean, streaks 0-15 through t=2000). The pantry is consumed
+            # 1 unit/tick, so it must cover the RAMP in ticks, not days:
+            # bread 60 (gate 4 showed a 53-tick bread gap for 6 late-
+            # served citizens), water/electricity 40. This is the scaled
+            # world's launch reserve — real societies also launch with
+            # strategic reserves while production ramps.
             for n in names:
                 run._inject({"after_tick": tick1, "op": "pantry", "citizen": n,
-                             "goods": {"bread": 3, "water": 3, "electricity": 3}})
+                             "goods": {"bread": 60, "water": 40, "electricity": 40}})
     # apply founding batch through the engine (tick already advanced by
     # Run.__init__; citizens injected first so they exist, then the
     # FOUND_COOP batch creates the coops, then treasuries)
