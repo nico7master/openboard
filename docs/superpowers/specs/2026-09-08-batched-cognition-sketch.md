@@ -21,6 +21,27 @@ Status: APPROVED (user, 2026-09-10 "yes continue") — sub-steps 1+2 LANDED.
   trigger rescans listings per member; equity _run_cost; honest-wages
   _replace_w/EMA - all identical across a coop's members).
 
+## Patch B (3e06b66) + post-patch profile verdict (2026-09-10 evening)
+
+- Patch B: per-tick listing-aggregate caches (_own_listed_qty,
+  _active_entries) replace sim.bot's 9 per-citizen listing rescans.
+  Same frozen-tick safety argument; fingerprint byte-identical (same
+  96d0e0fa91804b61 / SEQ f732931b9f938ef1); suite 425 green (703s).
+- Pinned ladder: 1.46 -> 1.52 (A) -> 1.51 (B) at pop 966. Honest: B is
+  flat at 966 - its win is asymptotic (per-(tick,good) filter cost is
+  independent of citizen count).
+- POST-PATCH PROFILE (cProfile, 6 ticks): apply_tick now 78% of tick
+  time; cognition ~16% (sim.bot 1.58s of 9.83s) - this spec's rung is
+  DONE (est. 1.5-1.6, delivered 1.51-1.52). Remaining mass: ledger hash
+  chain (~19k records/tick x 2 canonical_json each) and clearing sorts
+  (53k calls).
+- VERDICT: >=5 ticks/s will NOT come from caching. Two structural
+  levers, each needing its own reviewed spec (hard gate):
+  (1) regional markets (doctrine sect 3);
+  (2) ledger record batching - merkle-ize actions within a tick into
+  one record, cutting canonical_json from ~2x/action to ~1x/batch;
+  MUST land before the anchor format freezes (pre-anchor window).
+
 ## Problem
 
 Bot cognition is the largest remaining profiled block (~30% of tick time

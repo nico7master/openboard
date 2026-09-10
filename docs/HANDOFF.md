@@ -308,5 +308,15 @@ The complete fix chain (ladder 953 -> 96 -> 156 -> 53 -> 73 -> 48 -> PASS):
    deduction unaccounted (money_delta -127,500 at first refresh). At 181
    the rule ships OFF so the bug never fired before.
 
-Residual for perf work: ~1.3 ticks/s at 966 (gate needs 5) - batched
-cognition + regional markets remain. The stability half of WP4.2 is DONE.
+Performance (2026-09-10 evening, pinned 2-core nice-19 harness - CPU
+holdback now mandatory via memrun, commit 1938be3): ladder 1.46 -> 1.52
+-> 1.51 ticks/s at 966 via Patch A 3d4253d (per-tick coop-membership
+map + params hoists) and Patch B 3e06b66 (per-tick listing aggregate
+caches), BOTH proven byte-identical by 30-tick fingerprint A/B
+(96d0e0fa91804b61 / SEQ_SHA f732931b9f938ef1), both 425-green. Post-patch
+profile: apply_tick 78% of tick (ledger hash chain ~19k records/tick x2
+canonical_json + clearing sorts 53k calls); cognition done (~16%).
+Next levers are STRUCTURAL and need their own reviewed specs: regional
+markets (doctrine sect 3) and ledger record batching (merkle per tick,
+pre-anchor window). Full-suite pinned cap is 6 GiB (RLIMIT_AS, not
+RSS - 2 GiB dies mid-import). The stability half of WP4.2 is DONE.
