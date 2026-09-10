@@ -310,10 +310,15 @@ The complete fix chain (ladder 953 -> 96 -> 156 -> 53 -> 73 -> 48 -> PASS):
 
 Performance (2026-09-10 evening, pinned 2-core nice-19 harness - CPU
 holdback now mandatory via memrun, commit 1938be3): ladder 1.46 -> 1.52
--> 1.51 ticks/s at 966 via Patch A 3d4253d (per-tick coop-membership
-map + params hoists) and Patch B 3e06b66 (per-tick listing aggregate
-caches), BOTH proven byte-identical by 30-tick fingerprint A/B
-(96d0e0fa91804b61 / SEQ_SHA f732931b9f938ef1), both 425-green. Post-patch
+-> 1.51 -> 1.74 ticks/s at 966 via Patch A 3d4253d (per-tick
+coop-membership map + params hoists), Patch B 3e06b66 (per-tick listing
+aggregate caches), and ledger record_hash v3 (concat encoding, spec
+2026-09-10-ledger-record-hash-v3). A+B proven byte-identical by
+30-tick fingerprint A/B (96d0e0fa91804b61 / SEQ_SHA f732931b9f938ef1),
+both 425-green. v3 proven STATE-EQUIVALENT (hash VALUES change by
+design, pre-anchor window): FINAL_STATE_HASH + outcomes multiset
+identical over 30 ticks / 509,843 records, verify_chain True, 425
+green; micro-bench 2.68x on the record-hash input. Post-patch
 profile: apply_tick 78% of tick (ledger hash chain ~19k records/tick x2
 canonical_json + clearing sorts 53k calls); cognition done (~16%).
 Next levers are STRUCTURAL and need their own reviewed specs: regional
