@@ -9,7 +9,7 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .bots import DecisionFn, _my_coop, _tx, personal_needs
+from .bots import DecisionFn, _active_entries, _my_coop, _own_listed_qty, _tx, personal_needs
 from .engine import apply_tick
 from .ledger import Ledger, Transaction
 from .metrics import SimMetrics
@@ -101,7 +101,7 @@ def make_specialist(
             short = any(c["inventory"].get(g, 0) < recipe["inputs"][g] for g in bridge_goods)
             buyable = True
             for g in bridge_goods:
-                ls = [e for e in (state.listings.get(g) or []) if e.get("qty", 0) > 0]
+                ls = _active_entries(state, g)
                 if not ls:
                     buyable = False
                     break
@@ -200,8 +200,7 @@ def make_specialist(
             # replacement -> hours stop flowing. No mountains, no famine.
             _gap_w = 0
             for _og in _outs_w:
-                _listed_w = sum(e["qty"] for e in state.listings.get(_og, [])
-                                if e["coop_id"] == coop_id)
+                _listed_w = _own_listed_qty(state, coop_id, _og)
                 _stock_w = c["inventory"].get(_og, 0) + _listed_w
                 _gap_w = max(_gap_w, max(0, stock_target - _stock_w))
             _gap_runs = max(1, -(-_gap_w // _out_units_w))
@@ -229,10 +228,7 @@ def make_specialist(
             out.append(_tx(tick, who, "WORK", {"coop_id": coop_id, "hours": _hours}, v))
 
 
-        listed = sum(
-            e["qty"] for e in state.listings.get(output_good, [])
-            if e["coop_id"] == coop_id
-        )
+        listed = _own_listed_qty(state, coop_id, output_good)
         stock = c["inventory"].get(output_good, 0) + listed
         # D18 demand-starvation fix: when unsold stock piles up past 2x
         # the produce target, the produce gate (stock < target) stays
@@ -281,7 +277,7 @@ def make_specialist(
         # Demand is true when ANY output's market stock is below target.
         _any_output_short = any(
             (c["inventory"].get(_og, 0)
-             + sum(e["qty"] for e in state.listings.get(_og, []) if e["coop_id"] == coop_id))
+             + _own_listed_qty(state, coop_id, _og))
             < stock_target
             for _og in sorted(recipe["outputs"].keys())
         )
@@ -317,7 +313,7 @@ def make_specialist(
             # deadlock (steelworks starved of power forever).
             _input_loop_covers_power = "electricity" in (_maint_recipe.get("inputs") or {})
             if e_short > 0 and not (want_produce and _input_loop_covers_power):
-                floors = [e["floor"] for e in state.listings.get("electricity", ()) if e["qty"] > 0]
+                floors = [e["floor"] for e in _active_entries(state, "electricity")]
                 # 2026-09-01: bid at floor+2 like every other buyer —
                 # bidding the raw floor loses every tie-break to floor+2
                 # bidders (observed: livestock priced power at 1 vs floor 2,
@@ -355,10 +351,7 @@ def make_specialist(
             # primary-good demand does.
             runs_wanted = 1
             for _og in sorted(recipe["outputs"].keys()):
-                _listed_og = sum(
-                    e["qty"] for e in state.listings.get(_og, [])
-                    if e["coop_id"] == coop_id
-                )
+                _listed_og = _own_listed_qty(state, coop_id, _og)
                 _stock_og = c["inventory"].get(_og, 0) + _listed_og
                 _gap_og = max(0, stock_target - _stock_og)
                 _rw = max(1, (_gap_og + out_units - 1) // out_units)
@@ -446,7 +439,7 @@ def make_specialist(
                     if short <= 0:
                         continue
                     _cap_short = True
-                    floors = [e["floor"] for e in state.listings.get(cap_good, ()) if e["qty"] > 0]
+                    floors = [e["floor"] for e in _active_entries(state, cap_good)]
                     cap_price = int(min(floors) if floors else state.good_cost_baseline.get(cap_good, 1)) + 2
                     cap_qty = min(short, c.get("treasury", 0) // cap_price) if cap_price > 0 else short
                     if cap_qty > 0:
@@ -475,7 +468,7 @@ def make_specialist(
                     mat_short = max(0, _mat_target - mat_have)
                     if mat_short <= 0:
                         continue
-                    floors = [e["floor"] for e in state.listings.get(mat_good, ()) if e["qty"] > 0]
+                    floors = [e["floor"] for e in _active_entries(state, mat_good)]
                     mat_price = int(min(floors) if floors else state.good_cost_baseline.get(mat_good, 1)) + 2
                     mat_qty = min(mat_short, c.get("treasury", 0) // mat_price) if mat_price > 0 else mat_short
                     if mat_qty > 0:
@@ -563,7 +556,7 @@ def make_specialist(
             # the worst (deepest) gap drives runs, so unmet milk demand
             # keeps livestock producing even when meat is at target
             _worst_gap = max((max(0, stock_target - (c["inventory"].get(_og, 0)
-                                + sum(e["qty"] for e in state.listings.get(_og, []) if e["coop_id"] == coop_id)))
+                                + _own_listed_qty(state, coop_id, _og)))
                               for _og in recipe["outputs"]), default=stock_target - stock)
             # replacement runs: at least enough to replace what sold last
             # tick across all outputs (sold units leave the market, the

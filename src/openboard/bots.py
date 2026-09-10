@@ -56,6 +56,53 @@ def _my_coop(state: WorldState, who: str) -> str | None:
     return cache[1].get(who)
 
 
+def _listing_agg_cache(state: WorldState) -> tuple[int, dict]:
+    """WP4.2 Patch B: tick-scoped listing-aggregate cache.
+
+    Listings mutate ONLY inside apply_tick (LIST_GOOD append, clearing
+    qty edits, strip) - never during the cognition phase, which reads a
+    frozen tick. Same safety argument as the _coop_of membership map.
+    """
+    cache = getattr(state, "_listing_agg", None)
+    if cache is None or cache[0] != state.tick:
+        cache = (state.tick, {})
+        state._listing_agg = cache
+    return cache
+
+
+def _own_listed_qty(state: WorldState, coop_id: str, good: str) -> int:
+    """Sum of this coop's offered qty for one good (per-tick cached).
+
+    Replaces the per-citizen `sum(e["qty"] ... if e["coop_id"] ==
+    coop_id)` rescans: the value is coop-constant, identical for every
+    member of the coop within a tick.
+    """
+    tick, store = _listing_agg_cache(state)
+    key = ("own", coop_id, good)
+    agg = store.get(key)
+    if agg is None:
+        agg = sum(e["qty"] for e in state.listings.get(good, [])
+                  if e["coop_id"] == coop_id)
+        store[key] = agg
+    return agg
+
+
+def _active_entries(state: WorldState, good: str) -> list[dict[str, Any]]:
+    """Listings of one good with qty > 0, order preserved (per-tick cached).
+
+    The filter (the alloc-heavy part of the per-citizen floor scans) runs
+    once per (tick, good); call sites keep their own min()/any() reads
+    over the SAME dict references, so semantics are untouched.
+    """
+    tick, store = _listing_agg_cache(state)
+    key = ("active", good)
+    ent = store.get(key)
+    if ent is None:
+        ent = [e for e in (state.listings.get(good) or []) if e.get("qty", 0) > 0]
+        store[key] = ent
+    return ent
+
+
 def _afford(state: WorldState, who: str, price: int, qty: int) -> bool:
     return state.balances.get(who, 0) >= price * qty
 
