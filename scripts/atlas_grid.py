@@ -93,6 +93,7 @@ def money_delta(run) -> int:
         + s.surplus_pool
         + s.capital_fund
         + getattr(s, "innovation_pool", 0)
+        + sum(getattr(s, "research_funding", {}).values())
         + sum(c.get("treasury", 0) for c in s.coops.values())
     )
     if not hasattr(run, "_money0"):

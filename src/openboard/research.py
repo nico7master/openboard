@@ -252,11 +252,17 @@ def allocate_fields_phase(
     if crisis_active(state):
         base = crisis_field_override(state, params, base)
     funding = state.research_funding
+    total_taken = 0
     for f in sorted(FIELDS):
         take = pool * int(base.get(f, 0)) // 10_000
         if take > 0:
             funding[f] = funding.get(f, 0) + take
-    state.innovation_pool = 0
+            total_taken += take
+    # Money conservation (bug found by Lever Atlas 2026-09-11): floor
+    # division per field leaves a remainder; zeroing the pool destroyed
+    # it every tick (measured -1..-17 credits/tick at research=500bp).
+    # Unallocated dust STAYS in the pool for the next allocation.
+    state.innovation_pool = pool - total_taken
     events: list[dict[str, Any]] = [{
         "tick": tick,
         "action": "RESEARCH_ALLOCATE",
