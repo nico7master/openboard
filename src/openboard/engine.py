@@ -15,6 +15,7 @@ from __future__ import annotations
 import random
 from typing import Any
 
+from .crisis import crisis_active
 from .errors import Reason
 from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
@@ -95,11 +96,25 @@ def _credit_params(params: dict[str, Any]) -> dict[str, Any] | None:
     return cp
 
 
-def _loan_owed(loan: dict[str, Any]) -> int:
+def _loan_owed(loan: dict[str, Any], tick: int) -> int:
     principal_left = loan["principal"] - loan.get("repaid_principal", 0)
-    fee_total = loan["principal"] * loan.get("fee_bp", 0) // 10_000
-    fee_left = fee_total - loan.get("repaid_fees", 0)
+    flat_fee_total = loan["principal"] * loan.get("fee_bp", 0) // 10_000
+    # Realism contract L1 (spec 2026-09-11): simple interest on outstanding
+    # principal, 1 tick = 1 day.  rate_bp_annual=0 (incl. crisis-originated
+    # solidarity loans) => identical to the pre-interest formula, so old
+    # worlds replay byte-identically.
+    rate = loan.get("rate_bp_annual", 0)
+    # Charge-off: defaulted debt stops accruing (frozen at due_tick).
+    accrue_until = loan["due_tick"] if loan.get("defaulted") else tick
+    days = max(0, accrue_until - loan.get("opened_tick", 0))
+    interest = principal_left * rate * days // 10_000 // 365
+    fee_left = flat_fee_total + interest - loan.get("repaid_fees", 0)
     return principal_left + max(0, fee_left)
+
+
+def loan_owed(loan: dict[str, Any], tick: int) -> int:
+    """Public single-source-of-truth for outstanding balance (seat UI, tests)."""
+    return _loan_owed(loan, tick)
 
 
 def _validate_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
@@ -129,6 +144,11 @@ def _apply_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
     amount = tx.payload["amount"]
     cp = params["credit"]
     due = tx.tick + int(cp.get("term_ticks", 100))
+    # Crisis flip (L1): solidarity credit = 0% rate, locked at origination
+    # like a real fixed-rate loan.  The live flag lives on state.crisis
+    # (declare_crisis), the same truthiness every suspension hook reads.
+    crisis_now = crisis_active(state)
+    rate_bp = 0 if crisis_now else int(cp.get("rate_bp_annual", 0))
     state.surplus_pool -= amount
     state.balances[tx.sender] += amount
     state.loans[tx.sender] = {
@@ -138,6 +158,7 @@ def _apply_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
         "opened_tick": tx.tick,
         "due_tick": due,
         "fee_bp": int(cp.get("fee_bp", 0)),
+        "rate_bp_annual": rate_bp,
         "defaulted": False,
     }
     return {
@@ -146,6 +167,7 @@ def _apply_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
         "citizen": tx.sender,
         "principal": amount,
         "due_tick": due,
+        "rate_bp_annual": rate_bp,
         "pool_after": state.surplus_pool,
     }
 
@@ -176,7 +198,7 @@ def _validate_repay(state: WorldState, tx: Transaction, params: dict[str, Any]) 
     loan = state.loans.get(tx.sender)
     if loan is None or loan.get("defaulted"):
         return Reason.NO_ACTIVE_LOAN
-    if tx.payload["amount"] > _loan_owed(loan):
+    if tx.payload["amount"] > _loan_owed(loan, tx.tick):
         return Reason.RULE_VIOLATION
     if state.balances[tx.sender] < tx.payload["amount"]:
         return Reason.INSUFFICIENT_CREDITS
@@ -185,7 +207,8 @@ def _validate_repay(state: WorldState, tx: Transaction, params: dict[str, Any]) 
 
 def _apply_repay(state: WorldState, tx: Transaction) -> dict[str, Any]:
     loan = state.loans[tx.sender]
-    pay = min(tx.payload["amount"], _loan_owed(loan))
+    owed_before = _loan_owed(loan, tx.tick)
+    pay = min(tx.payload["amount"], owed_before)
     principal_left = loan["principal"] - loan.get("repaid_principal", 0)
     principal_pay = min(pay, principal_left)
     fee_pay = pay - principal_pay
@@ -193,7 +216,9 @@ def _apply_repay(state: WorldState, tx: Transaction) -> dict[str, Any]:
     state.surplus_pool += pay
     loan["repaid_principal"] = loan.get("repaid_principal", 0) + principal_pay
     loan["repaid_fees"] = loan.get("repaid_fees", 0) + fee_pay
-    closed = loan.get("repaid_principal", 0) >= loan["principal"]
+    # L1 fidelity: a loan settles only when principal AND accrued
+    # interest/fees are fully paid (owed_before fully covered).
+    closed = pay >= owed_before
     entry = {
         "tick": tx.tick,
         "action": "REPAY",
@@ -225,7 +250,7 @@ def credit_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[d
                 "action": "LOAN_DEFAULT",
                 "citizen": citizen,
                 "principal": loan["principal"],
-                "owed": _loan_owed(loan),
+                "owed": _loan_owed(loan, tick),
             })
             state.flags.append({
                 "tick": tick,

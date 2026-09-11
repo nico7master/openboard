@@ -28,7 +28,7 @@ from openboard.breaksystem import PLAYBOOKS, ROUND_TICKS, STOP_FLAGS, STOP_UNMET
 from openboard.accounts import Accounts  # noqa: E402
 from openboard.story import build_story  # noqa: E402
 from openboard.flows import build_flows  # noqa: E402
-from openboard.engine import apply_tick  # noqa: E402
+from openboard.engine import loan_owed, apply_tick  # noqa: E402
 from openboard.ledger import Ledger, Transaction  # noqa: E402
 from openboard.metrics import SimMetrics, gini  # noqa: E402
 from openboard.rules import DEFAULT_RULESET_PARAMS  # noqa: E402
@@ -1763,10 +1763,7 @@ def api_seat():
         if cp.get("enabled"):
             loan = s.loans.get(who)
             if loan and not loan.get("defaulted"):
-                principal_left = int(loan["principal"]) - int(loan.get("repaid_principal", 0))
-                fee_total = int(loan["principal"]) * int(loan.get("fee_bp", 0)) // 10_000
-                fee_left = fee_total - int(loan.get("repaid_fees", 0))
-                owed = principal_left + max(0, fee_left)
+                owed = int(loan_owed(loan, s.tick))  # engine formula (incl. interest, L1)
                 loan_info = {"principal": int(loan["principal"]), "owed": owed,
                              "due_tick": int(loan["due_tick"]), "defaulted": False}
                 if balance > 0:
