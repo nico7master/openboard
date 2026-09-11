@@ -16,10 +16,32 @@ from __future__ import annotations
 
 from typing import Any
 
+from .crisis import crisis_active, crisis_field_override
 from .state import WorldState
 
 FIELDS = ("food", "health", "energy", "infrastructure", "computing")
 UNLOCK_PCT_CAP = 20  # max input reduction per unlock tier (spec)
+
+# The PUBLISHED mapping: which goods belong to which research field
+# (collect_signals and recipe_field both read this - one source of truth).
+FIELD_GOODS = {
+    "food": ("bread", "meat", "milk", "eggs", "cheese", "meals", "vegetables", "grain"),
+    "health": ("medicine", "bandages"),
+    "energy": ("electricity", "heating_fuel", "coal"),
+    "infrastructure": ("water", "housing", "maintenance", "clothing"),
+    "computing": ("electronics", "books"),
+}
+
+
+def recipe_field(recipe: dict[str, Any]) -> str | None:
+    """Field a recipe draws its productivity from: the field of its FIRST
+    catalog output (deterministic dict order = authoring order)."""
+    outs = recipe.get("outputs") or {}
+    for g in outs:
+        for f in FIELDS:
+            if g in FIELD_GOODS[f]:
+                return f
+    return None
 
 
 def _cfg(params: dict[str, Any]) -> dict[str, Any] | None:
@@ -38,13 +60,7 @@ def collect_signals(state: WorldState) -> dict[str, int]:
     - disease_prevalence: currently sick citizens (pandemic pressure)
     - population: living citizens
     """
-    field_goods = {
-        "food": ("bread", "meat", "milk", "eggs", "cheese", "meals", "vegetables", "grain"),
-        "health": ("medicine", "bandages"),
-        "energy": ("electricity", "heating_fuel", "coal"),
-        "infrastructure": ("water", "housing", "maintenance", "clothing"),
-        "computing": ("electronics", "books"),
-    }
+    field_goods = FIELD_GOODS
     signals: dict[str, int] = {"population": len(state.balances)}
     for f in FIELDS:
         signals[f"unmet_{f}"] = 0
@@ -202,6 +218,101 @@ def fund_pool_phase(
         "amount": take,
         "pool": state.innovation_pool,
     }]
+
+
+def allocate_fields_phase(
+    state: WorldState, tick: int, params: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Convert the innovation pool into CUMULATIVE per-field funding, then
+    unlock improved recipe variants as fields cross thresholds.
+
+    Allocation = effective split of the two-layer design with every
+    citizen's weight at the abstain default: the published algorithm's
+    proposal (engine bots do not cast research votes; citizens may via
+    the dashboard layer). Crisis override redirects the whole budget to
+    the crisis field (spec section 4).
+
+    Funding is CUMULATIVE KNOW-HOW, not a money balance: credits here are
+    the accounting unit of accumulated research (money conservation is
+    preserved bucket-to-bucket: surplus_pool -> innovation_pool ->
+    research_funding; nothing minted or retired).
+
+    Productivity effect (realism contract L3): recipes draw output bonus
+    from their field's funding via research_effect_bp; crossing each
+    unlock_threshold in a field unlocks the next variant tier of its
+    first recipe in that field (deterministic pick).
+    """
+    cfg = params.get("research") or {}
+    if not cfg.get("enabled"):
+        return []
+    pool = int(getattr(state, "innovation_pool", 0))
+    if pool <= 0:
+        return []
+    base = propose_allocation(state, params)
+    if crisis_active(state):
+        base = crisis_field_override(state, params, base)
+    funding = state.research_funding
+    for f in sorted(FIELDS):
+        take = pool * int(base.get(f, 0)) // 10_000
+        if take > 0:
+            funding[f] = funding.get(f, 0) + take
+    state.innovation_pool = 0
+    events: list[dict[str, Any]] = [{
+        "tick": tick,
+        "action": "RESEARCH_ALLOCATE",
+        "split": dict(sorted(base.items())),
+        "funding": dict(sorted(funding.items())),
+    }]
+
+    # Variant unlocks: each unlock_threshold reached in a field unlocks the
+    # next tier of that field's first (alphabetical) recipe not yet at tier.
+    threshold = int(cfg.get("unlock_threshold", 50_000))
+    if threshold <= 0:
+        return events
+    unlocks = state.research_unlocked
+    for f in sorted(FIELDS):
+        tier = funding.get(f, 0) // threshold
+        if tier <= 0:
+            continue
+        for rid in sorted(state.recipes.keys()):
+            if recipe_field(state.recipes[rid]) != f:
+                continue
+            cur = unlocks.get(rid, 0)
+            if cur >= min(tier, UNLOCK_PCT_CAP // 5):
+                continue  # already unlocked through this tier
+            new_tier = cur + 1
+            unlocks[rid] = new_tier
+            vid = f"{rid}_v{new_tier}"
+            state.recipes[vid] = unlock_variant(state.recipes[rid], new_tier)
+            events.append({
+                "tick": tick,
+                "action": "RESEARCH_UNLOCK",
+                "field": f,
+                "from_recipe": rid,
+                "recipe_id": vid,
+                "tier": new_tier,
+            })
+            break  # one unlock per field per tick
+    return events
+
+
+def research_effect_bp(state: WorldState, recipe: dict[str, Any], params: dict[str, Any]) -> int:
+    """L3 productivity: output bonus (bp) a recipe earns from its field's
+    cumulative funding. Default scale: +250bp per 10,000cr of know-how in
+    the field, capped at +2500bp (+25% = the spec's realism magnitude).
+    Integer only; 0 when research disabled or field unfunded."""
+    cfg = params.get("research") or {}
+    if not cfg.get("enabled"):
+        return 0
+    f = recipe_field(recipe)
+    if f is None:
+        return 0
+    fnd = int(state.research_funding.get(f, 0))
+    if fnd <= 0:
+        return 0
+    per = int(cfg.get("output_bonus_bp_per_10k", 250))
+    cap = int(cfg.get("max_output_bonus_bp", 2_500))
+    return min(cap, fnd * per // 10_000)
 
 
 def unlock_variant(recipe: dict[str, Any], tier: int) -> dict[str, Any]:

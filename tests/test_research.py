@@ -160,7 +160,11 @@ def test_funding_phase_invariant_neutral_and_gated() -> None:
     s2.surplus_pool = 1_000
     apply_tick(s2, Ledger(), [], current_tick=1)
     assert any(e.get("action") == "RESEARCH_FUND" for e in s2.applied)
-    assert s2.surplus_pool + s2.innovation_pool == 1_000
+    # L3 (2026-09-11): the allocation phase now converts the pool into
+    # per-field know-how buckets same-tick - same conservation law,
+    # finer buckets.
+    assert s2.surplus_pool + s2.innovation_pool \
+        + sum(s2.research_funding.values()) == 1_000
 
 
 # ---------------------------------------------------------------- unlocks

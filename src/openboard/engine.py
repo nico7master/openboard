@@ -931,6 +931,8 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
                   for m in coop.get("members", [])]
         avg_lv = sum(levels) // len(levels) if levels else 0
         out_mult_bp = 10_000 + avg_lv * int(skp.get("output_bonus_bp", 500))
+    # L3 (realism contract): funded research raises output in its field.
+    out_mult_bp += _research_effect_bp(state, recipe, params)
     outputs_produced: dict[str, int] = {}
     for good, qty in recipe["outputs"].items():
         produced = qty * runs * out_mult_bp // 10_000
@@ -3069,6 +3071,15 @@ def _apply_crisis_vote(state: WorldState, tx: Transaction) -> dict[str, Any]:
     }
 
 
+def _research_effect_bp(state: WorldState, recipe: dict[str, Any], params: dict[str, Any]) -> int:
+    """Research productivity bonus for one produce run (0 when disabled)."""
+    try:
+        from .research import research_effect_bp
+        return max(0, int(research_effect_bp(state, recipe, params)))
+    except Exception:
+        return 0
+
+
 def _research_phase_safe(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
     """Research funding phase (Stage 5). Inert without params['research']."""
     from .research import fund_pool_phase
@@ -3263,6 +3274,18 @@ def apply_tick(
     from . import research as _research
     research_events = _research_phase_safe(state, tick, params)
     state.applied.extend(research_events)
+    # Stage 5/L3 - convert the innovation pool into per-field know-how and
+    # unlock variants (inert without params['research']).
+    try:
+        from .research import allocate_fields_phase
+        state.applied.extend(allocate_fields_phase(state, tick, params))
+    except Exception as exc:  # ledger-visible failure, never silent
+        state.flags.append({
+            "tick": tick,
+            "kind": "RESEARCH_ALLOCATE_ERROR",
+            "target": "research_pipeline",
+            "error": str(exc)[:200],
+        })
 
     # Patronage: co-op surplus above a buffer returns to members.
     coop_events = _coop_distribute_phase(state, tick, params)

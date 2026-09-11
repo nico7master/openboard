@@ -99,6 +99,11 @@ class WorldState:
     # (replay compat: absent param -> 0 -> hash unchanged).
     capital_fund: int = 0
     innovation_pool: int = 0  # Stage 5: research funding pool (surplus -> innovation)
+    # L3 (realism contract 2026-09-11): cumulative research know-how per
+    # field (accounting credits) and unlocked variant tiers per base recipe.
+    # Both snapshot only when non-empty (absent-when-default hash compat).
+    research_funding: dict[str, int] = field(default_factory=dict)
+    research_unlocked: dict[str, int] = field(default_factory=dict)
     # Ephemeral per-tick WORK-hours counter (anti multi-tx mint exploit).
     # Cleared at tick boundaries before any snapshot -> state hashes are
     # unaffected; populated only while transactions are being applied.
@@ -171,6 +176,10 @@ class WorldState:
             snap["capital_fund"] = self.capital_fund
         if self.innovation_pool:
             snap["innovation_pool"] = self.innovation_pool
+        if self.research_funding:
+            snap["research_funding"] = dict(sorted(self.research_funding.items()))
+        if self.research_unlocked:
+            snap["research_unlocked"] = dict(sorted(self.research_unlocked.items()))
         if self.crisis:
             snap["crisis"] = dict(self.crisis)
         if self.active_shocks:
@@ -228,6 +237,8 @@ class WorldState:
             capital_burned=dict(self.capital_burned),
             capital_fund=self.capital_fund,
             innovation_pool=self.innovation_pool,
+            research_funding=dict(self.research_funding),
+            research_unlocked=dict(self.research_unlocked),
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
