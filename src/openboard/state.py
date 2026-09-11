@@ -111,6 +111,11 @@ class WorldState:
     land_parcels: dict[str, dict[str, Any]] = field(default_factory=dict)
     land_genesis_pop: int = 0
     land_tax_due: dict[str, int] = field(default_factory=dict)
+    # L5 (realism contract 2026-09-11): net money position vs the world
+    # market (units). The world only buys what was first sold to it, so
+    # this bucket never goes negative - it is a REAL counterparty, part
+    # of the money-conservation identity.
+    foreign_balance: int = 0
     # Ephemeral per-tick WORK-hours counter (anti multi-tx mint exploit).
     # Cleared at tick boundaries before any snapshot -> state hashes are
     # unaffected; populated only while transactions are being applied.
@@ -196,6 +201,8 @@ class WorldState:
             snap["land_genesis_pop"] = self.land_genesis_pop
         if self.land_tax_due:
             snap["land_tax_due"] = dict(sorted(self.land_tax_due.items()))
+        if self.foreign_balance:
+            snap["foreign_balance"] = self.foreign_balance
         if self.crisis:
             snap["crisis"] = dict(self.crisis)
         if self.active_shocks:
@@ -258,6 +265,7 @@ class WorldState:
             land_parcels={k: dict(v) for k, v in self.land_parcels.items()},
             land_genesis_pop=self.land_genesis_pop,
             land_tax_due=dict(self.land_tax_due),
+            foreign_balance=self.foreign_balance,
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:

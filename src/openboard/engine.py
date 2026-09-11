@@ -21,7 +21,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE", "BUY_LAND", "SELL_LAND"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE", "BUY_LAND", "SELL_LAND", "IMPORT_GOOD", "EXPORT_GOOD"})
 
 
 def _is_int(v: Any) -> bool:
@@ -3139,6 +3139,7 @@ def apply_tick(
     # Stage 5 · shock lifecycle (rule-gated; absent => inert, replay-safe)
     from . import shocks as _shocks
     from . import land as _land_mod
+    from . import foreign as _foreign_mod
     if (params.get("shocks") or {}).get("enabled"):
         seed_cfg = (params.get("shocks") or {}).get("rng_seed", 0)
         _rng = random.Random(f"{seed_cfg}:{tick}")
@@ -3183,6 +3184,8 @@ def apply_tick(
         "DELEGATE": _validate_delegate,
         "BUY_LAND": _land_mod.validate_buy_land,
         "SELL_LAND": _land_mod.validate_sell_land,
+        "IMPORT_GOOD": _foreign_mod.validate_import,
+        "EXPORT_GOOD": _foreign_mod.validate_export,
     }
     # Apply-dispatch: same once-per-tick treatment. Every lambda preserves
     # the original call signature for its action exactly.
@@ -3208,6 +3211,8 @@ def apply_tick(
         "DELEGATE": lambda t: _apply_delegate(state, t),
         "BUY_LAND": lambda t: _land_mod.apply_buy_land(state, t, params),
         "SELL_LAND": lambda t: _land_mod.apply_sell_land(state, t, params),
+        "IMPORT_GOOD": lambda t: _foreign_mod.apply_import(state, t, params),
+        "EXPORT_GOOD": lambda t: _foreign_mod.apply_export(state, t, params),
     }
     for tx in sorted(actions, key=Transaction.sort_key):
         if tx.tick != tick:

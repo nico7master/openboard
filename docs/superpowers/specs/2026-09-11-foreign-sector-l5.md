@@ -9,7 +9,9 @@ Status: approved (user go, 2026-09-11). Realism Contracts standard.
   transmit into domestic scarcity/prices; trade cheapens consumption
   and drains domestic stock when world prices exceed domestic cost
   (export booms can STARVE domestic buyers - the classic food-export
-  famine pattern).
+  famine pattern). The net trade position (foreign_balance) is a real
+  claim: negative = trade surplus in our favor, positive = what we owe
+  for imports - exactly how real trade balances work.
 - MECHANISM: one exogenous PRICE-TAKER world market (unlimited quantity
   at the posted price). Two new citizen/coop actions: EXPORT_GOOD sells
   inventory to the world at world_price (domestic stock leaves, foreign
@@ -36,8 +38,10 @@ Status: approved (user go, 2026-09-11). Realism Contracts standard.
   x tariff into the WORLD's offer; goods to citizen/coop inventory,
   money -> foreign_balance) and EXPORT_GOOD {good, qty} (escrow-checked
   inventory leaves to the world, foreign_balance pays from its bucket;
-  foreign_balance >= 0 enforced - the world only buys what we first
-  sold it; this keeps the foreign sector a conserved counterparty).
+  the bucket may go NEGATIVE (that is a trade surplus in our favor,
+  the world owes us); no-mint holds because every paid unit is offset
+  inside the bucket - balances + pool + treasuries + foreign_balance
+  is the conserved identity).
 - World trades settle at price x qty exactly; integer floors.
 
 ## Contract tests (tests/test_realism_foreign.py)
