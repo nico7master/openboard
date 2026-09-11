@@ -111,6 +111,9 @@ class WorldState:
     # (0..1000). Bumped by unmet streaks, decays ~1%/tick. Omitted from
     # snapshots when empty -> old-world state hashes stay byte-identical.
     shortage_memory: dict[str, int] = field(default_factory=dict)
+    # L2 scarcity signal (bp of floor premium currently justified by unmet
+    # demand); present only while a shortage persists. Rule-gated writes.
+    scarcity_signal: dict[str, int] = field(default_factory=dict)
 
     def snapshot_dict(self) -> dict[str, Any]:
         """Canonical, fully-JSON view of the state."""
@@ -142,6 +145,8 @@ class WorldState:
             snap["skills"] = dict(sorted(self.skills.items()))
         if self.shortage_memory:
             snap["shortage_memory"] = dict(sorted(self.shortage_memory.items()))
+        if self.scarcity_signal:
+            snap["scarcity_signal"] = dict(sorted(self.scarcity_signal.items()))
 
         # Circular-flow fields: included ONLY when used. Hash-compat: old
         # histories replayed under this engine must hash identically to
@@ -200,6 +205,7 @@ class WorldState:
             citizen_inventory={c: dict(inv) for c, inv in self.citizen_inventory.items()},
             skills=dict(self.skills),
             shortage_memory=dict(self.shortage_memory),
+            scarcity_signal=dict(self.scarcity_signal),
             surplus_pool=self.surplus_pool,
             treasury_in=self.treasury_in,
             listings={g: list(ls) for g, ls in self.listings.items()},

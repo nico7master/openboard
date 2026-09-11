@@ -1077,6 +1077,17 @@ def _apply_list_good(state: WorldState, tx: Transaction) -> dict[str, Any]:
         mdb = int((state.active_ruleset_params().get("sub_floor_clearance")
                    or {}).get("max_discount_bp", 5_000))
         price = max(1, floor - floor * mdb // 10_000)
+    if not payload.get("clearance") and not crisis_active(state):
+        # L2 (spec 2026-09-11): market-signal scarcity premium. The premium
+        # is set by the ENGINE from economy-wide unmet demand (not by the
+        # seller), re-justified every tick because listings are tick-scoped,
+        # and zero while a crisis is active (anti-gouging). Integer only.
+        sp = state.active_ruleset_params().get("scarcity_pricing") or {}
+        if sp.get("enabled"):
+            sig = min(int(state.scarcity_signal.get(good, 0)),
+                      int(sp.get("max_markup_bp", 2_500)))
+            if sig > 0:
+                price = floor + floor * sig // 10_000
     state.listings.setdefault(good, []).append({
         "coop_id": payload["coop_id"],
         "qty": qty,
@@ -1322,6 +1333,14 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
     for _bucket in auction_bids.values():
         _bucket.sort(key=_bucket_key)
 
+    # L2: total demand per good before any pass (essential + producer +
+    # auction bids); compared with units actually sold to update the
+    # scarcity signal at end of tick.
+    _wanted: dict[str, int] = {}
+    for _b in state.bids:
+        _wanted[_b["good"]] = _wanted.get(_b["good"], 0) + max(0, int(_b.get("qty", 0)))
+    _sold: dict[str, int] = {}
+
     # --- Pass 1: essentials FCFS at the cost floor (D8: need first)
     # Common-pool draw first: reclaimed hoard goods at cost (§6.4).
     # Buyers pay the pool; pool value later funds public purposes.
@@ -1358,6 +1377,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             inv[good] = inv.get(good, 0) + take
             state.common_pool[good] -= take
             pool_qty -= take
+            _sold[good] = _sold.get(good, 0) + take
             buyer["qty"] -= take
 
     # --- Producer input priority (Stage 4, votable; default OFF).
@@ -1502,6 +1522,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                 # never WANTED to produce because demand never reached
                 # them through the only channel they sell on.
                 _pip_sold = sum(int(x.get("qty") or 0) for x in served)
+                _sold[good] = _sold.get(good, 0) + _pip_sold
                 state.recent_sales[good] = state.recent_sales.get(good, 0) + _pip_sold
                 _update_demand_ema(state, good, state.recent_sales[good])
                 # D18 growth channel: unserved bid volume = demand that
@@ -1532,6 +1553,8 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                 if take <= 0:
                     continue
                 price = entry.get("price", entry["floor"])
+                if price > entry["floor"]:
+                    price = entry["floor"]  # L2: essential needs never pay premium
                 if state.balances[buyer["bidder"]] < take * price:
                     break  # cannot pay at settlement — deterministic drop
                 state.balances[buyer["bidder"]] -= take * price
@@ -1551,6 +1574,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         # D18 replacement-rate signal: record this tick's sold volume
         state.recent_sales[good] = total_sold
         _update_demand_ema(state, good, total_sold)
+        _sold[good] = _sold.get(good, 0) + total_sold
         events.append({
             "tick": tick,
             "action": "MARKET_CLEAR_ESSENTIAL",
@@ -1609,6 +1633,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         # D18 replacement-rate signal: record this tick's sold volume
         state.recent_sales[good] = total_sold
         _update_demand_ema(state, good, total_sold)
+        _sold[good] = _sold.get(good, 0) + total_sold
         state.last_clearing[good] = clearing  # public price signal
         floor = state.good_cost_baseline.get(good, 1)
 
@@ -1711,6 +1736,32 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             bid["escrowed"] = 0
     state.listings = {g: ls for g, ls in state.listings.items() if any(e["qty"] > 0 for e in ls)}
     state.bids = []
+    # L2: update the scarcity signal from this tick's unmet demand.
+    # Rationale: persistent unmet demand is THE real-world trigger for
+    # prices rising above cost; when supply serves demand, premiums decay
+    # back toward cost. Crisis forces the premium to zero (anti-gouging).
+    _sp = params.get("scarcity_pricing") or {}
+    if _sp.get("enabled"):
+        if crisis_active(state):
+            for _g in list(state.scarcity_signal.keys()):
+                state.scarcity_signal[_g] = 0
+        else:
+            _max = int(_sp.get("max_markup_bp", 2_500))
+            _step = int(_sp.get("step_bp", 500))
+            _decay = int(_sp.get("decay_bp", 250))
+            for _g in sorted(set(state.scarcity_signal.keys()) | set(_wanted.keys())):
+                _unmet = _wanted.get(_g, 0) - _sold.get(_g, 0)
+                _cur = state.scarcity_signal.get(_g, 0)
+                if _unmet > 0:
+                    state.scarcity_signal[_g] = min(_max, _cur + _step)
+                elif _cur > 0:
+                    _nv = _cur - _decay
+                    if _nv > 0:
+                        state.scarcity_signal[_g] = _nv
+                    else:
+                        del state.scarcity_signal[_g]
+    elif state.scarcity_signal:
+        state.scarcity_signal.clear()
     return events
 
 

@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -215,6 +215,17 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             if not isinstance(good, str) or isinstance(quota, bool) or not isinstance(quota, int) or quota < 0 or quota > 1000:
                 return Reason.INVALID_RULESET
             if known_goods is not None and good not in known_goods:
+                return Reason.INVALID_RULESET
+
+    if "scarcity_pricing" in params:
+        spv = params["scarcity_pricing"]
+        if not isinstance(spv, dict) or set(spv.keys()) != {"enabled", "max_markup_bp", "step_bp", "decay_bp"}:
+            return Reason.INVALID_RULESET
+        if not isinstance(spv["enabled"], bool):
+            return Reason.INVALID_RULESET
+        for _k in ("max_markup_bp", "step_bp", "decay_bp"):
+            _v = spv[_k]
+            if isinstance(_v, bool) or not isinstance(_v, int) or _v < 1 or _v > 10_000:
                 return Reason.INVALID_RULESET
 
     if "needs_cycle" in params:
