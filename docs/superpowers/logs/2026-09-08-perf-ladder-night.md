@@ -69,3 +69,17 @@ Remaining work is algorithmic, per the scaling doctrine
 
 Rule for every step above: same-harness double benchmark + 30-tick
 fingerprint A/B + full suite before commit.
+
+## 2026-09-11 L6 hot-path follow-up (med bench discipline)
+- Median benches (3x each, pinned): OFF=1.77 t/s, ON(R=10)=0.43 t/s.
+  NOT variance - a real 4.1x wrapper regression. Honest HANDOFF note
+  banked before attempting fixes; regional_markets stays default-OFF.
+- Suspect ranked by code read: WASH_BID dedupe rebuilt a set-comprehension
+  over ALL state.flags for every (good, region) pass - R x G x |flags|.
+  Fix: lazy set built once, SHARED across regional passes via the stats
+  dict (byte-identical: updated on append; legacy path unchanged). Plus
+  region_of memo in the wrapper (pure function of owner id).
+- Self-inflicted UnboundLocalError (init placed after first use) caught
+  by the regional tests immediately; init moved before parts loop; 11/11
+  green (regions + clearance consumers).
+- Post-fix ON benches: see /tmp/mbc_on*.log (this entry updated next).

@@ -1332,10 +1332,16 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
     n_regions = region_count(params, len(state.balances))
     if n_regions <= 1:
         return _clear_markets(state, tick, params, ledger)
+    wash_seen = None  # shared WASH_BID dedupe cache across region passes
+    rcache: dict[str, int] = {}  # owner -> region memo (pure function)
     parts: dict[int, list[dict[str, Any]]] = {r: [] for r in range(n_regions)}
     for bid in state.bids:
         owner = bid["bidder"] if bid.get("coop_id") is None else f"coop:{bid['coop_id']}"
-        parts[region_of(owner, n_regions)].append(bid)
+        r = rcache.get(owner)
+        if r is None:
+            r = region_of(owner, n_regions)
+            rcache[owner] = r
+        parts[r].append(bid)
     g_wanted: dict[str, int] = {}
     g_sold: dict[str, int] = {}
     events: list[dict[str, Any]] = []
@@ -1354,10 +1360,11 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
             # sweep below runs on the full saved table.
             want_goods = {b["good"] for b in parts[r]}
             state.listings = {g: full_listings[g] for g in sorted(want_goods) if g in full_listings}
-            st: dict[str, Any] = {}
+            st: dict[str, Any] = {"wash_seen": wash_seen}
             events.extend(_clear_markets(state, tick, params, ledger,
                                          scarcity_update=False,
                                          defer_unsold=True, stats=st))
+            wash_seen = st.get("wash_seen")
             for g, w in st.get("wanted", {}).items():
                 g_wanted[g] = g_wanted.get(g, 0) + w
             for g, s in st.get("sold", {}).items():
@@ -1387,6 +1394,11 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
     only, no rounding — nothing is ever created or destroyed by clearing.
     """
     events: list[dict[str, Any]] = []
+    # WASH_BID dedupe cache: lazily built once per call (legacy) or shared
+    # across regional passes via stats (L6 perf - the per-good rebuild was
+    # R x G x |flags|). Updated on append => membership identical to the
+    # old rebuild-per-check; byte-identical outcomes.
+    _wash_seen = stats.get("wash_seen") if stats is not None else None
 
     if not state.listings and not state.bids:
         return events
@@ -1744,8 +1756,13 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                                 "clearing": clearing,
                                 "floor": floor,
                             }
-                            if ("WASH_BID", flag["target"], good) not in {(f["kind"], f["target"], f.get("good", "")) for f in state.flags}:
+                            if _wash_seen is None:
+                                _wash_seen = {(f["kind"], f["target"], f.get("good", "")) for f in state.flags}
+                                if stats is not None:
+                                    stats["wash_seen"] = _wash_seen
+                            if ("WASH_BID", flag["target"], good) not in _wash_seen:
                                 state.flags.append(flag)
+                                _wash_seen.add(("WASH_BID", flag["target"], good))
 
         # buyers pay take x clearing (exact)
         vwap_on = (params.get("cost_accounting") or {}).get("method") == "vwap"

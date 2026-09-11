@@ -455,3 +455,18 @@ EFFECT - direction/mechanism/magnitude/flip - gate-enforced by tests):
   (~28% of tick) which dwarfs the wrapper cost; (3) only then the
   Rust/pyo3 decision on the ~40% ledger path. Do NOT enable
   regional_markets by default until medians show parity-or-better.
+- L6 PERF ROOT CAUSE (profile-confirmed 2026-09-11 20:2x, /tmp/prof_on*.log):
+  the PRODUCER-INPUT-PRIORITY pass (engine ~1559-1576: want=min(bid,claim)
+  x take=min(entry,need) for every coop bid x EVERY city-wide listing
+  entry) is quadratic, and the L6 wrapper re-ran it R=10x per tick:
+  17,041,770 min() calls in 30 _clear_markets invocations (vs 107k from
+  ALL bot cognition). Medians: OFF=1.77, ON=0.43 pre-fix, 0.49 post
+  wash-cache fix (helped slightly; structural cost remains).
+  NEXT-SESSION FIX (doctrine-aligned, spec-consistent): run the PIP pass
+  ONCE city-wide BEFORE the regional citizen passes - coops are producers
+  with city-wide visibility per the approved L6 contract; only CITIZEN
+  buyer passes are region-sharded. Then re-bench medians: expect ON ~
+  OFF minus sort savings. Wash-cache fix landed (lazy shared set via
+  stats, byte-identical; region_of memo); 11/11 regional+clearance
+  green; full suite re-run REQUIRED before push (was green at 465 pre-
+  fix, projection+wash commits need one final suite verdict).
