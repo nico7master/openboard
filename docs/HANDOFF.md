@@ -526,3 +526,23 @@ NEXT SESSION (surgical, fresh context):
    projection scans). Goal: ON median >= 1.4 t/s (vs OFF 1.74).
 3. Re-bench 3 reps each; re-run tests/test_realism_regions.py (all 11
    must pass); full suite; then Lever B batched cognition.
+
+## Session 2026-09-12 01:25: regions-ON wrapper pathology FIXED (0.14 -> 0.74 t/s, 5.3x)
+
+Evidence chain (all scripts committed):
+- vol_probe.py: records/tick OFF=18544 vs ON=18283 -> NOT economic volume.
+- profile_regions.py BEFORE: _clear_markets ON 60 calls (10 regions x 6 ticks),
+  56M min() calls, 14.6s tottime vs OFF 0.55s. AFTER fix: per-call 0.090s ON
+  vs 0.092s OFF (equal); residual ON gap is call-count arithmetic (60 vs 6)
+  = the approved L6 regional semantic itself, NOT a pathology.
+- Fix (3f0922b): regional listing projection keeps qty>0 entries only
+  (listings accumulate qty==0 dead entries; essential pass rescans them per
+  buyer x R regions). Entry dicts stay shared; empty filtered lists keep the
+  good key (event streams unchanged); legacy OFF path untouched.
+- Bench (3 reps, pinned): ON 0.737/0.737/0.737 t/s (vs OFF 1.74).
+- Verification: 11/11 regions+clearance, full suite 465 passed (604s).
+- REJECTED en route: city-wide-clear-then-regional hybrid (broke L6
+  semantics: partial bids re-served, 4 winners vs 3); reverted.
+
+Next perf levers: Lever B batched cognition (~28% of tick, helps both
+paths); optionally revisit default region count (R=10 at 933 pop).
