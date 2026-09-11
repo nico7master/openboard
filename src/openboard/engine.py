@@ -1340,11 +1340,20 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
     g_sold: dict[str, int] = {}
     events: list[dict[str, Any]] = []
     saved = state.bids
+    full_listings = state.listings
     try:
         for r in region_order(n_regions, tick):
             if not parts[r]:
                 continue  # no buyers here; supply stays for later regions
             state.bids = parts[r]
+            # L6 perf (bench 2026-09-11): without this projection each
+            # region re-scanned the ENTIRE city-wide listing table
+            # (R x full scans swamped the sort win: 0.84 vs 1.80 t/s).
+            # Projection keeps the SAME entry dict objects (mutations
+            # persist across passes; deferred unsold intact); the global
+            # sweep below runs on the full saved table.
+            want_goods = {b["good"] for b in parts[r]}
+            state.listings = {g: full_listings[g] for g in sorted(want_goods) if g in full_listings}
             st: dict[str, Any] = {}
             events.extend(_clear_markets(state, tick, params, ledger,
                                          scarcity_update=False,
@@ -1355,7 +1364,8 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
                 g_sold[g] = g_sold.get(g, 0) + s
     finally:
         state.bids = saved
-    for good in sorted(state.listings.keys()):
+        state.listings = full_listings
+    for good in sorted(full_listings.keys()):
         _return_unsold(state, good)
     _update_scarcity(state, g_wanted, g_sold, params)
     return events

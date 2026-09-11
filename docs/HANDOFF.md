@@ -438,3 +438,20 @@ EFFECT - direction/mechanism/magnitude/flip - gate-enforced by tests):
   bundle < 5 t/s (ledger path is ~40%), (4) gates re-run: hardcore
   3 seeds + refresh2 stability ladder + seat soak with regions ON,
   (5) per-region oversight streak metric for the dashboard.
+- L6 PERF EVIDENCE (honest, 2026-09-11, pinned 2-core benches, 933 cit):
+  OFF=1.80 t/s; ON(R=10) pre-projection=0.84 t/s; post-listing-projection
+  run measured 0.40 t/s (variance across runs is large - single runs NOT
+  trustworthy; medians needed). VERDICT: L6 is functionally proven
+  (conservation exact, scarcity-once, rule-off byte-identical, 465
+  green) but NOT perf-positive yet: the wrapper re-enters _clear_markets
+  per region, which re-classifies/re-sorts that region's bids AND still
+  walks city-wide tables (common_pool essential pass, cost baselines).
+  Projection fix (per-region listing dict over shared entry objects,
+  global unsold sweep on full table) kept - logically less work, tests
+  green. NEXT SESSION, in order: (1) re-bench 3x/config, take medians;
+  (2) real fix = PRE-PARTITIONED per-region state for the clearing
+  (essential buyers + auction buckets built once per tick per region,
+  not swapped-globals re-entry), plus Lever B batched cognition
+  (~28% of tick) which dwarfs the wrapper cost; (3) only then the
+  Rust/pyo3 decision on the ~40% ledger path. Do NOT enable
+  regional_markets by default until medians show parity-or-better.
