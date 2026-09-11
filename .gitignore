@@ -17,3 +17,6 @@ dashboard/saves/
 
 # Python build artifacts
 *.egg-info/
+
+# Dashboard runtime artifacts
+dashboard/autosave.json
