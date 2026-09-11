@@ -383,3 +383,34 @@ EFFECT - direction/mechanism/magnitude/flip - gate-enforced by tests):
   reviewed spec (week-scale). Variant ADOPTION by bots is a small
   follow-on (recipe choice already scans state.recipes). Perf: regional
   markets spec still the gate-critical pending item (>=5 ticks/s).
+- L4 land market LANDED ec160df (land.py): fixed parcel stock (n>=4,
+  quality tiers 12000/10000/8000bp cycled), society-owned at genesis,
+  appreciated assessment (base x quality x population growth), BUY_LAND
+  pays assessment -> surplus pool, SELL_LAND = 90% bank buyback (10%
+  social uplift stays), Georgist LVT (default 1bp/tick ~3.6%/yr; unpaid
+  -> grace_ticks -> foreclosure). BUY_LAND/SELL_LAND registered in
+  SUPPORTED_ACTIONS; land_market param validation strict. base_land_price
+  scales by upc at READ time (no genesis mutation). 7 contract tests
+  (test_realism_land.py, run under money_cap like production).
+- L5 foreign sector LANDED ed4eb57 (foreign.py): price-taker world
+  market (world_prices table + tick-scheduled shocks, no rng),
+  IMPORT_GOOD (price x qty + tariff_bp -> pool; buyer pays GROSS),
+  EXPORT_GOOD (pays from foreign_balance). foreign_balance is a REAL
+  trade balance: may go NEGATIVE (surplus in our favor - the first-
+  export deadlock was a real bug my contract test caught: an earlier
+  draft forbade negative bucket, making the first export impossible).
+  Extended conservation identity: balances + pool + treasuries +
+  foreign_balance is constant; test_fixed_supply consumers green.
+  7 contract tests (test_realism_foreign.py).
+- REALISM ROADMAP COMPLETE: L1 interest 15b3e4c, L2 scarcity 430fb1e,
+  L3 research->productivity 844ff19, L4 land ec160df, L5 foreign
+  ed4eb57 - 29 contract tests, full suite 459 green, all pushed.
+  The economy now grows (TFP), prices signal scarcity, credit has a
+  price, land is a fixed appreciating asset with Georgist rent capture,
+  and the economy is open to terms-of-trade shocks.
+- Test lessons (L4/L5): money_cap genesis IGNORES passed balances
+  (stakes 500cr x upc) - derive expectations from actual balances;
+  same-tick phases mean a land buyer pays LVT immediately in the buy
+  tick; surplus-spend dividends hit ALL citizens every tick (use a
+  control citizen to isolate flows); pool_after_buy already contains
+  the buy price (uplift = final vs pre-buy, not an addition).
