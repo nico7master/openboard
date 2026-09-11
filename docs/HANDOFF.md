@@ -499,3 +499,30 @@ EFFECT - direction/mechanism/magnitude/flip - gate-enforced by tests):
   stats, byte-identical; region_of memo); 11/11 regional+clearance
   green; full suite re-run REQUIRED before push (was green at 465 pre-
   fix, projection+wash commits need one final suite verdict).
+
+## Session 2026-09-12 (00:50): regions-ON 12x slowdown ROOT-CAUSED (profiles banked)
+
+Evidence (scripts/vol_probe.py + scripts/profile_regions.py, both committed):
+- Volume is NOT the cause: avg ledger records/tick OFF=18544 vs ON=18283.
+- Profile (5 ticks, 966 citizens): _clear_markets called 60x ON vs 6x OFF
+  (10 regions x 6 ticks), with **56M builtins.min calls (7.3s) + 14.6s
+  tottime inside _clear_markets** vs OFF's 0.55s. The per-region auction
+  price scan is the pathology.
+- PIP extraction (4b2bf58) is proven correct and stays (legacy byte-
+  identity + 10/11 regional tests green; the 1 failure below is fixed by
+  the revert of my speculative patch, re-verified).
+
+ATTEMPTED AND REVERTED: hybrid city-wide-clear-then-regional broke
+L6 semantics (test_multi_region_conservation: 4 winners vs 3 - partial
+bids re-served in region passes). Per-region clearing IS the spec'd
+fairness semantic; do not bypass it.
+
+NEXT SESSION (surgical, fresh context):
+1. Read the auction pass inside _clear_markets (engine.py ~1700+); find
+   the min() scan over (bids x entries) per good per region.
+2. Fix INSIDE the regional semantic: precompute per-good sorted bid
+   lists ONCE per tick (shared across regions via stats dict, like
+   wash_seen), and/or per-region listing index built once (not R x
+   projection scans). Goal: ON median >= 1.4 t/s (vs OFF 1.74).
+3. Re-bench 3 reps each; re-run tests/test_realism_regions.py (all 11
+   must pass); full suite; then Lever B batched cognition.
