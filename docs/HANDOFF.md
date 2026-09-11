@@ -106,6 +106,35 @@
 - Weekly tag: v0.3 (wk1), v0.4 (wk2), v0.5 (wk3), v1.0-rc (wk4).
 - Decision save points capture before every rule change (already automatic).
 
+## Session 2026-09-11 (late): Lever Atlas campaign + research conservation fix
+
+**Lever Atlas COMPLETE (81/81 runs)**: scripts/atlas_grid.py (harness, 6651a4e),
+sweeps/atlas/ (81 JSONs + ATLAS.md playbook, aec8e9c + correction d6869f7).
+Grid: L1 interest x L2 scarcity cap x L3 research share (3x3x3) x 3 seeds,
+600 ticks, on the proven tax400/div3000 baseline.
+
+**Findings:**
+1. ENGINE BUG (fixed b3850a7): allocate_fields_phase destroyed the
+   floor-division remainder each tick (-1..-17 credits/tick at 500bp).
+   Found because atlas inv_bad flags fired research-ON only. Post-fix diag:
+   inv_bad=0. research_funding bucket now ALSO in atlas money_delta.
+2. BEHAVIORAL (stands, corrected verdicts in ATLAS.md): research is a
+   luxury lever — 0bp: 27/27 WIN; 250bp: 21/27 (200+-tick essential
+   starvation on some seeds); 500bp: 0/27. Interest + scarcity cap:
+   no effect on win rate (9/27 WIN each level, driven by research=0 rows).
+3. Harness lesson banked: money identity in sweep harnesses must cover ALL
+   state buckets (research_funding was added late; state.py owns truth).
+
+**Next (in order):**
+1. Regional-markets perf fix (root-caused 2026-09-10, b369105): run the
+   producer-input-priority pass ONCE city-wide BEFORE regional citizen
+   passes (engine.py:1487-1610 pip block vs _clear_markets_regional:1323).
+   Then median re-bench (ON was 0.43-0.49 vs OFF 1.77 t/s).
+2. Lever B batched cognition (equivalence baseline locked: state 64f53098,
+   head 1afc6809, outcomes f887fe3213fff3d0).
+3. Rust/pyo3 decision on ledger path (~40% of tick) if still <5 t/s.
+4. UX pass, release docs, fresh-clone e2e, tag v1.0.0.
+
 ## Next Steps
 The next agent should start with Week 4.1 (Cardano preprod anchoring).
 
