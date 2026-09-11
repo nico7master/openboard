@@ -1368,7 +1368,21 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
             # persist across passes; deferred unsold intact); the global
             # sweep below runs on the full saved table.
             want_goods = {b["good"] for b in parts[r]}
-            state.listings = {g: full_listings[g] for g in sorted(want_goods) if g in full_listings}
+            # L6 perf fix (2026-09-12, cProfile evidence): the essential
+            # pass scans state.listings[good] PER BUYER, and listings
+            # accumulate dead entries (qty==0; entries are never removed,
+            # only zeroed). R regions x buyers x dead entries exploded to
+            # 56M min() calls per 5 ticks at 966 citizens (ON 0.14 vs OFF
+            # 1.74 t/s with records/tick identical -> pure wrapper
+            # pathology). Zero-qty entries are no-ops in every consumer
+            # (essential skip, auction/PIP qty>0 pre-filters, unsold
+            # sweep), so the projection drops them. Entry DICTS stay
+            # shared (qty mutations persist across passes and into
+            # full_listings for the single global unsold sweep); the
+            # good KEY is kept even when its filtered list is empty so
+            # the sold=0 essential event stream is unchanged.
+            state.listings = {g: [e for e in full_listings[g] if e["qty"] > 0]
+                              for g in sorted(want_goods) if g in full_listings}
             st: dict[str, Any] = {"wash_seen": wash_seen}
             events.extend(_clear_markets(state, tick, params, ledger,
                                          scarcity_update=False,
