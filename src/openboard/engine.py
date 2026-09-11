@@ -1345,6 +1345,15 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
     g_wanted: dict[str, int] = {}
     g_sold: dict[str, int] = {}
     events: list[dict[str, Any]] = []
+    # L6 perf fix (2026-09-11): run the producer-input pass ONCE
+    # city-wide BEFORE the regional citizen passes (was R x region:
+    # the 4x regression). PIP sold volume merges into g_sold so the
+    # single global scarcity update sees it exactly as before.
+    _pip_auction: dict[str, list[dict[str, Any]]] = {}
+    for _bid in state.bids:
+        if not _bid.get("essential"):
+            _pip_auction.setdefault(_bid["good"], []).append(_bid)
+    _apply_pip_pass(state, tick, params, _pip_auction, g_sold, events)
     saved = state.bids
     full_listings = state.listings
     try:
@@ -1363,7 +1372,7 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
             st: dict[str, Any] = {"wash_seen": wash_seen}
             events.extend(_clear_markets(state, tick, params, ledger,
                                          scarcity_update=False,
-                                         defer_unsold=True, stats=st))
+                                         defer_unsold=True, stats=st, skip_pip=True))
             wash_seen = st.get("wash_seen")
             for g, w in st.get("wanted", {}).items():
                 g_wanted[g] = g_wanted.get(g, 0) + w
@@ -1378,112 +1387,19 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
     return events
 
 
-def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger, *, scarcity_update: bool = True, defer_unsold: bool = False, stats: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-    """End-of-tick market clearing. Deterministic (spec §9).
+def _apply_pip_pass(
+    state: WorldState, tick: int, params: dict[str, Any],
+    auction_bids: dict[str, list[dict[str, Any]]], _sold: dict[str, int],
+    events: list[dict[str, Any]],
+) -> None:
+    """Stage-4 producer-input priority pass, run ONCE city-wide.
 
-    1. Essential FCFS pass: essential/emergency goods sold at the seller's
-       cost floor to essential buyers in deterministic order.
-    2. Auction pass: remaining listed units sold to market bids at the
-       uniform clearing price (lowest winning bid, never below floor).
-    3. Unsold units return to their sellers.
-    4. Surplus (price - floor) flows to the pool; pool beyond the reserve
-       cap is retired from circulation.
-
-    Money conservation is exact: every unit sold at price P moves exactly
-    P credits from the buyer to seller floor + pool (P - floor). Integer
-    only, no rounding — nothing is ever created or destroyed by clearing.
+    L6 perf fix (2026-09-11): coops are PRODUCERS with city-wide
+    visibility (L6 contract), so this pass is semantically city-wide;
+    the regional wrapper re-running it per region caused the 4x
+    regression (17M min() calls at 966 citizens). Pure code move from
+    _clear_markets: identical order, identical mutations.
     """
-    events: list[dict[str, Any]] = []
-    # WASH_BID dedupe cache: lazily built once per call (legacy) or shared
-    # across regional passes via stats (L6 perf - the per-good rebuild was
-    # R x G x |flags|). Updated on append => membership identical to the
-    # old rebuild-per-check; byte-identical outcomes.
-    _wash_seen = stats.get("wash_seen") if stats is not None else None
-
-    if not state.listings and not state.bids:
-        return events
-
-    essential_buyers: dict[str, list[dict[str, Any]]] = {}
-    auction_bids: dict[str, list[dict[str, Any]]] = {}
-
-    # WP4.2 perf bucketing: classify bids per good first, then sort each
-    # bucket by the legacy 5-tuple key minus the (constant within-bucket)
-    # good field. Within-bucket order is identical to the old global
-    # sort (good compared equal inside a bucket; sort is stable), so
-    # clearing results and replay bytes are unchanged - the cross-good
-    # O(B log B) 5-tuple sort (string compare on every comparison)
-    # collapses into small per-good 4-tuple sorts. Pass 2 and the
-    # producer-input pass re-sort with their own keys anyway; their
-    # stable sorts inherit this exact pre-order as tie-break.
-    for bid in state.bids:
-        if bid.get("essential"):
-            essential_buyers.setdefault(bid["good"], []).append(bid)
-        else:
-            auction_bids.setdefault(bid["good"], []).append(bid)
-    _bucket_key = lambda b: (b["bidder"], str(b["coop_id"]), b["qty"], b["max_price"])
-    for _bucket in essential_buyers.values():
-        _bucket.sort(key=_bucket_key)
-    for _bucket in auction_bids.values():
-        _bucket.sort(key=_bucket_key)
-
-    # L2: total demand per good before any pass (essential + producer +
-    # auction bids); compared with units actually sold to update the
-    # scarcity signal at end of tick.
-    _wanted: dict[str, int] = {}
-    for _b in state.bids:
-        _wanted[_b["good"]] = _wanted.get(_b["good"], 0) + max(0, int(_b.get("qty", 0)))
-    _sold: dict[str, int] = {}
-
-    # --- Pass 1: essentials FCFS at the cost floor (D8: need first)
-    # Common-pool draw first: reclaimed hoard goods at cost (§6.4).
-    # Buyers pay the pool; pool value later funds public purposes.
-    # Fair clearing (votable): rotate buyer service order each tick so
-    # scarce essentials don't permanently starve alphabetically-late
-    # citizens under deterministic FCFS. Off => legacy order (replay-safe).
-    fair = params.get("fair_clearing", False)
-    # Stage 5 - crisis override forces need-based rotation ON
-    from . import crisis as _crisis_fair
-    if _crisis_fair.crisis_active(state):
-        fair = True
-
-    def _served(good: str) -> list[dict[str, Any]]:
-        buyers = essential_buyers[good]
-        if not fair or len(buyers) < 2:
-            return buyers
-        off = tick % len(buyers)
-        return buyers[off:] + buyers[:off]
-
-    for good in sorted(essential_buyers.keys() & state.common_pool.keys()):
-        pool_qty = state.common_pool[good]
-        if pool_qty <= 0:
-            continue
-        for buyer in _served(good):
-            if pool_qty <= 0:
-                break
-            take = min(buyer["qty"], pool_qty)
-            price = state.good_cost_baseline.get(good, 1)
-            if state.balances[buyer["bidder"]] < take * price:
-                continue
-            state.balances[buyer["bidder"]] -= take * price
-            state.surplus_pool += take * price  # society reclaims value at cost
-            inv = state.citizen_inventory.setdefault(buyer["bidder"], {})
-            inv[good] = inv.get(good, 0) + take
-            state.common_pool[good] -= take
-            pool_qty -= take
-            _sold[good] = _sold.get(good, 0) + take
-            buyer["qty"] -= take
-
-    # --- Producer input priority (Stage 4, votable; default OFF).
-    # Without it, citizens' essential FCFS stripped every unit of
-    # bread/vegetables/meat at the floor before producer auction bids
-    # filled: the kitchen bid 1,603 bread, received 0, and never
-    # produced a single meal in 1,000 ticks — producer input
-    # starvation. This pass lets coops buy the inputs of their trade
-    # at the seller's floor BEFORE the citizen pass, so production
-    # chains can run. share_cap_bp keeps citizens first-class:
-    # producers may claim at most that share of each good's listed
-    # units per tick. Money flow mirrors the essential pass exactly
-    # (buyer treasury -> seller treasury at floor, no pool cut).
     pip = params.get("producer_input_priority") or {}
     # Stage 5 - crisis override: advantages/priorities are suspended
     # during an active crisis (need-first distribution, spec section 4).
@@ -1629,6 +1545,117 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                     "good": good,
                     "served": served,
                 })
+
+
+
+def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger, *, scarcity_update: bool = True, defer_unsold: bool = False, stats: dict[str, Any] | None = None, skip_pip: bool = False) -> list[dict[str, Any]]:
+    """End-of-tick market clearing. Deterministic (spec §9).
+
+    1. Essential FCFS pass: essential/emergency goods sold at the seller's
+       cost floor to essential buyers in deterministic order.
+    2. Auction pass: remaining listed units sold to market bids at the
+       uniform clearing price (lowest winning bid, never below floor).
+    3. Unsold units return to their sellers.
+    4. Surplus (price - floor) flows to the pool; pool beyond the reserve
+       cap is retired from circulation.
+
+    Money conservation is exact: every unit sold at price P moves exactly
+    P credits from the buyer to seller floor + pool (P - floor). Integer
+    only, no rounding — nothing is ever created or destroyed by clearing.
+    """
+    events: list[dict[str, Any]] = []
+    # WASH_BID dedupe cache: lazily built once per call (legacy) or shared
+    # across regional passes via stats (L6 perf - the per-good rebuild was
+    # R x G x |flags|). Updated on append => membership identical to the
+    # old rebuild-per-check; byte-identical outcomes.
+    _wash_seen = stats.get("wash_seen") if stats is not None else None
+
+    if not state.listings and not state.bids:
+        return events
+
+    essential_buyers: dict[str, list[dict[str, Any]]] = {}
+    auction_bids: dict[str, list[dict[str, Any]]] = {}
+
+    # WP4.2 perf bucketing: classify bids per good first, then sort each
+    # bucket by the legacy 5-tuple key minus the (constant within-bucket)
+    # good field. Within-bucket order is identical to the old global
+    # sort (good compared equal inside a bucket; sort is stable), so
+    # clearing results and replay bytes are unchanged - the cross-good
+    # O(B log B) 5-tuple sort (string compare on every comparison)
+    # collapses into small per-good 4-tuple sorts. Pass 2 and the
+    # producer-input pass re-sort with their own keys anyway; their
+    # stable sorts inherit this exact pre-order as tie-break.
+    for bid in state.bids:
+        if bid.get("essential"):
+            essential_buyers.setdefault(bid["good"], []).append(bid)
+        else:
+            auction_bids.setdefault(bid["good"], []).append(bid)
+    _bucket_key = lambda b: (b["bidder"], str(b["coop_id"]), b["qty"], b["max_price"])
+    for _bucket in essential_buyers.values():
+        _bucket.sort(key=_bucket_key)
+    for _bucket in auction_bids.values():
+        _bucket.sort(key=_bucket_key)
+
+    # L2: total demand per good before any pass (essential + producer +
+    # auction bids); compared with units actually sold to update the
+    # scarcity signal at end of tick.
+    _wanted: dict[str, int] = {}
+    for _b in state.bids:
+        _wanted[_b["good"]] = _wanted.get(_b["good"], 0) + max(0, int(_b.get("qty", 0)))
+    _sold: dict[str, int] = {}
+
+    # --- Pass 1: essentials FCFS at the cost floor (D8: need first)
+    # Common-pool draw first: reclaimed hoard goods at cost (§6.4).
+    # Buyers pay the pool; pool value later funds public purposes.
+    # Fair clearing (votable): rotate buyer service order each tick so
+    # scarce essentials don't permanently starve alphabetically-late
+    # citizens under deterministic FCFS. Off => legacy order (replay-safe).
+    fair = params.get("fair_clearing", False)
+    # Stage 5 - crisis override forces need-based rotation ON
+    from . import crisis as _crisis_fair
+    if _crisis_fair.crisis_active(state):
+        fair = True
+
+    def _served(good: str) -> list[dict[str, Any]]:
+        buyers = essential_buyers[good]
+        if not fair or len(buyers) < 2:
+            return buyers
+        off = tick % len(buyers)
+        return buyers[off:] + buyers[:off]
+
+    for good in sorted(essential_buyers.keys() & state.common_pool.keys()):
+        pool_qty = state.common_pool[good]
+        if pool_qty <= 0:
+            continue
+        for buyer in _served(good):
+            if pool_qty <= 0:
+                break
+            take = min(buyer["qty"], pool_qty)
+            price = state.good_cost_baseline.get(good, 1)
+            if state.balances[buyer["bidder"]] < take * price:
+                continue
+            state.balances[buyer["bidder"]] -= take * price
+            state.surplus_pool += take * price  # society reclaims value at cost
+            inv = state.citizen_inventory.setdefault(buyer["bidder"], {})
+            inv[good] = inv.get(good, 0) + take
+            state.common_pool[good] -= take
+            pool_qty -= take
+            _sold[good] = _sold.get(good, 0) + take
+            buyer["qty"] -= take
+
+    # --- Producer input priority (Stage 4, votable; default OFF).
+    # Without it, citizens' essential FCFS stripped every unit of
+    # bread/vegetables/meat at the floor before producer auction bids
+    # filled: the kitchen bid 1,603 bread, received 0, and never
+    # produced a single meal in 1,000 ticks — producer input
+    # starvation. This pass lets coops buy the inputs of their trade
+    # at the seller's floor BEFORE the citizen pass, so production
+    # chains can run. share_cap_bp keeps citizens first-class:
+    # producers may claim at most that share of each good's listed
+    # units per tick. Money flow mirrors the essential pass exactly
+    # (buyer treasury -> seller treasury at floor, no pool cut).
+    if not skip_pip:
+        _apply_pip_pass(state, tick, params, auction_bids, _sold, events)
 
     for good in sorted(essential_buyers.keys() & state.listings.keys()):
         sold_records: list[dict[str, Any]] = []
