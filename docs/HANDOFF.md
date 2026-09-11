@@ -353,3 +353,33 @@ EFFECT - direction/mechanism/magnitude/flip - gate-enforced by tests):
   unlocks; user's two-layer voting design in memory), L4 land, L5 foreign
   sector (week-scale, own specs). Perf note: L2 adds one dict update per
   good per tick (negligible); regional-markets perf spec still pending.
+- L3 research->productivity LANDED 844ff19 (the deepest gap: research.py
+  had funding but ZERO engine effect - a stationary economy):
+  * allocate_fields_phase: innovation_pool -> cumulative per-field
+    know-how buckets (research_funding), allocation = published
+    algorithm's proposal (abstain-default of the two-layer design);
+    crisis_field_override redirects 100% to the crisis field
+  * research_effect_bp: +250bp output per 10,000cr field know-how,
+    capped +2500bp (+25%), composed into _apply_produce's out_mult_bp
+    alongside skills (integer-only)
+  * variant unlocks: crossing unlock_threshold (default 50k) per field
+    unlocks next tier of that field's first alphabetical recipe
+    (unlock_variant, -5%/tier inputs, min-1 floor, <=20% cap) - new
+    recipes {rid}_v{n} appear in state.recipes (bots can adopt them;
+    adoption pressure is future work)
+  * state: research_funding/research_unlocked (absent-when-default hash
+    compat); money conservation bucket-to-bucket (surplus -> pool ->
+    know-how; know-how is an ACCOUNTING bucket, not spendable money)
+  * ENGINE FIX: pipeline research hook errors now append a schema-valid
+    OVERSIGHT flag (kind+target) - the previous silent-swallow pattern
+    violated the 'nothing fails silently' rule; flag schema requires
+    target (oversight reads f['target'] on every flag)
+  * 7 contract tests in tests/test_realism_research.py; full suite 445
+    green. Research param validation block still ABSENT (validate_params
+    tolerates unknown keys; add when dashboard exposes research voting).
+- Realism backlog remaining: L4 land (fixed location stock, ownable,
+  rentable - structural inequality), L5 foreign sector (external
+  price-taker market, terms-of-trade shocks) - each needs its own
+  reviewed spec (week-scale). Variant ADOPTION by bots is a small
+  follow-on (recipe choice already scans state.recipes). Perf: regional
+  markets spec still the gate-critical pending item (>=5 ticks/s).
