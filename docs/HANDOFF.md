@@ -325,3 +325,31 @@ Next levers are STRUCTURAL and need their own reviewed specs: regional
 markets (doctrine sect 3) and ledger record batching (merkle per tick,
 pre-anchor window). Full-suite pinned cap is 6 GiB (RLIMIT_AS, not
 RSS - 2 GiB dies mid-import). The stability half of WP4.2 is DONE.
+
+Realism contracts (2026-09-11, spec 2026-09-11-policy-realism-contracts.md,
+user-approved target: every policy lever must reproduce its real-world
+EFFECT - direction/mechanism/magnitude/flip - gate-enforced by tests):
+- L1 interest on loans LANDED 15b3e4c: rate_bp_annual (default 0 = old
+  worlds replay identical), simple declining-balance interest (1 tick =
+  1 day) to the surplus pool, crisis origination locks 0% (solidarity
+  credit), charge-off freezes accrual at due_tick, REPAY now settles only
+  when FULL owed (principal + interest) is paid. 5 contract tests in
+  tests/test_realism_loans.py; full suite 430 green.
+- L2 scarcity pricing LANDED 430fb1e: engine-set premium (scarcity_signal
+  bp of floor) from economy-wide unmet bid volume - NOT seller-set;
+  tick-scoped listings re-justify it every tick; essentials pass clamps
+  to floor (need-first); crisis forces signal 0 (anti-gouging); rule off
+  = byte-identical. Optional param scarcity_pricing {enabled, max_markup_bp
+  2500, step_bp 500, decay_bp 250}, strict validation. 8 contract tests in
+  tests/test_realism_scarcity.py; full suite 438 green. Both pushes
+  verified on origin/master.
+- Lessons for next contract levers: (1) listings are TICK-SCOPED - assert
+  prices via direct _apply_list_good, flows via full apply_tick; (2) list
+  + bids must be ONE apply_tick batch; (3) ledger suppresses DUPLICATE
+  payloads per tick (silent reject) - vary max_price per tick; (4) check
+  affordability validator (price x qty vs balance) in test worlds.
+- Remaining: L3 research->productivity (research.py has ZERO engine call
+  sites today - wire field allocation to output bonuses + variant recipe
+  unlocks; user's two-layer voting design in memory), L4 land, L5 foreign
+  sector (week-scale, own specs). Perf note: L2 adds one dict update per
+  good per tick (negligible); regional-markets perf spec still pending.
