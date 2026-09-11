@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -452,6 +452,41 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
     if "supply_buffer_runs" in params:
         sbr = params["supply_buffer_runs"]
         if not isinstance(sbr, dict) or set(sbr.keys()) != {"runs"} or not isinstance(sbr["runs"], int) or not (0 <= sbr["runs"] <= 10):
+            return Reason.INVALID_RULESET
+
+    lmkt = params.get("land_market")
+    if lmkt is not None:
+        if not isinstance(lmkt, dict) or not isinstance(lmkt.get("enabled"), bool):
+            return Reason.INVALID_RULESET
+        for k in ("base_land_price", "land_tax_bp", "grace_ticks"):
+            v = lmkt.get(k, {"base_land_price": 500, "land_tax_bp": 1, "grace_ticks": 5}[k])
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+                return Reason.INVALID_RULESET
+        if lmkt.get("land_tax_bp", 1) > 10_000 or lmkt.get("grace_ticks", 5) < 1:
+            return Reason.INVALID_RULESET
+
+    fs = params.get("foreign_sector")
+    if fs is not None:
+        if not isinstance(fs, dict) or not isinstance(fs.get("enabled"), bool):
+            return Reason.INVALID_RULESET
+        wp = fs.get("world_prices", {})
+        if not isinstance(wp, dict) or not all(
+            isinstance(g, str) and isinstance(p, int) and not isinstance(p, bool) and p > 0
+            for g, p in wp.items()
+        ):
+            return Reason.INVALID_RULESET
+        tbp = fs.get("tariff_bp", 0)
+        if isinstance(tbp, bool) or not isinstance(tbp, int) or not (0 <= tbp <= 10_000):
+            return Reason.INVALID_RULESET
+        shocks = fs.get("shocks", [])
+        if not isinstance(shocks, list) or not all(
+            isinstance(s, dict)
+            and isinstance(s.get("tick"), int) and not isinstance(s.get("tick"), bool)
+            and isinstance(s.get("good"), str)
+            and isinstance(s.get("price"), int) and not isinstance(s.get("price"), bool)
+            and s.get("price", 0) > 0
+            for s in shocks
+        ):
             return Reason.INVALID_RULESET
 
     if set(params.keys()) - set(REQUIRED_PARAMS) - set(OPTIONAL_PARAMS):

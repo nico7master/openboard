@@ -104,6 +104,13 @@ class WorldState:
     # Both snapshot only when non-empty (absent-when-default hash compat).
     research_funding: dict[str, int] = field(default_factory=dict)
     research_unlocked: dict[str, int] = field(default_factory=dict)
+    # L4 (realism contract 2026-09-11): fixed land registry. Parcels only
+    # exist when land_market enabled at genesis (absent-when-default hash
+    # compat); land_genesis_pop anchors appreciation; land_tax_due counts
+    # unpaid LVT ticks toward foreclosure.
+    land_parcels: dict[str, dict[str, Any]] = field(default_factory=dict)
+    land_genesis_pop: int = 0
+    land_tax_due: dict[str, int] = field(default_factory=dict)
     # Ephemeral per-tick WORK-hours counter (anti multi-tx mint exploit).
     # Cleared at tick boundaries before any snapshot -> state hashes are
     # unaffected; populated only while transactions are being applied.
@@ -180,6 +187,15 @@ class WorldState:
             snap["research_funding"] = dict(sorted(self.research_funding.items()))
         if self.research_unlocked:
             snap["research_unlocked"] = dict(sorted(self.research_unlocked.items()))
+        if self.land_parcels:
+            snap["land_parcels"] = {
+                k: dict(sorted(self.land_parcels[k].items()))
+                for k in sorted(self.land_parcels.keys())
+            }
+        if self.land_genesis_pop:
+            snap["land_genesis_pop"] = self.land_genesis_pop
+        if self.land_tax_due:
+            snap["land_tax_due"] = dict(sorted(self.land_tax_due.items()))
         if self.crisis:
             snap["crisis"] = dict(self.crisis)
         if self.active_shocks:
@@ -239,6 +255,9 @@ class WorldState:
             innovation_pool=self.innovation_pool,
             research_funding=dict(self.research_funding),
             research_unlocked=dict(self.research_unlocked),
+            land_parcels={k: dict(v) for k, v in self.land_parcels.items()},
+            land_genesis_pop=self.land_genesis_pop,
+            land_tax_due=dict(self.land_tax_due),
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
@@ -393,7 +412,7 @@ def genesis_state(
             if isinstance(wt.get("threshold"), int):
                 wt["threshold"] = wt["threshold"] * upc
 
-    return WorldState(
+    _ws = WorldState(
         tick=0,
         balances=balances,
         applied=[],
@@ -412,3 +431,8 @@ def genesis_state(
         listings={},
         bids=[],
     )
+    # L4: fixed land registry exists only when land_market enabled at
+    # genesis (inert otherwise; old worlds identical)
+    from .land import init_parcels
+    init_parcels(_ws, params)
+    return _ws

@@ -21,7 +21,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE", "BUY_LAND", "SELL_LAND"})
 
 
 def _is_int(v: Any) -> bool:
@@ -3138,6 +3138,7 @@ def apply_tick(
 
     # Stage 5 · shock lifecycle (rule-gated; absent => inert, replay-safe)
     from . import shocks as _shocks
+    from . import land as _land_mod
     if (params.get("shocks") or {}).get("enabled"):
         seed_cfg = (params.get("shocks") or {}).get("rng_seed", 0)
         _rng = random.Random(f"{seed_cfg}:{tick}")
@@ -3180,6 +3181,8 @@ def apply_tick(
         "LOAN": _validate_loan,
         "REPAY": _validate_repay,
         "DELEGATE": _validate_delegate,
+        "BUY_LAND": _land_mod.validate_buy_land,
+        "SELL_LAND": _land_mod.validate_sell_land,
     }
     # Apply-dispatch: same once-per-tick treatment. Every lambda preserves
     # the original call signature for its action exactly.
@@ -3203,6 +3206,8 @@ def apply_tick(
         "VOTE": lambda t: _apply_vote(state, t),
         "REPAY": lambda t: _apply_repay(state, t),
         "DELEGATE": lambda t: _apply_delegate(state, t),
+        "BUY_LAND": lambda t: _land_mod.apply_buy_land(state, t, params),
+        "SELL_LAND": lambda t: _land_mod.apply_sell_land(state, t, params),
     }
     for tx in sorted(actions, key=Transaction.sort_key):
         if tx.tick != tick:
@@ -3296,6 +3301,19 @@ def apply_tick(
     # concentration without touching subsistence balances.
     tax_events = _wealth_tax_phase(state, tick, params)
     state.applied.extend(tax_events)
+
+    # L4 - Georgist land-value tax + foreclosure (inert without
+    # params['land_market']; deterministic sorted-pid order).
+    try:
+        from .land import land_phase
+        state.applied.extend(land_phase(state, tick, params))
+    except Exception as exc:  # ledger-visible failure, never silent
+        state.flags.append({
+            "tick": tick,
+            "kind": "LAND_PHASE_ERROR",
+            "target": "land_pipeline",
+            "error": str(exc)[:200],
+        })
 
     # Public capital maintenance: society replaces worn-out tools and
     # machines, paying replacement cost from the pool (and retiring it).
