@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector")
+OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -465,6 +465,14 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
         if lmkt.get("land_tax_bp", 1) > 10_000 or lmkt.get("grace_ticks", 5) < 1:
             return Reason.INVALID_RULESET
 
+    rm = params.get("regional_markets")
+    if rm:
+        if not isinstance(rm, dict):
+            return "regional_markets must be a dict"
+        if rm.get("enabled"):
+            n = rm.get("regions", 0)
+            if not isinstance(n, int) or isinstance(n, bool) or n < 0 or n > 10_000:
+                return "regional_markets.regions must be int in [0, 10000] (0=auto)"
     fs = params.get("foreign_sector")
     if fs is not None:
         if not isinstance(fs, dict) or not isinstance(fs.get("enabled"), bool):

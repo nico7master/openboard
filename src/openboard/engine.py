@@ -1292,7 +1292,76 @@ def _update_demand_ema(state: WorldState, good: str, observed: int, alpha_bp: in
     state.demand_ema[good] = observed if prev is None else (prev * (10_000 - alpha_bp) + observed * alpha_bp) // 10_000
 
 
-def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger) -> list[dict[str, Any]]:
+def _update_scarcity(state: WorldState, _wanted: dict[str, int], _sold: dict[str, int], params: dict[str, Any]) -> None:
+    """L2 scarcity-signal update from (wanted, sold) totals. Called once
+    per tick on the legacy path; exactly once per tick (globally) on the
+    regional path - never once per region."""
+    _sp = params.get("scarcity_pricing") or {}
+    if _sp.get("enabled"):
+        if crisis_active(state):
+            for _g in list(state.scarcity_signal.keys()):
+                state.scarcity_signal[_g] = 0
+        else:
+            _max = int(_sp.get("max_markup_bp", 2_500))
+            _step = int(_sp.get("step_bp", 500))
+            _decay = int(_sp.get("decay_bp", 250))
+            for _g in sorted(set(state.scarcity_signal.keys()) | set(_wanted.keys())):
+                _unmet = _wanted.get(_g, 0) - _sold.get(_g, 0)
+                _cur = state.scarcity_signal.get(_g, 0)
+                if _unmet > 0:
+                    state.scarcity_signal[_g] = min(_max, _cur + _step)
+                elif _cur > 0:
+                    _nv = _cur - _decay
+                    if _nv > 0:
+                        state.scarcity_signal[_g] = _nv
+                    else:
+                        del state.scarcity_signal[_g]
+    elif state.scarcity_signal:
+        state.scarcity_signal.clear()
+
+
+def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger) -> list[dict[str, Any]]:
+    """L6 regional-markets wrapper: partition bids by buyer region and
+    run the legacy clearing once per region (tick-rotated order).
+    Listings stay CITY-WIDE (coops = producers keep full visibility);
+    unsold returns are deferred so later regions still see remaining
+    supply; one global unsold sweep + one global scarcity update close
+    the tick. Deterministic: region = hash bucket of the owner id.
+    """
+    from .regions import region_count, region_of, region_order
+    n_regions = region_count(params, len(state.balances))
+    if n_regions <= 1:
+        return _clear_markets(state, tick, params, ledger)
+    parts: dict[int, list[dict[str, Any]]] = {r: [] for r in range(n_regions)}
+    for bid in state.bids:
+        owner = bid["bidder"] if bid.get("coop_id") is None else f"coop:{bid['coop_id']}"
+        parts[region_of(owner, n_regions)].append(bid)
+    g_wanted: dict[str, int] = {}
+    g_sold: dict[str, int] = {}
+    events: list[dict[str, Any]] = []
+    saved = state.bids
+    try:
+        for r in region_order(n_regions, tick):
+            if not parts[r]:
+                continue  # no buyers here; supply stays for later regions
+            state.bids = parts[r]
+            st: dict[str, Any] = {}
+            events.extend(_clear_markets(state, tick, params, ledger,
+                                         scarcity_update=False,
+                                         defer_unsold=True, stats=st))
+            for g, w in st.get("wanted", {}).items():
+                g_wanted[g] = g_wanted.get(g, 0) + w
+            for g, s in st.get("sold", {}).items():
+                g_sold[g] = g_sold.get(g, 0) + s
+    finally:
+        state.bids = saved
+    for good in sorted(state.listings.keys()):
+        _return_unsold(state, good)
+    _update_scarcity(state, g_wanted, g_sold, params)
+    return events
+
+
+def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger: Ledger, *, scarcity_update: bool = True, defer_unsold: bool = False, stats: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """End-of-tick market clearing. Deterministic (spec §9).
 
     1. Essential FCFS pass: essential/emergency goods sold at the seller's
@@ -1574,7 +1643,10 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                 sold_records.append({"bidder": buyer["bidder"], "qty": got, "paid": paid})
 
         # D18 replacement-rate signal: record this tick's sold volume
-        state.recent_sales[good] = total_sold
+        if defer_unsold:
+            state.recent_sales[good] = state.recent_sales.get(good, 0) + total_sold
+        else:
+            state.recent_sales[good] = total_sold
         _update_demand_ema(state, good, total_sold)
         _sold[good] = _sold.get(good, 0) + total_sold
         events.append({
@@ -1617,7 +1689,8 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             remaining_supply -= take
 
         if not winners:
-            _return_unsold(state, good)
+            if not defer_unsold:
+                _return_unsold(state, good)
             events.append({
                 "tick": tick,
                 "action": "MARKET_CLEAR_AUCTION",
@@ -1633,7 +1706,10 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         clearing = min(w["bid"]["max_price"] for w in winners)
         total_sold = supply - remaining_supply
         # D18 replacement-rate signal: record this tick's sold volume
-        state.recent_sales[good] = total_sold
+        if defer_unsold:
+            state.recent_sales[good] = state.recent_sales.get(good, 0) + total_sold
+        else:
+            state.recent_sales[good] = total_sold
         _update_demand_ema(state, good, total_sold)
         _sold[good] = _sold.get(good, 0) + total_sold
         state.last_clearing[good] = clearing  # public price signal
@@ -1695,7 +1771,8 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
             entry["qty"] -= take
             to_sell -= take
 
-        _return_unsold(state, good)
+        if not defer_unsold:
+            _return_unsold(state, good)
 
         events.append({
             "tick": tick,
@@ -1742,28 +1819,11 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
     # Rationale: persistent unmet demand is THE real-world trigger for
     # prices rising above cost; when supply serves demand, premiums decay
     # back toward cost. Crisis forces the premium to zero (anti-gouging).
-    _sp = params.get("scarcity_pricing") or {}
-    if _sp.get("enabled"):
-        if crisis_active(state):
-            for _g in list(state.scarcity_signal.keys()):
-                state.scarcity_signal[_g] = 0
-        else:
-            _max = int(_sp.get("max_markup_bp", 2_500))
-            _step = int(_sp.get("step_bp", 500))
-            _decay = int(_sp.get("decay_bp", 250))
-            for _g in sorted(set(state.scarcity_signal.keys()) | set(_wanted.keys())):
-                _unmet = _wanted.get(_g, 0) - _sold.get(_g, 0)
-                _cur = state.scarcity_signal.get(_g, 0)
-                if _unmet > 0:
-                    state.scarcity_signal[_g] = min(_max, _cur + _step)
-                elif _cur > 0:
-                    _nv = _cur - _decay
-                    if _nv > 0:
-                        state.scarcity_signal[_g] = _nv
-                    else:
-                        del state.scarcity_signal[_g]
-    elif state.scarcity_signal:
-        state.scarcity_signal.clear()
+    if stats is not None:
+        stats["wanted"] = _wanted
+        stats["sold"] = _sold
+    if scarcity_update:
+        _update_scarcity(state, _wanted, _sold, params)
     return events
 
 
@@ -3258,7 +3318,10 @@ def apply_tick(
     listings_snapshot = {g: [dict(e) for e in ls] for g, ls in state.listings.items()}
 
     # End-of-tick market clearing (deterministic) — spec §9
-    market_events = _clear_markets(state, tick, params, ledger)
+    if (params.get("regional_markets") or {}).get("enabled"):
+        market_events = _clear_markets_regional(state, tick, params, ledger)
+    else:
+        market_events = _clear_markets(state, tick, params, ledger)
     state.applied.extend(market_events)
 
     # Fixed supply: coops repay wage debt from the day's sales (D14).
