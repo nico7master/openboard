@@ -414,3 +414,27 @@ EFFECT - direction/mechanism/magnitude/flip - gate-enforced by tests):
   tick; surplus-spend dividends hit ALL citizens every tick (use a
   control citizen to isolate flows); pool_after_buy already contains
   the buy price (uplift = final vs pre-buy, not an addition).
+- L6 regional markets LANDED 7217a7c (regions.py): rule-gated
+  (regional_markets.enabled, default off = byte-identical legacy path).
+  Buyers (citizens AND coop-bids) partitioned into deterministic
+  hash-bucket regions (region_of, salted sha256; regions=clamp(pop/100,
+  4..16) or explicit). Clearing passes run per region in tick-rotated
+  sorted order (region_order - fairness across ticks, pure function).
+  Listings stay CITY-WIDE (coops = producers, full visibility).
+  Deferred unsold-return: per-region passes skip _return_unsold so
+  later regions still see remaining supply; one global sweep + ONE
+  global scarcity update close the tick (L2 signal steps once, not
+  once per region - contract-tested). recent_sales accumulates across
+  regional passes. Strict param validation. 6 contract tests
+  (test_realism_regions.py): determinism/totality, rule-off ==
+  regions=1 byte-identical, multi-region conservation + deferred
+  unsold, scarcity-once, rotation, validation. Full suite 465 green.
+  REALISM ROADMAP: L1-L6 COMPLETE (interest, scarcity pricing,
+  research->productivity, land, foreign sector, regional markets).
+- NEXT SESSION: (1) Levers B+C of the perf bundle (batched cognition +
+  ledger micro-pass, byte-identical, fingerprint protocol), (2) bench
+  at 966 with regional_markets ON (spec: -10..15% wall, sort count
+  contract >=R/2 fewer sorts/tick), (3) Rust/pyo3 decision point if
+  bundle < 5 t/s (ledger path is ~40%), (4) gates re-run: hardcore
+  3 seeds + refresh2 stability ladder + seat soak with regions ON,
+  (5) per-region oversight streak metric for the dashboard.
