@@ -9,7 +9,7 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .bots import DecisionFn, _active_entries, _my_coop, _own_listed_qty, _tx, personal_needs
+from .bots import DecisionFn, _active_entries, _my_coop, _own_listed_qty, _tx, personal_needs, _decision_cache
 from .engine import apply_tick
 from .ledger import Ledger, Transaction
 from .metrics import SimMetrics
@@ -125,14 +125,25 @@ def make_specialist(
         # tick — the injection adds capital, it never replaces labor.
         _lpt_e = c.get("last_produce_tick")
         if _lpt_e is not None and (tick - _lpt_e) >= 10:
-            _rid_e = c.get("recipe_intent") or c.get("trade") or ""
-            _rec_e = state.recipes.get(_rid_e) or {}
-            _run_cost = sum(
-                q * (state.good_cost_baseline.get(g, 1) + 2)
-                for g, q in (_rec_e.get("inputs") or {}).items()
-            )
-            _run_cost += int(_rec_e.get("energy", 0)) * (state.good_cost_baseline.get("electricity", 1) + 2)
-            _run_cost = _run_cost * 3 // 2
+            # WP4.2 Lever C sub-step 1: _run_cost is coop-constant within
+            # a tick (reads only the coop's recipe and the static cost
+            # baselines) — compute once per (tick, coop), reuse for every
+            # member. Same frozen-tick safety argument as _coop_of and
+            # _listing_agg (Patch A/B, fingerprint-proven). The per-citizen
+            # part below (_bal, _inj, TRANSFER) stays per-citizen.
+            _dct = _decision_cache(state)[1]
+            _rck = ("run_cost", coop_id)
+            _run_cost = _dct.get(_rck)
+            if _run_cost is None:
+                _rid_e = c.get("recipe_intent") or c.get("trade") or ""
+                _rec_e = state.recipes.get(_rid_e) or {}
+                _run_cost = sum(
+                    q * (state.good_cost_baseline.get(g, 1) + 2)
+                    for g, q in (_rec_e.get("inputs") or {}).items()
+                )
+                _run_cost += int(_rec_e.get("energy", 0)) * (state.good_cost_baseline.get("electricity", 1) + 2)
+                _run_cost = _run_cost * 3 // 2
+                _dct[_rck] = _run_cost
             if _run_cost > 0 and c.get("treasury", 0) < _run_cost:
                 _bal = state.balances.get(who, 0)
                 # int-cast: baselines are floats (true division); the

@@ -103,6 +103,23 @@ def _active_entries(state: WorldState, good: str) -> list[dict[str, Any]]:
     return ent
 
 
+def _decision_cache(state: WorldState) -> tuple[int, dict]:
+    """WP4.2 Lever C (spec 2026-09-08 transformation 1): per-tick per-coop decision cache.
+
+    _run_cost, equity calculation, and honest-wages plan are coop-constant
+    within a tick (read only the coop dict, recipes, static baselines,
+    frozen-tick sales). First member computes, rest reuse. Same safety
+    argument as _coop_of and _listing_agg: state mutates only inside
+    apply_tick; cognition is a frozen-tick pure read; cache is keyed on
+    state.tick so replay forks never share state across ticks.
+    """
+    cache = getattr(state, "_decision", None)
+    if cache is None or cache[0] != state.tick:
+        cache = (state.tick, {})
+        state._decision = cache
+    return cache
+
+
 def _afford(state: WorldState, who: str, price: int, qty: int) -> bool:
     return state.balances.get(who, 0) >= price * qty
 
