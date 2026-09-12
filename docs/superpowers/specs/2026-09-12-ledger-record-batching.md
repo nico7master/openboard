@@ -1,31 +1,28 @@
-# Ledger Record Batching (WP4.2 Lever D)
+# Ledger Record Batching (WP4.2 Lever D) — REVISED
 
-## Problem
+## Problem (Original)
 
 Profile at 966 citizens: 19k records/tick → `canonical_json` + hashing dominates (~40% of tick). This is structural, not cognitive.
 
-## Solution
+## Updated Verdict: DECLINED (Structural Ceiling)
 
-Batch actions into a single `Record` per tick with a Merkle tree of transactions inside it.
-- 1 canonical_json + hash per tick (vs 19k).
-- Transaction content_hash + Merkle proofs per tx.
-- Verification: Replay Merkle proofs + hash chain.
+**Content hashing cannot be removed.** Per Spec §14, every outcome (including rejections) must have a permanent content commitment (`tx_hash = sha256(canonical_json(tx))`). Measured: **2.42s cumtime over the 6-tick profile ≈ 27% of the 9.09s wall (≈0.4s/tick)** at 966 citizens — irreducible in Python, only parallelizable or Rust-portable.
 
-## Gate
+**Linkage hashing is the true batchable ceiling.** `record_hash` (linkage chain) is **0.69s over 6 ticks (~8% of wall)**. A tick-level Merkle root on the *linkage fields* would save ~8% at best — not the 2x the first draft claimed.
 
-Must land before anchor format freeze (pre-release window). Requires:
-1. Fingerprint A/B (state/outcomes byte-identical).
-2. Full suite pass.
-3. Merkle verification unit tests.
+**Overlap note:** `sorted`/`sort_key` show 2.44s cumtime, but that INCLUDES first-time `content_hash` computations (hashing runs inside `sort_key` for the tiebreak). Do not double-count; the pure sort overhead is small.
 
-## Implementation Plan
+**Risk:** Any structural change to the record stream (batching, different hashes, per-tick vs per-tx records) breaks the fingerprint A/B proof gate. Without that gate, replay security claims are void.
 
-1. Modify `ledger.py` to accept `actions[]` batch + compute `tx_hash_merkle`.
-2. Update `apply_tick` to batch all `out` txs into one ledger record.
-3. Update replay logic to verify Merkle proofs.
-4. Benchmark: expect ≥2× ledger speedup.
+## Recommendation
 
-## Risk
+1.  **Mark as "On Hold"** until release gate is complete. The ~8% gain is not worth the fingerprint risk pre-v1.0.
+2.  **Post-release path:** If Rust is considered, optimize the *hashing loop* itself (parallel `content_hash`), not the ledger structure. This preserves per-tx commitment but reduces wall time.
 
-- Spec §14 (every tx is a permanent record) satisfied via Merkle proofs.
-- If proofs fail, fallback to 1:1 tx records (no breaking change).
+## Proof Reference
+
+- Profile: `scripts/profile_scale.py 966 6 42` — seed 42, 933 settled pop, 6 ticks, 9.23s wall (9.086s profiled). Captured at tree `fbcff56`; `61a160b` and later are docs-only commits, so the code state is identical to the 465-green `7f76cad`:
+  - `content_hash` chain: 2.42s cumtime (~27%)
+  - `record_hash` linkage: 0.69s cumtime (~8%)
+  - `sorted` 2.44s cumtime — overlaps `content_hash`, not additive
+  - → ~0.65 t/s at 966 citizens

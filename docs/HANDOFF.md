@@ -569,3 +569,12 @@ paths); optionally revisit default region count (R=10 at 933 pop).
   cProfile at 966 on this HEAD queued to size the two structural levers
   from the 09-10 verdict: ledger record batching (needs own spec - hard
   gate, pre-anchor window) vs clearing sorts.
+
+## Session 2026-09-12 14:5x: Lever D (ledger batching) investigated and DECLINED pre-anchor
+
+- Fresh 966-profile (scripts/profile_scale.py 966 6 42): content_hash chain 2.42s cumtime (~27% of 9.09s wall), record_hash linkage 0.69s (~8%), sorted 2.44s OVERLAPS content_hash (first-time hashing inside sort_key - do not double-count).
+- First implementation attempt (buffer accept + tick flush_batch with per-tx Merkle) was broken by construction: deleted reject() (6 engine call sites), NameError in the individual-records comprehension, batch record fails verify_chain content check, collapses per-tx reason codes (S14). Reverted; ledger smoke OK after (accept/reject/verify_chain).
+- Honest re-read: tx_hash = sha256(canonical_json(tx)) IS the S14 content commitment - irreducible in Python. True batchable ceiling is the ~8% linkage share, not 2x. A structural record-stream change can never pass the fingerprint A/B gate anyway (it changes the hashed stream itself).
+- Verdict banked: docs/superpowers/specs/2026-09-12-ledger-record-batching.md = DECLINED pre-anchor. Post-release option: parallel/Rust content_hash (preserves per-tx commitment). Also: to_dict/content_hash memoization already works under frozen=True via object.__setattr__; unfreezing is NOT needed and would break dataclass hashability.
+- Benches at 7f76cad (3 reps, pinned 2-core): OFF median 1.71 t/s (1.59/1.71/1.72), ON median 0.74 t/s (0.737/0.740/0.740). Lever C helps dense-coop workloads, neutral at 966; the ON residual gap is the approved 10x-pass regional semantic itself.
+- Python-side ladder closed: 1.74 peak / 1.71 current OFF. Path to >=5: pre-partitioned regional clearing, Rust/pyo3 hashing+clearing kernels, or reduced region count - each needs its own spec (hard gate).
