@@ -546,3 +546,26 @@ Evidence chain (all scripts committed):
 
 Next perf levers: Lever B batched cognition (~28% of tick, helps both
 paths); optionally revisit default region count (R=10 at 933 pop).
+
+## Session 2026-09-12 14:2x: Lever C sub-step 1 landed (7f76cad) - _run_cost per-(tick,coop) cache
+
+- WP4.2 transformation 1 (per-coop decision templates), first sub-step:
+  the D18 equity-injection _run_cost is coop-constant within a tick
+  (reads only the coop recipe + static baselines); now computed once per
+  (tick, coop) via _decision_cache in bots.py, reused by every member.
+  Per-citizen part (_bal, _inj, TRANSFER append) untouched.
+- En route failure (honest): a scripted rewrite of the honest-wages
+  block dropped the _hw gate/_rests guard/WORK append -> 3 suite fails
+  (hardcore survival, phase7 100-tick, ratchet 50-tick). Reverted to
+  c77154f, artifact script deleted. Lesson applied: surgical patches
+  only, never whole-block rewrites.
+- Proof: fingerprint A/B byte-identical (records=1000,
+  state=2177a714265097bf, outcomes=6cc27474dd2ac5b2 = HEAD witness);
+  full suite 465 passed (625s).
+- Bench (966 pop, 3 reps, pinned): OFF median 1.71 t/s (1.59/1.71/1.72)
+  - within noise of the 1.57-1.74 pre-C band; the win scales with
+  members-per-coop, not at 966.
+- Next: cognition caching rungs are DONE (A/B 09-10, C1 tonight). Fresh
+  cProfile at 966 on this HEAD queued to size the two structural levers
+  from the 09-10 verdict: ledger record batching (needs own spec - hard
+  gate, pre-anchor window) vs clearing sorts.
