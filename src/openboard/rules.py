@@ -35,10 +35,17 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets")
+OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets", "whistleblower", "audits", "need_allocation")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
+    # Source-model completion (spec 2026-09-15 §A): "Prices ... provide
+    # real-time signals of scarcity" — market-signal premium ON by default
+    # (proven values from tests/test_realism_scarcity.py::sp_params).
+    # Citizens' BUY_ESSENTIAL never pays the premium (engine clamps
+    # essential settlement to the floor); the markup steers the auction
+    # layer only. Crisis zeroes the signal (anti-gouging, existing L2).
+    "scarcity_pricing": {"enabled": True, "max_markup_bp": 2_500, "step_bp": 500, "decay_bp": 250},
     "transfer_limit": 0,  # 0 = unlimited
     # 2026-09-15 true-need balance: 20 had no documented rationale (engine
     # fallback said 12) and capped essential throughput (8 water coops x 20
@@ -292,6 +299,39 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             _v = spv[_k]
             if isinstance(_v, bool) or not isinstance(_v, int) or _v < 1 or _v > 10_000:
                 return Reason.INVALID_RULESET
+
+    # Source-model completion (spec 2026-09-15 §B1): whistleblower bounties.
+    if "whistleblower" in params:
+        wb = params["whistleblower"]
+        if not isinstance(wb, dict) or set(wb.keys()) != {"enabled", "reward_credits", "max_per_tick"}:
+            return Reason.INVALID_RULESET
+        if not isinstance(wb["enabled"], bool):
+            return Reason.INVALID_RULESET
+        for _k in ("reward_credits", "max_per_tick"):
+            _v = wb[_k]
+            if isinstance(_v, bool) or not isinstance(_v, int) or _v < 1 or _v > 100_000:
+                return Reason.INVALID_RULESET
+
+    # Source-model completion (spec 2026-09-15 §B2): periodic public audits.
+    if "audits" in params:
+        au = params["audits"]
+        if not isinstance(au, dict) or set(au.keys()) != {"enabled", "every_ticks"}:
+            return Reason.INVALID_RULESET
+        if not isinstance(au["enabled"], bool):
+            return Reason.INVALID_RULESET
+        _v = au["every_ticks"]
+        if isinstance(_v, bool) or not isinstance(_v, int) or _v < 1 or _v > 10_000:
+            return Reason.INVALID_RULESET
+
+    # Source-model completion (spec 2026-09-15 §C): need-first allocation.
+    if "need_allocation" in params:
+        na = params["need_allocation"]
+        if not isinstance(na, dict) or set(na.keys()) != {"enabled", "mode"}:
+            return Reason.INVALID_RULESET
+        if not isinstance(na["enabled"], bool):
+            return Reason.INVALID_RULESET
+        if na["mode"] not in ("priority", "lottery"):
+            return Reason.INVALID_RULESET
 
     if "needs_cycle" in params:
         nc = params["needs_cycle"]

@@ -21,7 +21,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE", "BUY_LAND", "SELL_LAND", "IMPORT_GOOD", "EXPORT_GOOD"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE", "BUY_LAND", "SELL_LAND", "IMPORT_GOOD", "EXPORT_GOOD", "REPORT"})
 
 
 def _is_int(v: Any) -> bool:
@@ -1346,6 +1346,74 @@ def _apply_buy_essential(state: WorldState, tx: Transaction) -> dict[str, Any]:
     }
 
 
+# Source-model completion (spec 2026-09-15 §B1): whistleblower bounty.
+# The source text: "Game-theoretic incentives (whistleblower rewards,
+# automatic audits) keep the system honest." A REPORT cites an existing
+# oversight flag (HOARD/MARKET_POWER/FREE_RIDER) already detected by the
+# deterministic engine; the FIRST valid report of a (kind, target) pair
+# earns a fixed bounty from the Society Pool. Payment is a public event —
+# the reward mechanism itself stays transparent (no secret payoffs).
+_REPORT_FLAG_KINDS = frozenset({"HOARD", "MARKET_POWER", "FREE_RIDER"})
+
+
+def _validate_report(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+    if not isinstance(payload, dict) or set(payload.keys()) != {"kind", "target"}:
+        return Reason.INVALID_PAYLOAD
+    kind = payload["kind"]
+    target = payload["target"]
+    if kind not in _REPORT_FLAG_KINDS or not isinstance(target, str) or not target:
+        return Reason.INVALID_PAYLOAD
+
+    wb = (params.get("whistleblower") or {})
+    if not wb.get("enabled"):
+        return Reason.REPORT_DISABLED
+    if tx.sender == target:
+        return Reason.SELF_REPORT
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    # The cited flag must already exist (engine-detected, not citizen-invented).
+    flagged = {(f["kind"], f["target"]) for f in state.flags
+               if f.get("kind") in _REPORT_FLAG_KINDS}
+    if (kind, target) not in flagged:
+        return Reason.FLAG_NOT_FOUND
+
+    # Deterministic first-report-wins: later reports of the same pair are
+    # rejected and earn nothing (no bounty farming on one violation).
+    paid = {(e.get("kind"), e.get("target")) for e in state.applied
+            if e.get("action") == "WHISTLEBLOWER_PAID"}
+    if (kind, target) in paid:
+        return Reason.ALREADY_REPORTED
+
+    # Per-tick cap on paid bounties (deterministic count over this tick's
+    # already-applied events; the ledger order makes "first" well-defined).
+    cap = int(wb.get("max_per_tick", 10))
+    paid_this_tick = sum(1 for e in state.applied
+                         if e.get("action") == "WHISTLEBLOWER_PAID" and e.get("tick") == tx.tick)
+    if paid_this_tick >= cap:
+        return Reason.ALREADY_REPORTED
+
+    if state.surplus_pool < int(wb.get("reward_credits", 100)):
+        return Reason.INSUFFICIENT_FUNDS
+    return None
+
+
+def _apply_report(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
+    wb = params["whistleblower"]
+    reward = int(wb.get("reward_credits", 100))
+    state.surplus_pool -= reward
+    state.balances[tx.sender] = state.balances.get(tx.sender, 0) + reward
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "WHISTLEBLOWER_PAID",
+        "kind": tx.payload["kind"],
+        "target": tx.payload["target"],
+        "reward": reward,
+    }
+
+
 def _update_demand_ema(state: WorldState, good: str, observed: int, alpha_bp: int = 4000) -> None:
     """D21f cobweb fix: exponential moving average of observed demand.
     Producers planning from RAW last-tick sales chase their own lumpy
@@ -1695,9 +1763,47 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
     if _crisis_fair.crisis_active(state):
         fair = True
 
+    # kcal food-group members (true-need balance): their unmet streak is
+    # reported under the group key "food", so priority allocation must
+    # read that key for them (mirrors the consume phase's kcal logic).
+    _kcal_cfg = params.get("kcal_needs") or {}
+    _kcal_foods = (set(_kcal_cfg.get("kcal_per_unit") or {})
+                   if _kcal_cfg.get("enabled") else set())
+
     def _served(good: str) -> list[dict[str, Any]]:
         buyers = essential_buyers[good]
-        if not fair or len(buyers) < 2:
+        if len(buyers) < 2:
+            return buyers
+        # Source-model completion (spec 2026-09-15 §C): "genuine scarcity →
+        # allocate based on need (priority lists, lotteries, or democratic
+        # decision)". Need-first ordering supersedes the fair rotation when
+        # enabled; an active crisis forces priority regardless (need-first
+        # is the crisis doctrine). Both modes are deterministic (replayable).
+        na = params.get("need_allocation") or {}
+        na_on = bool(na.get("enabled"))
+        mode = str(na.get("mode", "priority"))
+        if _crisis_fair.crisis_active(state):
+            na_on, mode = True, "priority"
+        if na_on:
+            if mode == "lottery":
+                # Deterministic integer LCG over (tick, good): equal need,
+                # equal chance, identical bytes on replay.
+                seed = (tick * 1_000_003 + sum(ord(ch) for ch in good)) & 0x7FFFFFFF
+                order = list(range(len(buyers)))
+                for i in range(len(order) - 1, 0, -1):
+                    seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF
+                    j = seed % (i + 1)
+                    order[i], order[j] = order[j], order[i]
+                return [buyers[i] for i in order]
+            # priority mode: longest-unmet citizen served first.
+            # kcal foods report their streak under the group key "food".
+            def _streak(b: dict[str, Any]) -> int:
+                unmet = state.unmet_needs.get(b["bidder"], {})
+                if good in _kcal_foods:
+                    return int(unmet.get("food", 0))
+                return int(unmet.get(good, 0))
+            return sorted(buyers, key=lambda b: (-_streak(b), str(b["bidder"])))
+        if not fair:
             return buyers
         off = tick % len(buyers)
         return buyers[off:] + buyers[:off]
@@ -3413,6 +3519,38 @@ def _research_phase_safe(state: WorldState, tick: int, params: dict[str, Any]) -
     return fund_pool_phase(state, tick, params)  # crisis redirection lives in the vote cycle, not the tap
 
 
+def _audit_phase(state: WorldState, tick: int, ledger: Ledger, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Source-model completion (spec 2026-09-15 §B2): periodic PUBLIC audit.
+
+    The source text: "Citizens can see and audit the entire economy" and
+    "automatic audits keep the system honest." Every `every_ticks` the
+    engine publishes a deterministic AUDIT_REPORT event: ledger chain
+    verification (recomputed, not trusted), flag counts, and board
+    totals. Event-only — no state mutation, integer arithmetic only.
+    """
+    au = params.get("audits") or {}
+    if not au.get("enabled"):
+        return []
+    every = int(au.get("every_ticks", 50))
+    if tick % every != 0:
+        return []
+    chain_ok = bool(ledger.verify_chain())
+    flag_counts: dict[str, int] = {}
+    for f in state.flags:
+        k = str(f.get("kind", "?"))
+        flag_counts[k] = flag_counts.get(k, 0) + 1
+    return [{
+        "tick": tick,
+        "action": "AUDIT_REPORT",
+        "chain_ok": chain_ok,
+        "records": len(ledger.records),
+        "accepted": ledger.accepted_count(),
+        "flags": dict(sorted(flag_counts.items())),
+        "surplus_pool": state.surplus_pool,
+        "treasury_in": state.treasury_in,
+    }]
+
+
 def apply_tick(
     state: WorldState,
     ledger: Ledger,
@@ -3517,6 +3655,7 @@ def apply_tick(
         "SELL_LAND": _land_mod.validate_sell_land,
         "IMPORT_GOOD": _foreign_mod.validate_import,
         "EXPORT_GOOD": _foreign_mod.validate_export,
+        "REPORT": _validate_report,
     }
     # Apply-dispatch: same once-per-tick treatment. Every lambda preserves
     # the original call signature for its action exactly.
@@ -3543,6 +3682,7 @@ def apply_tick(
         "BUY_LAND": lambda t: _land_mod.apply_buy_land(state, t, params),
         "SELL_LAND": lambda t: _land_mod.apply_sell_land(state, t, params),
         "IMPORT_GOOD": lambda t: _foreign_mod.apply_import(state, t, params),
+        "REPORT": lambda t: _apply_report(state, t, params),
         "EXPORT_GOOD": lambda t: _foreign_mod.apply_export(state, t, params),
     }
     for tx in sorted(actions, key=Transaction.sort_key):
@@ -3677,6 +3817,9 @@ def apply_tick(
     # End-of-tick oversight detection (deterministic) — spec §6.4
     ov_events = _detect_anomalies(state, tick, params, listings_snapshot)
     state.applied.extend(ov_events)
+
+    # Source-model completion (spec 2026-09-15 §B2): periodic public audit.
+    state.applied.extend(_audit_phase(state, tick, ledger, params))
 
     state.tick = tick
     state.ruleset_version = version_for_tick

@@ -163,3 +163,27 @@ all implemented and verified in code. Gaps: whistleblower rewards &
 automatic audits (absent), priority lists/lotteries for genuine scarcity
 (partial via crisis mode), scarcity pricing (built, off by default),
 democratic voting shape (now fixed via vote token).
+
+## Source Completion (2026-09-15, founder-approved, spec 2026-09-15-source-completion.md)
+
+All three audit gaps closed in one program; full suite + gate proof pending at write time.
+
+| Gap | Fix | Default | Replay safety |
+|---|---|---|---|
+| Scarcity pricing off | `scarcity_pricing` ON in DEFAULT_RULESET_PARAMS (max_markup 2500bp, step 500, decay 250 — proven values) | ON | Essential settlement clamps to floor (no gouging); crisis zeroes signals; explicit-params worlds unaffected |
+| Whistleblower rewards absent | New `REPORT` action: first valid report per (kind,target) oversight flag earns `reward_credits` from Society Pool; ALREADY_REPORTED blocks bounty farming; SELF_REPORT rejected; per-tick cap | OFF | Optional param `whistleblower`, off = zero behavior change |
+| Automatic audits absent | Periodic public `AUDIT_REPORT` event: recomputed `ledger.verify_chain()`, record counts, flag summary, pool/treasury board numbers | OFF | Optional param `audits`, event-only, no state mutation |
+| Priority lists/lotteries absent | `need_allocation` param: `priority` mode = longest-unmet served first (kcal foods read the group key `food`); `lottery` = deterministic LCG permutation; crisis forces priority regardless of mode | OFF | Optional param, off = legacy rotation |
+
+Verification: 12 new tests (test_whistleblower_audit.py, test_need_allocation.py) all pass;
+full-suite + hardcore-gate results to be appended below on completion.
+
+### Hardcore survival gate with source-completion defaults (2,000 ticks, memrun 14GiB/2-core)
+
+| Seed | worst_essential (bound 0) | worst_breadth (bound 30) | Verdict |
+|---|---|---|---|
+| 7 | 0 | 9 | PASS |
+| 42 | 0 | 9 | PASS |
+| 123 | 0 | 9 | PASS |
+
+Scarcity pricing ON did not reintroduce famine: the essential-pass floor clamp held at city scale for all 3 seeds (identical breadth profile to the pre-change gate — the premium steers the auction layer only). Full suite: 494/495 on first run; the single failure was the stale default-assuming scarcity test (updated to test the OFF contract explicitly + a new default-ON assertion; 9/9 on re-run). Final full-suite confirmation launched after gate ladder.

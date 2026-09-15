@@ -189,15 +189,29 @@ def test_crisis_zeroes_scarcity_premium():
 
 
 def test_rule_off_replays_identical_pricing():
-    """Backward contract: rule absent => listing price equals floor exactly
-    as before (and no signal state is created)."""
+    """Backward contract: rule OFF => listing price equals floor exactly
+    as before (and no signal state is created).
+
+    2026-09-15 source-completion: the DEFAULT flipped to ON (spec
+    2026-09-15-source-completion.md §A), so this test now disables the
+    rule explicitly — it tests the OFF contract, which is unchanged."""
     p = copy.deepcopy(DEFAULT_RULESET_PARAMS)
     p["triage_overrides"] = {}
+    p["scarcity_pricing"] = {"enabled": False, "max_markup_bp": 2_500,
+                             "step_bp": 500, "decay_bp": 250}
     s = _world(p)
     _found_bakery(s)
     _shortage_tick(s, 2)
     assert _list_price_direct(s, 3, 5) == s.good_cost_baseline["bread"]
     assert s.scarcity_signal == {}
+
+
+def test_scarcity_on_by_default():
+    """Source-model completion (2026-09-15 §A): the default ruleset now
+    ships with the market-signal premium ON (proven values)."""
+    assert DEFAULT_RULESET_PARAMS["scarcity_pricing"] == {
+        "enabled": True, "max_markup_bp": 2_500, "step_bp": 500, "decay_bp": 250,
+    }
 
 
 def test_scarcity_param_validation():
