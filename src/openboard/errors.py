@@ -57,6 +57,7 @@ class Reason(str, Enum):
     NOT_COUNCIL_MEMBER = "NOT_COUNCIL_MEMBER"
     INVALID_INTERVENTION = "INVALID_INTERVENTION"
     INTERVENTION_TYPE_UNKNOWN = "INTERVENTION_TYPE_UNKNOWN"
+    VOTE_BUDGET_EXCEEDED = "VOTE_BUDGET_EXCEEDED"
 
 
 REJECTION_TEXT = {
@@ -67,6 +68,7 @@ REJECTION_TEXT = {
     Reason.UNKNOWN_CITIZEN: "payload references an unknown citizen",
     Reason.RULE_VIOLATION: "action violates the active rule-set",
     Reason.MALFORMED_TRANSACTION: "transaction object itself is malformed",
+    Reason.VOTE_BUDGET_EXCEEDED: "monthly vote token exhausted for this citizen",
     Reason.DUPLICATE_TRANSACTION: "identical transaction already applied this tick",
 }
 

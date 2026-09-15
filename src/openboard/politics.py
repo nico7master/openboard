@@ -233,13 +233,27 @@ def make_politician(inner: DecisionFn, archetype: str, window: int = ELECTION_WI
             tx = _PROPOSERS[archetype](who, tick, state, params)
             if tx is not None:
                 out.append(tx)
-        # vote on open proposals (one person, one vote — engine enforces)
+        # vote on open proposals (one person, one vote — engine enforces).
+        # Vote token (2026-09-15 spec): spend the whole remaining monthly
+        # budget on the FIRST proposal with a stance, then stop — attention
+        # is scarce by design. Legacy mode: one binary vote per proposal.
         active = state.active_ruleset_params()
+        token_bp = 0
+        gov = active.get("governance", {})
+        if gov.get("enabled") and gov.get("vote_token_bp", 0) > 0:
+            budget = state.vote_budget.get(who) or {}
+            token_bp = budget.get("bp", 0) if budget.get("cycle") == tick // gov.get("vote_cycle_ticks", 30) else 0
         for pid, proposal in _open_proposals(state, tick):
             if who in proposal["ballots"]:
                 continue
             choice = _stance(archetype, who, _delta(proposal["params"], active), state)
-            if choice is not None:
+            if choice is None:
+                continue
+            if token_bp > 0:
+                out.append(_tx(tick, who, "VOTE",
+                               {"proposal_id": pid, "choice": choice, "bp": token_bp}, v))
+                token_bp = 0  # monthly token spent — skip later proposals
+            elif gov.get("vote_token_bp", 0) == 0:
                 out.append(_tx(tick, who, "VOTE", {"proposal_id": pid, "choice": choice}, v))
         return out
 
@@ -281,13 +295,25 @@ def make_faction(inner: DecisionFn, members: frozenset[str], window: int = ELECT
             if tx is not None:
                 out.append(tx)
 
+        # Vote token (2026-09-15 spec): full remaining budget on the first
+        # proposal, then stop. Legacy: binary vote per proposal.
+        gov = active.get("governance", {})
+        token_bp = 0
+        if gov.get("enabled") and gov.get("vote_token_bp", 0) > 0:
+            budget = state.vote_budget.get(who) or {}
+            token_bp = budget.get("bp", 0) if budget.get("cycle") == tick // gov.get("vote_cycle_ticks", 30) else 0
         for pid, proposal in _open_proposals(state, tick):
             if who in proposal["ballots"]:
                 continue
             proposer_is_faction = proposal["proposer"] in members
-            out.append(_tx(tick, who, "VOTE",
-                           {"proposal_id": pid,
-                            "choice": "for" if proposer_is_faction else "against"}, v))
+            choice = "for" if proposer_is_faction else "against"
+            if token_bp > 0:
+                out.append(_tx(tick, who, "VOTE",
+                               {"proposal_id": pid, "choice": choice, "bp": token_bp}, v))
+                token_bp = 0
+            elif gov.get("vote_token_bp", 0) == 0:
+                out.append(_tx(tick, who, "VOTE",
+                               {"proposal_id": pid, "choice": choice}, v))
         return out
 
     return bot

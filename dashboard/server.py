@@ -973,8 +973,18 @@ class Run:
                     "status": pr["status"],
                     "opened_tick": pr["opened_tick"],
                     "closes_tick": pr["closes_tick"],
-                    "votes_for": sum(1 for v in ballots.values() if v == "for"),
-                    "votes_against": sum(1 for v in ballots.values() if v == "against"),
+                    # Vote token (2026-09-15): ballots may be weighted
+                    # ({choice, bp}); legacy ballots are plain strings.
+                    "votes_for": sum(
+                        (v["bp"] if isinstance(v, dict) else 1)
+                        for v in ballots.values()
+                        if (v["choice"] if isinstance(v, dict) else v) == "for"
+                    ),
+                    "votes_against": sum(
+                        (v["bp"] if isinstance(v, dict) else 1)
+                        for v in ballots.values()
+                        if (v["choice"] if isinstance(v, dict) else v) == "against"
+                    ),
                     "is_rollback": pr.get("is_rollback", False),
                     "is_intervention": pr.get("intervention") is not None,
                     "intervention": pr.get("intervention"),

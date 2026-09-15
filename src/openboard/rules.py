@@ -130,6 +130,10 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
         "vote_window_ticks": 3,  # votes accepted for window_ticks after propose
         "quorum_bp": 5_000,  # 50% of citizens must cast
         "trial_period_ticks": 10,  # rollback is easy inside this window
+        # Vote token (2026-09-15 spec, founder-directed): 1 splitable,
+        # delegable, revocable vote per month. 0 = legacy binary votes.
+        "vote_token_bp": 10_000,
+        "vote_cycle_ticks": 30,  # one month per the needs_cycle convention
     },
     "constitution_phase": "bootstrap",  # "hardened" -> 2/3 majority required
     "oversight": {
@@ -227,7 +231,13 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
         return Reason.INVALID_RULESET
 
     gov = params["governance"]
-    if not isinstance(gov, dict) or set(gov.keys()) != {"enabled", "vote_window_ticks", "quorum_bp", "trial_period_ticks"}:
+    _gov_required = {"enabled", "vote_window_ticks", "quorum_bp", "trial_period_ticks"}
+    _gov_optional = {"vote_token_bp", "vote_cycle_ticks"}  # vote token, 2026-09-15 spec
+    if (
+        not isinstance(gov, dict)
+        or not _gov_required.issubset(gov.keys())
+        or not set(gov.keys()).issubset(_gov_required | _gov_optional)
+    ):
         return Reason.INVALID_RULESET
     if not isinstance(gov["enabled"], bool):
         return Reason.INVALID_RULESET
@@ -238,6 +248,14 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
     q = gov["quorum_bp"]
     if isinstance(q, bool) or not isinstance(q, int) or q < 0 or q > 10_000:
         return Reason.INVALID_RULESET
+    if "vote_token_bp" in gov:
+        v = gov["vote_token_bp"]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > 10_000:
+            return Reason.INVALID_RULESET
+    if "vote_cycle_ticks" in gov:
+        v = gov["vote_cycle_ticks"]
+        if isinstance(v, bool) or not isinstance(v, int) or v < 1:
+            return Reason.INVALID_RULESET
 
     ov = params["oversight"]
     if not isinstance(ov, dict) or set(ov.keys()) != {"hoard_multiplier", "market_power_share_bp", "free_rider_min_hours", "council_members"}:

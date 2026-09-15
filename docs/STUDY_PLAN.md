@@ -146,3 +146,20 @@ them when the staple is secured, exactly as the user specified.
 *   **Focus:** We want to know *what happens in the game*, not if the code works.
 *   **Data:** All results are saved in the `sweeps/` folder.
 *   **Goal:** Build a guide for the game based on real test data, not guesses.
+
+## Governance Verdicts (2026-09-15)
+
+| Question | Verdict | Evidence |
+|---|---|---|
+| Election spam (open democracy) | 🛠️ **Fixed by vote token** | P2 measured ~270 doomed proposals/run; unlimited binary votes drowned the surface. Founder-directed fix: 1 splitable/delegable/revocable vote token per month (spec 2026-09-15-vote-token.md). Attention scarcity, not filing fees, kills spam. |
+| Proposal deposits | ❌ Superseded | Deposit spec marked SUPERSEDED same day — token approach chosen by founder. |
+| Research-style delegative voting for ALL governance | ✅ Shipped | Research vote had 100-point split + delegation since Stage 5; now generalized via `vote_token_bp`/`vote_cycle_ticks` (0 = legacy byte-identical). |
+| Duplicate `_validate_delegate` shadowing | ✅ Cleaned | Both validators explicitly named (`_politics`/`_credit`); dispatch uses the effective one, rejection reason preserved. |
+
+Source-document audit (open-board-market-socialism.md, 2026-09-15):
+social ownership, production-at-cost, open bidding, surplus return,
+hash-chained transparency, innovation fund, oversight/intervention —
+all implemented and verified in code. Gaps: whistleblower rewards &
+automatic audits (absent), priority lists/lotteries for genuine scarcity
+(partial via crisis mode), scarcity pricing (built, off by default),
+democratic voting shape (now fixed via vote token).

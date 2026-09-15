@@ -1,0 +1,1497 @@
+{
+  "seed": 42,
+  "target_pop": 949,
+  "ticks_driven": 150,
+  "wall_s": 83.2,
+  "at_start": {
+    "books": {
+      "need_per_tick": 10.544444444444444,
+      "capacity_per_tick": 110.0,
+      "coverage_bp": 104320.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "printshop",
+          "members": 2,
+          "max_runs": 2.0
+        },
+        {
+          "coop": "printshop_x1",
+          "members": 9,
+          "max_runs": 9.0
+        }
+      ]
+    },
+    "bread": {
+      "need_per_tick": 4234.0,
+      "capacity_per_tick": 4053.333333333333,
+      "coverage_bp": 9573.0,
+      "n_producers": 5,
+      "producers": [
+        {
+          "coop": "bakers",
+          "members": 4,
+          "max_runs": 10.666666666666666
+        },
+        {
+          "coop": "bakers_x1",
+          "members": 12,
+          "max_runs": 32.0
+        },
+        {
+          "coop": "bakers_x2",
+          "members": 12,
+          "max_runs": 32.0
+        },
+        {
+          "coop": "bakers_x3",
+          "members": 7,
+          "max_runs": 18.666666666666668
+        },
+        {
+          "coop": "city_bakers",
+          "members": 3,
+          "max_runs": 8.0
+        }
+      ]
+    },
+    "canned_food": {
+      "need_per_tick": 3440.125,
+      "capacity_per_tick": 264.0,
+      "coverage_bp": 767.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "cannery",
+          "members": 2,
+          "max_runs": 4.0
+        },
+        {
+          "coop": "cannery_x1",
+          "members": 9,
+          "max_runs": 18.0
+        }
+      ]
+    },
+    "cheese": {
+      "need_per_tick": 6880.25,
+      "capacity_per_tick": 204.8,
+      "coverage_bp": 297.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "dairy",
+          "members": 3,
+          "max_runs": 4.8
+        },
+        {
+          "coop": "dairy_x1",
+          "members": 11,
+          "max_runs": 17.6
+        },
+        {
+          "coop": "dairy_x2",
+          "members": 2,
+          "max_runs": 3.2
+        }
+      ]
+    },
+    "childcare": {
+      "need_per_tick": 189.8,
+      "capacity_per_tick": 1056.0,
+      "coverage_bp": 55637.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "childcare_co",
+          "members": 2,
+          "max_runs": 2.0
+        },
+        {
+          "coop": "childcare_co_x1",
+          "members": 9,
+          "max_runs": 9.0
+        }
+      ]
+    },
+    "clothing": {
+      "need_per_tick": 31.633333333333333,
+      "capacity_per_tick": 352.0,
+      "coverage_bp": 111275.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "tailors",
+          "members": 2,
+          "max_runs": 1.3333333333333333
+        },
+        {
+          "coop": "tailors_x1",
+          "members": 9,
+          "max_runs": 6.0
+        }
+      ]
+    },
+    "education": {
+      "need_per_tick": 94.9,
+      "capacity_per_tick": 1536.0,
+      "coverage_bp": 161854.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "school",
+          "members": 6,
+          "max_runs": 6.0
+        },
+        {
+          "coop": "school_x1",
+          "members": 12,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "school_x2",
+          "members": 12,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "school_x3",
+          "members": 2,
+          "max_runs": 2.0
+        }
+      ]
+    },
+    "eggs": {
+      "need_per_tick": 34401.25,
+      "capacity_per_tick": 1720.0,
+      "coverage_bp": 499.0,
+      "n_producers": 8,
+      "producers": [
+        {
+          "coop": "livestock_co",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        },
+        {
+          "coop": "livestock_co_x1",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x2",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x3",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x4",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x5",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x6",
+          "members": 10,
+          "max_runs": 1.3333333333333333
+        },
+        {
+          "coop": "livestock_north",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        }
+      ]
+    },
+    "electricity": {
+      "need_per_tick": 11388.0,
+      "capacity_per_tick": 28160.0,
+      "coverage_bp": 24727.0,
+      "n_producers": 6,
+      "producers": [
+        {
+          "coop": "power_plant",
+          "members": 4,
+          "max_runs": 3.2
+        },
+        {
+          "coop": "power_plant_x1",
+          "members": 12,
+          "max_runs": 9.6
+        },
+        {
+          "coop": "power_plant_x2",
+          "members": 6,
+          "max_runs": 4.8
+        },
+        {
+          "coop": "wind_farm",
+          "members": 4,
+          "max_runs": 1.28
+        },
+        {
+          "coop": "wind_farm_x1",
+          "members": 12,
+          "max_runs": 3.84
+        },
+        {
+          "coop": "wind_farm_x2",
+          "members": 6,
+          "max_runs": 1.92
+        }
+      ]
+    },
+    "fish": {
+      "need_per_tick": 13760.5,
+      "capacity_per_tick": 1173.3333333333335,
+      "coverage_bp": 852.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "fishery",
+          "members": 4,
+          "max_runs": 1.0666666666666667
+        },
+        {
+          "coop": "fishery_x1",
+          "members": 12,
+          "max_runs": 3.2
+        },
+        {
+          "coop": "fishery_x2",
+          "members": 6,
+          "max_runs": 1.6
+        }
+      ]
+    },
+    "flour": {
+      "need_per_tick": 764.4722222222222,
+      "capacity_per_tick": 1280.0,
+      "coverage_bp": 16743.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "millers",
+          "members": 3,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "millers_x1",
+          "members": 11,
+          "max_runs": 44.0
+        },
+        {
+          "coop": "millers_x2",
+          "members": 2,
+          "max_runs": 8.0
+        }
+      ]
+    },
+    "fruit": {
+      "need_per_tick": 11008.4,
+      "capacity_per_tick": 1234.2857142857142,
+      "coverage_bp": 1121.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "orchard_co",
+          "members": 5,
+          "max_runs": 1.1428571428571428
+        },
+        {
+          "coop": "orchard_co_x1",
+          "members": 12,
+          "max_runs": 2.742857142857143
+        },
+        {
+          "coop": "orchard_co_x2",
+          "members": 10,
+          "max_runs": 2.2857142857142856
+        }
+      ]
+    },
+    "furniture": {
+      "need_per_tick": 2.636111111111111,
+      "capacity_per_tick": 14.08,
+      "coverage_bp": 53412.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "furniture_shop",
+          "members": 4,
+          "max_runs": 1.28
+        },
+        {
+          "coop": "furniture_shop_x1",
+          "members": 12,
+          "max_runs": 3.84
+        },
+        {
+          "coop": "furniture_shop_x2",
+          "members": 6,
+          "max_runs": 1.92
+        }
+      ]
+    },
+    "grain": {
+      "need_per_tick": 809.4411764705883,
+      "capacity_per_tick": 9760.0,
+      "coverage_bp": 120577.0,
+      "n_producers": 6,
+      "producers": [
+        {
+          "coop": "farmers",
+          "members": 8,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "farmers_north",
+          "members": 5,
+          "max_runs": 1.0
+        },
+        {
+          "coop": "farmers_x1",
+          "members": 12,
+          "max_runs": 2.4
+        },
+        {
+          "coop": "farmers_x2",
+          "members": 12,
+          "max_runs": 2.4
+        },
+        {
+          "coop": "farmers_x3",
+          "members": 12,
+          "max_runs": 2.4
+        },
+        {
+          "coop": "farmers_x4",
+          "members": 12,
+          "max_runs": 2.4
+        }
+      ]
+    },
+    "healthcare": {
+      "need_per_tick": 189.8,
+      "capacity_per_tick": 1056.0,
+      "coverage_bp": 55637.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "clinic",
+          "members": 2,
+          "max_runs": 2.0
+        },
+        {
+          "coop": "clinic_x1",
+          "members": 9,
+          "max_runs": 9.0
+        }
+      ]
+    },
+    "heating_fuel": {
+      "need_per_tick": 5694.0,
+      "capacity_per_tick": 9120.0,
+      "coverage_bp": 16016.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "fuel_works",
+          "members": 7,
+          "max_runs": 7.0
+        },
+        {
+          "coop": "fuel_works_x1",
+          "members": 12,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "fuel_works_x2",
+          "members": 12,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "fuel_works_x3",
+          "members": 7,
+          "max_runs": 7.0
+        }
+      ]
+    },
+    "household_goods": {
+      "need_per_tick": 31.633333333333333,
+      "capacity_per_tick": 64.8,
+      "coverage_bp": 20484.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "household_co",
+          "members": 5,
+          "max_runs": 4.0
+        },
+        {
+          "coop": "household_co_x1",
+          "members": 12,
+          "max_runs": 9.6
+        },
+        {
+          "coop": "household_co_x2",
+          "members": 10,
+          "max_runs": 8.0
+        }
+      ]
+    },
+    "housing": {
+      "need_per_tick": 2.636111111111111,
+      "capacity_per_tick": 3.52,
+      "coverage_bp": 13353.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "housing_guild",
+          "members": 4,
+          "max_runs": 0.32
+        },
+        {
+          "coop": "housing_guild_x1",
+          "members": 12,
+          "max_runs": 0.96
+        },
+        {
+          "coop": "housing_guild_x2",
+          "members": 6,
+          "max_runs": 0.48
+        }
+      ]
+    },
+    "maintenance": {
+      "need_per_tick": 31.633333333333333,
+      "capacity_per_tick": 42.666666666666664,
+      "coverage_bp": 13487.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "maintenance_co",
+          "members": 6,
+          "max_runs": 8.0
+        },
+        {
+          "coop": "maintenance_co_x1",
+          "members": 12,
+          "max_runs": 16.0
+        },
+        {
+          "coop": "maintenance_co_x2",
+          "members": 12,
+          "max_runs": 16.0
+        },
+        {
+          "coop": "maintenance_co_x3",
+          "members": 2,
+          "max_runs": 2.6666666666666665
+        }
+      ]
+    },
+    "meals": {
+      "need_per_tick": 3931.5714285714284,
+      "capacity_per_tick": 1013.3333333333335,
+      "coverage_bp": 2577.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "kitchen",
+          "members": 7,
+          "max_runs": 9.333333333333334
+        },
+        {
+          "coop": "kitchen_x1",
+          "members": 12,
+          "max_runs": 16.0
+        },
+        {
+          "coop": "kitchen_x2",
+          "members": 12,
+          "max_runs": 16.0
+        },
+        {
+          "coop": "kitchen_x3",
+          "members": 7,
+          "max_runs": 9.333333333333334
+        }
+      ]
+    },
+    "meat": {
+      "need_per_tick": 11008.4,
+      "capacity_per_tick": 1720.0,
+      "coverage_bp": 1562.0,
+      "n_producers": 8,
+      "producers": [
+        {
+          "coop": "livestock_co",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        },
+        {
+          "coop": "livestock_co_x1",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x2",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x3",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x4",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x5",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x6",
+          "members": 10,
+          "max_runs": 1.3333333333333333
+        },
+        {
+          "coop": "livestock_north",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        }
+      ]
+    },
+    "medicine": {
+      "need_per_tick": 31.633333333333333,
+      "capacity_per_tick": 26.400000000000002,
+      "coverage_bp": 8345.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "apothecary",
+          "members": 2,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "apothecary_x1",
+          "members": 9,
+          "max_runs": 7.2
+        }
+      ]
+    },
+    "milk": {
+      "need_per_tick": 9173.666666666666,
+      "capacity_per_tick": 1720.0,
+      "coverage_bp": 1874.0,
+      "n_producers": 8,
+      "producers": [
+        {
+          "coop": "livestock_co",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        },
+        {
+          "coop": "livestock_co_x1",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x2",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x3",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x4",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x5",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x6",
+          "members": 10,
+          "max_runs": 1.3333333333333333
+        },
+        {
+          "coop": "livestock_north",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        }
+      ]
+    },
+    "transport": {
+      "need_per_tick": 1898.0,
+      "capacity_per_tick": 2112.0,
+      "coverage_bp": 11127.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "transport_co",
+          "members": 2,
+          "max_runs": 3.2
+        },
+        {
+          "coop": "transport_co_x1",
+          "members": 9,
+          "max_runs": 14.4
+        }
+      ]
+    },
+    "vegetables": {
+      "need_per_tick": 6880.25,
+      "capacity_per_tick": 1216.0,
+      "coverage_bp": 1767.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "vegetable_farm",
+          "members": 7,
+          "max_runs": 1.12
+        },
+        {
+          "coop": "vegetable_farm_x1",
+          "members": 12,
+          "max_runs": 1.92
+        },
+        {
+          "coop": "vegetable_farm_x2",
+          "members": 12,
+          "max_runs": 1.92
+        },
+        {
+          "coop": "vegetable_farm_x3",
+          "members": 7,
+          "max_runs": 1.12
+        }
+      ]
+    },
+    "water": {
+      "need_per_tick": 2847.0,
+      "capacity_per_tick": 8320.0,
+      "coverage_bp": 29223.0,
+      "n_producers": 8,
+      "producers": [
+        {
+          "coop": "water_works",
+          "members": 4,
+          "max_runs": 2.1333333333333333
+        },
+        {
+          "coop": "water_works_east",
+          "members": 4,
+          "max_runs": 2.1333333333333333
+        },
+        {
+          "coop": "water_works_north",
+          "members": 4,
+          "max_runs": 2.1333333333333333
+        },
+        {
+          "coop": "water_works_x1",
+          "members": 12,
+          "max_runs": 6.4
+        },
+        {
+          "coop": "water_works_x2",
+          "members": 12,
+          "max_runs": 6.4
+        },
+        {
+          "coop": "water_works_x3",
+          "members": 12,
+          "max_runs": 6.4
+        },
+        {
+          "coop": "water_works_x4",
+          "members": 12,
+          "max_runs": 6.4
+        },
+        {
+          "coop": "water_works_x5",
+          "members": 5,
+          "max_runs": 2.6666666666666665
+        }
+      ]
+    }
+  },
+  "at_end": {
+    "books": {
+      "need_per_tick": 10.544444444444444,
+      "capacity_per_tick": 110.0,
+      "coverage_bp": 104320.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "printshop",
+          "members": 2,
+          "max_runs": 2.0
+        },
+        {
+          "coop": "printshop_x1",
+          "members": 9,
+          "max_runs": 9.0
+        }
+      ]
+    },
+    "bread": {
+      "need_per_tick": 4234.0,
+      "capacity_per_tick": 4053.333333333333,
+      "coverage_bp": 9573.0,
+      "n_producers": 5,
+      "producers": [
+        {
+          "coop": "bakers",
+          "members": 4,
+          "max_runs": 10.666666666666666
+        },
+        {
+          "coop": "bakers_x1",
+          "members": 12,
+          "max_runs": 32.0
+        },
+        {
+          "coop": "bakers_x2",
+          "members": 12,
+          "max_runs": 32.0
+        },
+        {
+          "coop": "bakers_x3",
+          "members": 7,
+          "max_runs": 18.666666666666668
+        },
+        {
+          "coop": "city_bakers",
+          "members": 3,
+          "max_runs": 8.0
+        }
+      ]
+    },
+    "canned_food": {
+      "need_per_tick": 3440.125,
+      "capacity_per_tick": 264.0,
+      "coverage_bp": 767.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "cannery",
+          "members": 2,
+          "max_runs": 4.0
+        },
+        {
+          "coop": "cannery_x1",
+          "members": 9,
+          "max_runs": 18.0
+        }
+      ]
+    },
+    "cheese": {
+      "need_per_tick": 6880.25,
+      "capacity_per_tick": 204.8,
+      "coverage_bp": 297.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "dairy",
+          "members": 3,
+          "max_runs": 4.8
+        },
+        {
+          "coop": "dairy_x1",
+          "members": 11,
+          "max_runs": 17.6
+        },
+        {
+          "coop": "dairy_x2",
+          "members": 2,
+          "max_runs": 3.2
+        }
+      ]
+    },
+    "childcare": {
+      "need_per_tick": 189.8,
+      "capacity_per_tick": 1056.0,
+      "coverage_bp": 55637.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "childcare_co",
+          "members": 2,
+          "max_runs": 2.0
+        },
+        {
+          "coop": "childcare_co_x1",
+          "members": 9,
+          "max_runs": 9.0
+        }
+      ]
+    },
+    "clothing": {
+      "need_per_tick": 31.633333333333333,
+      "capacity_per_tick": 352.0,
+      "coverage_bp": 111275.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "tailors",
+          "members": 2,
+          "max_runs": 1.3333333333333333
+        },
+        {
+          "coop": "tailors_x1",
+          "members": 9,
+          "max_runs": 6.0
+        }
+      ]
+    },
+    "education": {
+      "need_per_tick": 94.9,
+      "capacity_per_tick": 1536.0,
+      "coverage_bp": 161854.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "school",
+          "members": 6,
+          "max_runs": 6.0
+        },
+        {
+          "coop": "school_x1",
+          "members": 12,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "school_x2",
+          "members": 12,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "school_x3",
+          "members": 2,
+          "max_runs": 2.0
+        }
+      ]
+    },
+    "eggs": {
+      "need_per_tick": 34401.25,
+      "capacity_per_tick": 1720.0,
+      "coverage_bp": 499.0,
+      "n_producers": 8,
+      "producers": [
+        {
+          "coop": "livestock_co",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        },
+        {
+          "coop": "livestock_co_x1",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x2",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x3",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x4",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x5",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x6",
+          "members": 10,
+          "max_runs": 1.3333333333333333
+        },
+        {
+          "coop": "livestock_north",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        }
+      ]
+    },
+    "electricity": {
+      "need_per_tick": 11388.0,
+      "capacity_per_tick": 28160.0,
+      "coverage_bp": 24727.0,
+      "n_producers": 6,
+      "producers": [
+        {
+          "coop": "power_plant",
+          "members": 4,
+          "max_runs": 3.2
+        },
+        {
+          "coop": "power_plant_x1",
+          "members": 12,
+          "max_runs": 9.6
+        },
+        {
+          "coop": "power_plant_x2",
+          "members": 6,
+          "max_runs": 4.8
+        },
+        {
+          "coop": "wind_farm",
+          "members": 4,
+          "max_runs": 1.28
+        },
+        {
+          "coop": "wind_farm_x1",
+          "members": 12,
+          "max_runs": 3.84
+        },
+        {
+          "coop": "wind_farm_x2",
+          "members": 6,
+          "max_runs": 1.92
+        }
+      ]
+    },
+    "fish": {
+      "need_per_tick": 13760.5,
+      "capacity_per_tick": 1173.3333333333335,
+      "coverage_bp": 852.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "fishery",
+          "members": 4,
+          "max_runs": 1.0666666666666667
+        },
+        {
+          "coop": "fishery_x1",
+          "members": 12,
+          "max_runs": 3.2
+        },
+        {
+          "coop": "fishery_x2",
+          "members": 6,
+          "max_runs": 1.6
+        }
+      ]
+    },
+    "flour": {
+      "need_per_tick": 764.4722222222222,
+      "capacity_per_tick": 1280.0,
+      "coverage_bp": 16743.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "millers",
+          "members": 3,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "millers_x1",
+          "members": 11,
+          "max_runs": 44.0
+        },
+        {
+          "coop": "millers_x2",
+          "members": 2,
+          "max_runs": 8.0
+        }
+      ]
+    },
+    "fruit": {
+      "need_per_tick": 11008.4,
+      "capacity_per_tick": 1234.2857142857142,
+      "coverage_bp": 1121.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "orchard_co",
+          "members": 5,
+          "max_runs": 1.1428571428571428
+        },
+        {
+          "coop": "orchard_co_x1",
+          "members": 12,
+          "max_runs": 2.742857142857143
+        },
+        {
+          "coop": "orchard_co_x2",
+          "members": 10,
+          "max_runs": 2.2857142857142856
+        }
+      ]
+    },
+    "furniture": {
+      "need_per_tick": 2.636111111111111,
+      "capacity_per_tick": 14.08,
+      "coverage_bp": 53412.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "furniture_shop",
+          "members": 4,
+          "max_runs": 1.28
+        },
+        {
+          "coop": "furniture_shop_x1",
+          "members": 12,
+          "max_runs": 3.84
+        },
+        {
+          "coop": "furniture_shop_x2",
+          "members": 6,
+          "max_runs": 1.92
+        }
+      ]
+    },
+    "grain": {
+      "need_per_tick": 809.4411764705883,
+      "capacity_per_tick": 9760.0,
+      "coverage_bp": 120577.0,
+      "n_producers": 6,
+      "producers": [
+        {
+          "coop": "farmers",
+          "members": 8,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "farmers_north",
+          "members": 5,
+          "max_runs": 1.0
+        },
+        {
+          "coop": "farmers_x1",
+          "members": 12,
+          "max_runs": 2.4
+        },
+        {
+          "coop": "farmers_x2",
+          "members": 12,
+          "max_runs": 2.4
+        },
+        {
+          "coop": "farmers_x3",
+          "members": 12,
+          "max_runs": 2.4
+        },
+        {
+          "coop": "farmers_x4",
+          "members": 12,
+          "max_runs": 2.4
+        }
+      ]
+    },
+    "healthcare": {
+      "need_per_tick": 189.8,
+      "capacity_per_tick": 1056.0,
+      "coverage_bp": 55637.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "clinic",
+          "members": 2,
+          "max_runs": 2.0
+        },
+        {
+          "coop": "clinic_x1",
+          "members": 9,
+          "max_runs": 9.0
+        }
+      ]
+    },
+    "heating_fuel": {
+      "need_per_tick": 5694.0,
+      "capacity_per_tick": 9120.0,
+      "coverage_bp": 16016.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "fuel_works",
+          "members": 7,
+          "max_runs": 7.0
+        },
+        {
+          "coop": "fuel_works_x1",
+          "members": 12,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "fuel_works_x2",
+          "members": 12,
+          "max_runs": 12.0
+        },
+        {
+          "coop": "fuel_works_x3",
+          "members": 7,
+          "max_runs": 7.0
+        }
+      ]
+    },
+    "household_goods": {
+      "need_per_tick": 31.633333333333333,
+      "capacity_per_tick": 64.8,
+      "coverage_bp": 20484.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "household_co",
+          "members": 5,
+          "max_runs": 4.0
+        },
+        {
+          "coop": "household_co_x1",
+          "members": 12,
+          "max_runs": 9.6
+        },
+        {
+          "coop": "household_co_x2",
+          "members": 10,
+          "max_runs": 8.0
+        }
+      ]
+    },
+    "housing": {
+      "need_per_tick": 2.636111111111111,
+      "capacity_per_tick": 3.52,
+      "coverage_bp": 13353.0,
+      "n_producers": 3,
+      "producers": [
+        {
+          "coop": "housing_guild",
+          "members": 4,
+          "max_runs": 0.32
+        },
+        {
+          "coop": "housing_guild_x1",
+          "members": 12,
+          "max_runs": 0.96
+        },
+        {
+          "coop": "housing_guild_x2",
+          "members": 6,
+          "max_runs": 0.48
+        }
+      ]
+    },
+    "maintenance": {
+      "need_per_tick": 31.633333333333333,
+      "capacity_per_tick": 42.666666666666664,
+      "coverage_bp": 13487.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "maintenance_co",
+          "members": 6,
+          "max_runs": 8.0
+        },
+        {
+          "coop": "maintenance_co_x1",
+          "members": 12,
+          "max_runs": 16.0
+        },
+        {
+          "coop": "maintenance_co_x2",
+          "members": 12,
+          "max_runs": 16.0
+        },
+        {
+          "coop": "maintenance_co_x3",
+          "members": 2,
+          "max_runs": 2.6666666666666665
+        }
+      ]
+    },
+    "meals": {
+      "need_per_tick": 3931.5714285714284,
+      "capacity_per_tick": 1013.3333333333335,
+      "coverage_bp": 2577.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "kitchen",
+          "members": 7,
+          "max_runs": 9.333333333333334
+        },
+        {
+          "coop": "kitchen_x1",
+          "members": 12,
+          "max_runs": 16.0
+        },
+        {
+          "coop": "kitchen_x2",
+          "members": 12,
+          "max_runs": 16.0
+        },
+        {
+          "coop": "kitchen_x3",
+          "members": 7,
+          "max_runs": 9.333333333333334
+        }
+      ]
+    },
+    "meat": {
+      "need_per_tick": 11008.4,
+      "capacity_per_tick": 1720.0,
+      "coverage_bp": 1562.0,
+      "n_producers": 8,
+      "producers": [
+        {
+          "coop": "livestock_co",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        },
+        {
+          "coop": "livestock_co_x1",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x2",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x3",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x4",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x5",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x6",
+          "members": 10,
+          "max_runs": 1.3333333333333333
+        },
+        {
+          "coop": "livestock_north",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        }
+      ]
+    },
+    "medicine": {
+      "need_per_tick": 31.633333333333333,
+      "capacity_per_tick": 26.400000000000002,
+      "coverage_bp": 8345.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "apothecary",
+          "members": 2,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "apothecary_x1",
+          "members": 9,
+          "max_runs": 7.2
+        }
+      ]
+    },
+    "milk": {
+      "need_per_tick": 9173.666666666666,
+      "capacity_per_tick": 1720.0,
+      "coverage_bp": 1874.0,
+      "n_producers": 8,
+      "producers": [
+        {
+          "coop": "livestock_co",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        },
+        {
+          "coop": "livestock_co_x1",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x2",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x3",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x4",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x5",
+          "members": 12,
+          "max_runs": 1.6
+        },
+        {
+          "coop": "livestock_co_x6",
+          "members": 10,
+          "max_runs": 1.3333333333333333
+        },
+        {
+          "coop": "livestock_north",
+          "members": 8,
+          "max_runs": 1.0666666666666667
+        }
+      ]
+    },
+    "transport": {
+      "need_per_tick": 1898.0,
+      "capacity_per_tick": 3840.0,
+      "coverage_bp": 20231.0,
+      "n_producers": 2,
+      "producers": [
+        {
+          "coop": "transport_co",
+          "members": 11,
+          "max_runs": 17.6
+        },
+        {
+          "coop": "transport_co_x1",
+          "members": 9,
+          "max_runs": 14.4
+        }
+      ]
+    },
+    "vegetables": {
+      "need_per_tick": 6880.25,
+      "capacity_per_tick": 1216.0,
+      "coverage_bp": 1767.0,
+      "n_producers": 4,
+      "producers": [
+        {
+          "coop": "vegetable_farm",
+          "members": 7,
+          "max_runs": 1.12
+        },
+        {
+          "coop": "vegetable_farm_x1",
+          "members": 12,
+          "max_runs": 1.92
+        },
+        {
+          "coop": "vegetable_farm_x2",
+          "members": 12,
+          "max_runs": 1.92
+        },
+        {
+          "coop": "vegetable_farm_x3",
+          "members": 7,
+          "max_runs": 1.12
+        }
+      ]
+    },
+    "water": {
+      "need_per_tick": 2847.0,
+      "capacity_per_tick": 8320.0,
+      "coverage_bp": 29223.0,
+      "n_producers": 8,
+      "producers": [
+        {
+          "coop": "water_works",
+          "members": 4,
+          "max_runs": 2.1333333333333333
+        },
+        {
+          "coop": "water_works_east",
+          "members": 4,
+          "max_runs": 2.1333333333333333
+        },
+        {
+          "coop": "water_works_north",
+          "members": 4,
+          "max_runs": 2.1333333333333333
+        },
+        {
+          "coop": "water_works_x1",
+          "members": 12,
+          "max_runs": 6.4
+        },
+        {
+          "coop": "water_works_x2",
+          "members": 12,
+          "max_runs": 6.4
+        },
+        {
+          "coop": "water_works_x3",
+          "members": 12,
+          "max_runs": 6.4
+        },
+        {
+          "coop": "water_works_x4",
+          "members": 12,
+          "max_runs": 6.4
+        },
+        {
+          "coop": "water_works_x5",
+          "members": 5,
+          "max_runs": 2.6666666666666665
+        }
+      ]
+    }
+  },
+  "demand_ema_at_end": {
+    "books": 31,
+    "bread": 811,
+    "canned_food": null,
+    "cheese": null,
+    "childcare": 947,
+    "clothing": 724,
+    "education": 947,
+    "eggs": 947,
+    "electricity": 11800,
+    "fish": 787,
+    "flour": 12641,
+    "fruit": 824,
+    "furniture": 15,
+    "grain": 1077,
+    "healthcare": 947,
+    "heating_fuel": 3936,
+    "household_goods": 35,
+    "housing": 10,
+    "maintenance": 38,
+    "meals": 165,
+    "meat": 954,
+    "medicine": 22,
+    "milk": 1001,
+    "transport": 605,
+    "vegetables": 912,
+    "water": 2970
+  },
+  "d18_wage_debt_book": 19695131,
+  "d18_indebted_coops": 73,
+  "d18_assumed_events": []
+}

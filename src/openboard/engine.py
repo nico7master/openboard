@@ -172,7 +172,9 @@ def _apply_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -> d
     }
 
 
-def _validate_delegate(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+def _validate_delegate_politics(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    """A3 delegation validator (was shadowed by the credit-file duplicate
+    below; kept explicit per 2026-09-15 vote-token spec cleanup)."""
     if not _delegation_enabled(params):
         return Reason.RULE_VIOLATION
     if tx.sender not in state.balances:
@@ -292,8 +294,12 @@ def resolve_delegation(state: WorldState, citizen: str, max_hops: int = 16) -> s
     return None  # chain too long: treat as broken
 
 
-def _validate_delegate(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
-    if not _delegation_enabled(params):
+def _validate_delegate_credit(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    """Effective DELEGATE validator (shadowed the politics one above;
+    rejection reason preserved byte-identically for replay safety).
+    Vote token (2026-09-15 spec): delegation is core to the token —
+    trust your vote to a citizen — so token mode enables DELEGATE too."""
+    if not _delegation_enabled(params) and _gov_params(params)["vote_token_bp"] <= 0:
         return Reason.CREDIT_DISABLED  # reuse: feature-disabled family
     payload: dict[str, Any] = tx.payload
     if not isinstance(payload, dict) or set(payload.keys()) != {"to"}:
@@ -346,6 +352,65 @@ def expand_ballots(state: WorldState, ballots: dict[str, str]) -> dict[str, str]
             expanded[citizen] = choice
     return expanded
 
+
+def expand_weighted_ballots(
+    state: WorldState, ballots: dict[str, Any], grant_bp: int
+) -> dict[str, dict[str, int]]:
+    """Vote-token tally expansion (2026-09-15 spec). Every citizen casts at
+    most their monthly token; a citizen who delegated contributes weight
+    by MIRRORING their delegate's allocation on this proposal. The
+    delegate's own total monthly spend is budget-capped, so a follower's
+    mirrored total never exceeds one token per month. Direct ballots
+    always win; delegation cycles abstain; non-voters (and followers of
+    non-voting delegates) abstain. Legacy string ballots (ruleset
+    transition) cast one absolute full token (10,000 bp). Deterministic."""
+    out: dict[str, dict[str, int]] = {}
+    for citizen in sorted(state.balances.keys()):
+        v = ballots.get(citizen)
+        if v is not None:
+            out[citizen] = dict(v) if isinstance(v, dict) else {"choice": v, "bp": 10_000}
+            continue
+        current, seen = citizen, {citizen}
+        resolved: Any = None
+        for _ in range(16):
+            nxt = state.delegations.get(current)
+            if nxt is None or nxt in seen or nxt not in state.balances:
+                break
+            seen.add(nxt)
+            if nxt in ballots:
+                resolved = ballots[nxt]
+                break
+            current = nxt
+        if resolved is None:
+            continue  # abstain (delegate did not vote / cycle)
+        out[citizen] = dict(resolved) if isinstance(resolved, dict) else {"choice": resolved, "bp": 10_000}
+    return out
+
+
+def _vote_budget_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
+    """Monthly vote-token grant (2026-09-15 spec). Every citizen's budget
+    refreshes to vote_token_bp at each vote_cycle_ticks boundary; unspent
+    basis points expire (a vote is a monthly duty, not a hoardable asset).
+    Inert (replay-safe) unless governance enables the token."""
+    gov = _gov_params(params)
+    if not gov["enabled"] or gov["vote_token_bp"] <= 0:
+        return []
+    cycle = tick // gov["vote_cycle_ticks"]
+    events: list[dict[str, Any]] = []
+    for who in sorted(state.balances.keys()):
+        entry = state.vote_budget.get(who)
+        if entry is not None and entry.get("cycle") == cycle:
+            continue
+        if entry is not None and entry.get("bp", 0) > 0:
+            events.append({
+                "tick": tick,
+                "action": "VOTE_TOKEN_EXPIRED",
+                "citizen": who,
+                "expired_bp": entry["bp"],
+                "cycle": cycle,
+            })
+        state.vote_budget[who] = {"bp": gov["vote_token_bp"], "cycle": cycle}
+    return events
 
 
 # ------------------------------------------------------------- RULE_CHANGE
@@ -2492,6 +2557,9 @@ def _gov_params(params: dict[str, Any]) -> dict[str, Any]:
         "vote_window_ticks": gov.get("vote_window_ticks", 3),
         "quorum_bp": gov.get("quorum_bp", 5_000),
         "trial_period_ticks": gov.get("trial_period_ticks", 10),
+        # Vote token (2026-09-15 spec): 0 = legacy binary votes (replay-safe).
+        "vote_token_bp": gov.get("vote_token_bp", 0),
+        "vote_cycle_ticks": gov.get("vote_cycle_ticks", 30),
     }
 
 
@@ -2560,12 +2628,14 @@ def _validate_vote(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     if tx.sender not in state.balances:
         return Reason.UNKNOWN_SENDER
 
-    if not isinstance(payload, dict) or set(payload.keys()) != {"proposal_id", "choice"}:
-        return Reason.INVALID_PAYLOAD
-
     gov = _gov_params(params)
     if not gov["enabled"]:
         return Reason.GOVERNANCE_DISABLED
+    token_mode = gov["vote_token_bp"] > 0
+
+    required_keys = {"proposal_id", "choice", "bp"} if token_mode else {"proposal_id", "choice"}
+    if not isinstance(payload, dict) or set(payload.keys()) != required_keys:
+        return Reason.INVALID_PAYLOAD
 
     proposal_id = payload.get("proposal_id")
     proposal = state.proposals.get(proposal_id)
@@ -2582,20 +2652,39 @@ def _validate_vote(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     if tx.sender in proposal["ballots"]:
         return Reason.ALREADY_VOTED  # one person, one vote — constitutional core #4
 
+    if token_mode:
+        # Splitable monthly vote token: spend any share of the remaining
+        # budget (basis points). Budget was granted by _vote_budget_phase
+        # for every citizen this tick.
+        bp = payload["bp"]
+        if isinstance(bp, bool) or not isinstance(bp, int) or bp <= 0 or bp > 10_000:
+            return Reason.INVALID_PAYLOAD
+        budget = state.vote_budget.get(tx.sender)
+        if budget is None or budget.get("cycle") != tx.tick // gov["vote_cycle_ticks"] or budget.get("bp", 0) < bp:
+            return Reason.VOTE_BUDGET_EXCEEDED
+
     return None
 
 
-def _apply_vote(state: WorldState, tx: Transaction) -> dict[str, Any]:
+def _apply_vote(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
     proposal = state.proposals[tx.payload["proposal_id"]]
-    proposal["ballots"][tx.sender] = tx.payload["choice"]
-
-    return {
+    gov = _gov_params(params)
+    entry: dict[str, Any] = {
         "tick": tx.tick,
         "sender": tx.sender,
         "action": "VOTE",
         "proposal_id": tx.payload["proposal_id"],
         "choice": tx.payload["choice"],
     }
+    if gov["enabled"] and gov["vote_token_bp"] > 0:
+        bp = tx.payload["bp"]
+        proposal["ballots"][tx.sender] = {"choice": tx.payload["choice"], "bp": bp}
+        state.vote_budget[tx.sender]["bp"] -= bp
+        entry["bp"] = bp
+        entry["budget_after"] = state.vote_budget[tx.sender]["bp"]
+    else:
+        proposal["ballots"][tx.sender] = tx.payload["choice"]
+    return entry
 
 
 def _validate_rollback(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
@@ -2979,12 +3068,30 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
             continue
 
         ballots = proposal["ballots"]
-        if _delegation_enabled(params):
-            # A3: delegated citizens vote through their (resolvable) delegate
-            ballots = expand_ballots(state, ballots)
-        cast = len(ballots)
-        votes_for = sum(1 for c in ballots.values() if c == "for")
-        votes_against = cast - votes_for
+        token_mode = gov["vote_token_bp"] > 0 or any(isinstance(v, dict) for v in ballots.values())
+        if token_mode:
+            # Vote token: weight = basis points. Delegated citizens mirror
+            # their delegate's allocation (direct votes always win).
+            ballots = expand_weighted_ballots(state, ballots, gov["vote_token_bp"])
+
+            def _w(v: Any) -> int:
+                return v["bp"] if isinstance(v, dict) else 10_000
+
+            def _c(v: Any) -> str:
+                return v["choice"] if isinstance(v, dict) else v
+
+            cast = len(ballots)  # quorum stays citizen-count based
+            votes_for = sum(_w(v) for v in ballots.values() if _c(v) == "for")
+            votes_against = sum(_w(v) for v in ballots.values() if _c(v) == "against")
+            cast_weight = votes_for + votes_against
+        else:
+            if _delegation_enabled(params):
+                # A3: delegated citizens vote through their (resolvable) delegate
+                ballots = expand_ballots(state, ballots)
+            cast = len(ballots)
+            votes_for = sum(1 for c in ballots.values() if c == "for")
+            votes_against = cast - votes_for
+            cast_weight = cast
 
         passed = False
         constitutional = (
@@ -2998,11 +3105,14 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
             if in_trial_rollback:
                 passed = votes_for > votes_against
             elif constitutional:
-                # 2/3 of ALL citizens — not just cast. Strategic abstention
-                # cannot lower the bar for changing the rules of voting.
-                passed = votes_for * 3 >= citizens * 2
+                if token_mode:
+                    # 2/3 of ALL citizen token weight (uniform monthly grant)
+                    # — strategic abstention cannot lower the bar.
+                    passed = votes_for * 3 >= citizens * gov["vote_token_bp"] * 2
+                else:
+                    passed = votes_for * 3 >= citizens * 2
             elif hardened:
-                passed = votes_for * 3 >= cast * 2  # >= 2/3 of cast
+                passed = votes_for * 3 >= cast_weight * 2  # >= 2/3 of cast weight
             else:
                 passed = votes_for > votes_against  # strict majority; tie fails
 
@@ -3375,6 +3485,10 @@ def apply_tick(
         credit_events = credit_phase(state, tick, params)
         state.applied.extend(credit_events)
 
+    # Vote token: monthly budget grant/refresh BEFORE any VOTE validates
+    # (2026-09-15 spec; inert unless the token is enabled — replay-safe).
+    state.applied.extend(_vote_budget_phase(state, tick, params))
+
     seen: set[str] = set()
     # Dispatch tables: built ONCE per tick (closures over this tick's
     # state/params), not once per transaction. Determinism unchanged —
@@ -3398,7 +3512,7 @@ def apply_tick(
         "CRISIS_VOTE": _validate_crisis_vote,
         "LOAN": _validate_loan,
         "REPAY": _validate_repay,
-        "DELEGATE": _validate_delegate,
+        "DELEGATE": _validate_delegate_credit,
         "BUY_LAND": _land_mod.validate_buy_land,
         "SELL_LAND": _land_mod.validate_sell_land,
         "IMPORT_GOOD": _foreign_mod.validate_import,
@@ -3423,7 +3537,7 @@ def apply_tick(
         "BID": lambda t: _apply_bid(state, t),
         "BID_FOR_COOP": lambda t: _apply_bid_for_coop(state, t),
         "BUY_ESSENTIAL": lambda t: _apply_buy_essential(state, t),
-        "VOTE": lambda t: _apply_vote(state, t),
+        "VOTE": lambda t: _apply_vote(state, t, params),
         "REPAY": lambda t: _apply_repay(state, t),
         "DELEGATE": lambda t: _apply_delegate(state, t),
         "BUY_LAND": lambda t: _land_mod.apply_buy_land(state, t, params),

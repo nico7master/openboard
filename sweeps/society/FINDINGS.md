@@ -260,3 +260,46 @@ self-corrected) — the system's ailment is too little entry, not concentration.
   WEALTH_TAX events (memrun log /tmp/tax_probe.log).
 - Full test suite unaffected by the `start_tick` amendment (research suites
   18/18 during build; full suite green at 466 after the reserve-floor fix).
+
+## 966-Citizen Capacity Audit (2026-09-15)
+
+Probe: `scripts/capacity_966_audit.py` (150 ticks, seed 42, stage-6 scaling).
+Data: `sweeps/society/capacity_966_s42.json`.
+
+**Question:** does the scaled world's installed capacity cover honest
+post-kcal need at city scale? (The 179-citizen gate verifies code paths;
+this verifies the arithmetic.)
+
+### Verdict: capacity-healthy at scale, two tight spots
+
+| Sector | Coverage | Note |
+|---|---|---|
+| Food (kcal GROUP) | **1,582%** | grain alone 1,206% — famine arithmetically impossible |
+| Bread (single food) | 95.7% | tightest single food; group covers via substitution |
+| Utilities | electricity 247%, water 292%, heating 160%, transport 202% | all safe |
+| Durables/services (cycled) | housing 133%, healthcare 556%, childcare 556%, education 1,618%, clothing 1,113%, books 1,043%, maintenance 135%, furniture 534%, household 205% | all covered |
+| **Medicine** | **83.5%** | the ONLY true under-capacity (2 producer coops, 26.4 vs 31.6/tick cycled need) |
+
+### Audit bugs found and fixed en route (both were false alarms)
+1. Integer-floor runs: a coop pooling <100 labor-h/tick showed ZERO
+   capacity for 100-hour recipes — the engine accumulates pooled labor
+   across ticks (`labor_pool_hours`); capacity must be fractional.
+2. Durables measured per-tick: housing/clothing/etc. are `needs_cycle`
+   goods (housing = 1 per 360 ticks); per-tick need overstated 30–360x.
+
+The earlier "housing 0%, healthcare 55%" alarm in this session was bug #1
++ #2, not a real gap. Housing_guild exists with 22 members across 3 coops.
+
+### D18 wage-debt backstop at scale (free rider on same run)
+Book 19.7M units across 73 indebted coops (~270k avg vs 480k–1.4M
+insolvency thresholds), **zero WAGE_DEBT_ASSUMED events** in 150 ticks.
+No coop near structural insolvency; backstop correctly dormant at scale.
+Consistent with the 179-citizen plateau finding — D18 calibration VERIFIED
+at 966 citizens, no fix needed.
+
+### Actionable
+- Medicine: +1 producer coop or batch bump closes the only real gap.
+- Founder trigger reads `demand_ema`; ema_end vs need shows the signal
+  will fire for medicine (ema 22 vs need 31.6) — but only 2 producer
+  coops exist and founders were absorbed; founder mobility (D19) remains
+  the lever that would self-heal this.

@@ -55,6 +55,9 @@ class WorldState:
     # A3 delegative democracy: citizen -> delegate. Present only when the
     # ruleset enables `delegation` (replay compat: absent = off).
     delegations: dict[str, str] = field(default_factory=dict)
+    # Vote token (2026-09-15 spec): citizen -> {"bp": remaining, "cycle": int}.
+    # Present only when governance enables vote_token_bp (replay compat).
+    vote_budget: dict[str, dict[str, int]] = field(default_factory=dict)
     crisis: dict[str, Any] = field(default_factory=dict)
     common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
     last_clearing: dict[str, int] = field(default_factory=dict)  # good -> last auction clearing price (public price signal)
@@ -215,6 +218,8 @@ class WorldState:
             snap["loans"] = {c: dict(l) for c, l in sorted(self.loans.items())}
         if self.delegations:
             snap["delegations"] = dict(sorted(self.delegations.items()))
+        if self.vote_budget:
+            snap["vote_budget"] = {c: dict(b) for c, b in sorted(self.vote_budget.items())}
         return snap
 
     def state_hash(self) -> str:
@@ -266,6 +271,8 @@ class WorldState:
             land_genesis_pop=self.land_genesis_pop,
             land_tax_due=dict(self.land_tax_due),
             foreign_balance=self.foreign_balance,
+            delegations=dict(self.delegations),
+            vote_budget={c: dict(b) for c, b in self.vote_budget.items()},
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
@@ -282,7 +289,11 @@ class WorldState:
 
 def _clone_proposal(pr: dict[str, Any]) -> dict[str, Any]:
     cloned = dict(pr)
-    cloned["ballots"] = dict(pr.get("ballots", {}))
+    # ballot entries are strings (legacy) or {choice, bp} dicts (vote token)
+    cloned["ballots"] = {
+        c: (dict(v) if isinstance(v, dict) else v)
+        for c, v in pr.get("ballots", {}).items()
+    }
     cloned["params"] = dict(pr.get("params", {}))
     return cloned
 
