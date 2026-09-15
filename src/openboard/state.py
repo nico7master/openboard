@@ -426,10 +426,11 @@ def genesis_state(
         for k in ("surplus_reserve_cap", "energy_price", "transfer_limit"):
             if isinstance(params.get(k), int):
                 params[k] = params[k] * upc
-        if isinstance(params.get("wealth_tax"), dict):
-            wt = params["wealth_tax"]
-            if isinstance(wt.get("threshold"), int):
-                wt["threshold"] = wt["threshold"] * upc
+        # D21: server _params already scaled wealth_tax.threshold ×100 per the fixed-supply
+        # convention (500k credits → 50M units = 500k credits). Skipping the double-scale
+        # prevents 5B-unit values that violate validate_params's 100M cap and poison
+        # whole-document proposals built from active rulesets.
+        # (2026-09-16: founder directive implementation)
 
     _ws = WorldState(
         tick=0,

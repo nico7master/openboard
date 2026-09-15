@@ -17,7 +17,7 @@ import random
 from typing import Any, Callable
 
 from .bots import DecisionFn, _tx
-from .engine import apply_tick  # noqa: F401  (re-export convenience for tests)
+from .engine import apply_tick, _is_constitutional  # noqa: F401  (apply_tick re-export convenience for tests)
 from .ledger import Transaction
 from .metrics import gini
 from .rules import validate_params
@@ -248,7 +248,21 @@ def make_politician(inner: DecisionFn, archetype: str, window: int = ELECTION_WI
                 continue
             choice = _stance(archetype, who, _delta(proposal["params"], active), state)
             if choice is None:
-                continue
+                # Founder directive 2026-09-16: bots are not smart voters and
+                # have no skin in the game — the SYSTEM proposes (bounded
+                # archetype mutations only), and politicians approve by
+                # default so non-crisis rebalancing never stalls on an
+                # indifferent electorate.
+                # CAPTURE GUARD (engine._is_constitutional contract): default
+                # approval NEVER applies to constitutional matters (voting
+                # rules, council, phase). Those need explicit consent — the
+                # 2/3-of-all gate counts FOR votes, so rubber stamps would
+                # let one faction proposal reach a constitutional majority
+                # (defense proven necessary by the faction-capture test).
+                from .engine import _is_constitutional
+                if _is_constitutional(proposal["params"], active):
+                    continue
+                choice = "for"
             if token_bp > 0:
                 out.append(_tx(tick, who, "VOTE",
                                {"proposal_id": pid, "choice": choice, "bp": token_bp}, v))

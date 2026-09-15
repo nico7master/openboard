@@ -36,6 +36,16 @@ def _cfg(params: dict[str, Any]) -> dict[str, Any] | None:
     return cfg if cfg.get("enabled") else None
 
 
+def _auto_ratify(params: dict[str, Any]) -> bool:
+    """Founder directive 2026-09-16: bots are not smart voters — crisis
+    balancing is the SYSTEM's job, not an electorate decision. When
+    auto_ratify is on, a declared crisis is ratified immediately (no
+    ratification window, no expiry-by-unratified). The emergency override
+    still ends at max_ticks — it's a temporary suspension, not a coup."""
+    cfg = params.get("crisis") or {}
+    return bool(cfg.get("auto_ratify"))
+
+
 def crisis_active(state: WorldState) -> bool:
     """True while a ratified crisis is active (engine suspension hook)."""
     c = getattr(state, "crisis", None)
@@ -130,7 +140,19 @@ def crisis_phase(
     pop = len(state.balances)
     if not c.get("ratified"):
         needed = max(1, pop // 2)
-        if c.get("votes_for", 0) > c.get("votes_against", 0) and c["votes_for"] >= needed:
+        # Founder directive 2026-09-16: with auto_ratify, the SYSTEM
+        # auto-balances emergencies — a declared crisis is ratified
+        # immediately (no ratification window, no expiry-by-unratified).
+        # Bots are not smart voters and have no skin in the game; the
+        # override still ends at max_ticks. Emits CRISIS_START(ratified)
+        # exactly like the citizen path for downstream parity.
+        if _auto_ratify(params):
+            c["ratified"] = True
+            state.applied.append({
+                "tick": tick, "action": "CRISIS_START", "kind": c.get("kind"),
+                "ratified": True, "auto": True,
+            })
+        elif c.get("votes_for", 0) > c.get("votes_against", 0) and c["votes_for"] >= needed:
             c["ratified"] = True
             state.applied.append({
                 "tick": tick, "action": "CRISIS_START", "kind": c.get("kind"),

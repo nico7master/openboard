@@ -931,6 +931,12 @@ class Run:
                                     "quorum_bp": 5_000, "trial_period_ticks": 10}
             params["oversight"] = dict(params["oversight"])
             params["oversight"]["council_members"] = ["worker_a", "worker_b"]
+            # Founder directive 2026-09-16: crises AUTO-BALANCE. Bots are
+            # not smart voters and have no skin in the game — the SYSTEM
+            # declares (severe shocks), ratifies, and rebalances without
+            # waiting on an indifferent electorate. Still ends at max_ticks.
+            params["crisis"] = {"enabled": True, "auto_ratify": True,
+                                "max_ticks": 600}
         # D18: money-denominated rule constants above were tuned in LEGACY
         # credits. Fixed-supply worlds run in base units (upc per credit) —
         # scale them once here, AFTER all assignments, so institutional

@@ -100,7 +100,7 @@ def _r(recipe_id, inputs, labor_hours, energy, outputs) -> Recipe:
 RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
     # Food processing
     _r("grain_to_flour", {"grain": 10}, 2, 1, {"flour": 20}),
-    _r("flour_to_bread", {"flour": 5}, 3, 2, {"bread": 40}),
+    _r("flour_to_bread", {"flour": 5}, 3, 2, {"bread": 50}),  # 2026-09-16 capacity audit: 95.7% peak coverage on a single chain -> slack (city scale, 966 cit)
     _r("canning", {"vegetables": 8, "fruit": 4}, 4, 2, {"canned_food": 12}),
     _r("cheesemaking", {"milk": 40}, 5, 2, {"cheese": 8}),
     _r("meal_service", {"vegetables": 3, "meat": 2, "bread": 2}, 6, 1, {"meals": 20}),
@@ -181,7 +181,7 @@ EXTENDED_RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
     _r("wind_farm", {}, 25, 0, {"electricity": 1000}),
     # Stage 4 breadth: goods with no recipe + the bootstrap tool
     _r("heating_fuel_refining", {"coal": 24, "water": 3}, 8, 12, {"heating_fuel": 240}),
-    _r("herbal_medicine", {"fruit": 5, "water": 2}, 10, 1, {"medicine": 3}),
+    _r("herbal_medicine", {"fruit": 5, "water": 2}, 10, 1, {"medicine": 5}),  # 2026-09-16 capacity audit: 83.5% coverage (the ONE true gap) -> healthy at city scale
     # Labor-only toolmaking: society can bootstrap its first tools from
     # bare labor when no endowments exist. Low yield on purpose — it is
     # a bridge, not a competitor to the steel-based chain.

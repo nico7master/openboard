@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets", "whistleblower", "audits", "need_allocation")
+OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets", "whistleblower", "audits", "need_allocation", "crisis")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -332,6 +332,19 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             return Reason.INVALID_RULESET
         if na["mode"] not in ("priority", "lottery"):
             return Reason.INVALID_RULESET
+
+    if "crisis" in params:
+        cr = params["crisis"]
+        if not isinstance(cr, dict) or not set(cr.keys()) <= {"enabled", "auto_ratify", "max_ticks"}:
+            return Reason.INVALID_RULESET
+        if not isinstance(cr.get("enabled", False), bool):
+            return Reason.INVALID_RULESET
+        if "auto_ratify" in cr and not isinstance(cr["auto_ratify"], bool):
+            return Reason.INVALID_RULESET
+        if "max_ticks" in cr:
+            v = cr["max_ticks"]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 1 or v > 100_000:
+                return Reason.INVALID_RULESET
 
     if "needs_cycle" in params:
         nc = params["needs_cycle"]
