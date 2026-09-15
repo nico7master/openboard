@@ -937,6 +937,10 @@ class Run:
             # waiting on an indifferent electorate. Still ends at max_ticks.
             params["crisis"] = {"enabled": True, "auto_ratify": True,
                                 "max_ticks": 600}
+            # Remaining source-document gaps enabled by default (votable, spec-compliant):
+            params["whistleblower"] = {"enabled": True, "reward_credits": 500, "max_per_tick": 10}
+            params["audits"] = {"enabled": True, "every_ticks": 100}
+            params["need_allocation"] = {"enabled": True, "mode": "priority"}
         # D18: money-denominated rule constants above were tuned in LEGACY
         # credits. Fixed-supply worlds run in base units (upc per credit) —
         # scale them once here, AFTER all assignments, so institutional
