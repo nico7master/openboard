@@ -1,5 +1,49 @@
 # Handoff: OpenBoard Economy Shipping Month Progress
 
+## Session 2026-09-15 (afternoon/evening): TRUE-NEED BALANCE — gate PASSED (3 seeds x 2000 ticks)
+
+**User directive:** "balance everything out as it should be" — replace the
+physiologically absurd need basket (~81,000 kcal/citizen/tick, ~35x real
+food, 12 forced foods) with a real calorie budget.
+
+**Engine changes (verified: hardcore gate 1 passed 645s; suite 476/476):**
+- kcal needs model (rules.py + engine.py + bots.py): foods form ONE
+  substitution group; hunger closes on TOTAL kcal (~2,900/tick),
+  compensating pass to 2x preference caps; group reports one streak key
+  "food". Absent kcal_needs -> legacy per-good semantics (replay-safe).
+- GRAIN = the STAPLE (1 unit = 3,400 kcal). Without a citizen-accessible
+  staple the food group NEVER closed (gate breadth 2000/2000).
+- Catalog batch rescale (catalog.py) to city scale: coal 24->600,
+  electricity 300->1200, wind 100->1000, grain 100->800, fabric 6->36,
+  clothing 8->48, childcare/healthcare 96, education 48, meals/flour/bread
+  2x, water 240, livestock 150x3. Services/needs cycled (needs_cycle).
+- max_coop_members 20->50 (had no documented rationale; engine fallback
+  said 12); founder cast scales with population (stage6).
+- Entrepreneur/founder trigger: durable under-capacity test (demand_ema vs
+  pop x quota) replaces dribble-listing blindness (bots.py).
+- **CRITICAL INVARIANT:** a specialist's `buys` dict OVERRIDES the
+  recipe-native bid loop -> must mirror the recipe's per-run consumable
+  inputs. 7 stale dicts (pre-rescale) caused PERMANENT BID SUPPRESSION:
+  power_plant dead 301/300 ticks with coal frozen at 16 (< 48 needed),
+  need computed to 0 -> no electricity -> no water -> no meals (streak
+  1,975/2,000). Synced all 7 (server.py). Code comment documents it.
+- Research funding: optional reserve_floor + start-tick (earlier fix,
+  included); research_effect_bp cap 2500 -> 5000 (+50% dial).
+
+**Gate ladder:** worst_essential 1975 -> 2 -> 0; breadth 2000 -> 153 ->
+36 -> 10 -> PASS. Fix rounds: staple, batch rescale, buys-dict sync,
+transport/heating/water/wind margins, fabric->clothing rescale.
+
+**Watch item CLOSED:** wage debt is a startup float (peak 6.4M @t400)
+that plateaus 4.3-5.7M through t=2000 — not a spiral
+(scripts/wage_debt_trend.py, sweeps/true_need/PROGRESS.md).
+
+**Working state:** gate + suite green, no stray processes, work landed as
+one comprehensive commit (this one). Artifacts: sweeps/true_need/,
+docs/superpowers/specs/2026-09-15-true-need-balance.md.
+
+
+
 ## What's Been Completed
 
 ### Week 1 (Shipping Month Week 1)

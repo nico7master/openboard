@@ -1986,6 +1986,25 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
     # an entry consume daily as before — old worlds replay identically.
     cycles = params.get("needs_cycle") or {}
 
+    # 2026-09-15 true-need balance (spec §1b): kcal SUBSTITUTION GROUP.
+    # Foods listed in kcal_needs.kcal_per_unit form one food group: eaten
+    # up to their per-good preference caps (needs quotas), with a
+    # deterministic compensating pass to 2x quota (the pantry ceiling bots
+    # buy to; stock goods with no quota — canned_food, cheese, grain,
+    # flour — eatable from the pantry uncapped: that is what a famine
+    # buffer is for) when the group's total kcal falls short. The group
+    # reports ONE streak key "food" — per-food starvation lines end;
+    # missing a favorite is preference disappointment, not hunger.
+    # Absent/disabled kcal_needs -> legacy per-good semantics (replay-safe).
+    kcal_cfg = params.get("kcal_needs") or {}
+    kcal_on = bool(kcal_cfg.get("enabled")) and bool(kcal_cfg.get("kcal_per_unit"))
+    kcal_map = (
+        {str(g): int(v) for g, v in (kcal_cfg.get("kcal_per_unit") or {}).items()}
+        if kcal_on
+        else {}
+    )
+    daily_kcal = max(1, int(kcal_cfg.get("daily_kcal", 2900))) if kcal_on else 0
+
     events: list[dict[str, Any]] = []
     # Loop invariants: needs order and the demographics helpers cannot
     # change within this phase — hoisted out of the per-citizen loop
@@ -2001,6 +2020,7 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
         _scale_bp = 10_000
         if is_child(state, citizen, params):
             _scale_bp = child_need_pct(params) * 100
+        kcal_got = 0  # kcal-substitution group total (true-need balance)
         for good in _needs_order:
             quota = needs[good]
             if quota <= 0:
@@ -2016,10 +2036,24 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
                 continue  # not this good's consumption day
             held = inv.get(good, 0)
             take = min(held, quota)
+            if kcal_on and good in kcal_map and kcal_got < daily_kcal:
+                # true-need balance §1b (gate fix 2026-09-15): citizens eat
+                # to the CALORIE BUDGET, not to the shopping list. Breadth-
+                # first up to preference caps, but never past the daily
+                # target — demand tracks physiology, not basket breadth.
+                _kcal_room = daily_kcal - kcal_got
+                take = min(take, max(0, (_kcal_room + kcal_map[good] - 1) // kcal_map[good]))
             if take > 0:
                 inv[good] = held - take
                 state.consumed_totals[good] = state.consumed_totals.get(good, 0) + take
                 consumed[good] = take
+                if good in kcal_map:
+                    kcal_got += take * kcal_map[good]
+            if good in kcal_map:
+                # kcal group: no per-food starvation lines — the single
+                # "food" key below is the hunger signal (true-need balance:
+                # missing a favorite is preference disappointment)
+                continue
             if take >= quota:
                 # fully met this tick — reset the streak
                 if citizen in state.unmet_needs and good in state.unmet_needs[citizen]:
@@ -2031,6 +2065,61 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
                 streaks[good] = streaks.get(good, 0) + 1
                 _memory_bump(state, citizen, good, params)
                 unmet[good] = True
+        if kcal_on and kcal_map:
+            # substitution: a short diet compensates from the pantry —
+            # group foods beyond their preference cap (to 2x cap, the
+            # ceiling bots buy to) and stock foods (kcal goods with no
+            # needs entry: canned_food, cheese, grain, flour) uncapped.
+            # Stock foods are the famine buffer: bought in calm days,
+            # eaten when the fresh diet fails.
+            _kcal_target = max(1, (daily_kcal * _scale_bp) // 10_000)
+            if kcal_got < _kcal_target:
+                for good in sorted(kcal_map):
+                    if kcal_got >= _kcal_target:
+                        break
+                    # true-need balance fix (suite 2026-09-15): cycle-
+                    # deferred goods stay deferred — the compensating pass
+                    # must not eat a needs_cycle good off its day (the
+                    # integer-fractional-quota contract). Uncycled stock
+                    # goods (canned_food) remain the famine buffer.
+                    _gcyc = cycles.get(good, 1)
+                    if _gcyc > 1 and tick % _gcyc != 0:
+                        continue
+                    _uk = kcal_map[good]
+                    _cap = needs.get(good)
+                    if _cap is not None:
+                        if is_child(state, citizen, params):
+                            _cap = max(1, (_cap * _scale_bp) // 10_000)
+                        _allowance = min(
+                            inv.get(good, 0),
+                            max(0, 2 * _cap - consumed.get(good, 0)),
+                        )
+                    else:
+                        _allowance = inv.get(good, 0)  # stock: uncapped
+                    if _allowance <= 0:
+                        continue
+                    _units = min(_allowance, (_kcal_target - kcal_got + _uk - 1) // _uk)
+                    if _units <= 0:
+                        continue
+                    inv[good] = inv.get(good, 0) - _units
+                    state.consumed_totals[good] = state.consumed_totals.get(good, 0) + _units
+                    consumed[good] = consumed.get(good, 0) + _units
+                    kcal_got += _units * _uk
+            if kcal_got >= _kcal_target:
+                # group met: clear "food" and any stale per-food streaks
+                # left from a pre-kcal ruleset (zombie signals would keep
+                # driving founders/oversight on foods nobody lacks)
+                if citizen in state.unmet_needs:
+                    state.unmet_needs[citizen].pop("food", None)
+                    for _g in list(state.unmet_needs[citizen]):
+                        if _g in kcal_map:
+                            del state.unmet_needs[citizen][_g]
+                    if not state.unmet_needs[citizen]:
+                        del state.unmet_needs[citizen]
+            else:
+                streaks = state.unmet_needs.setdefault(citizen, {})
+                streaks["food"] = streaks.get("food", 0) + 1
+                unmet["food"] = True
         if consumed or unmet:
             events.append({
                 "tick": tick,

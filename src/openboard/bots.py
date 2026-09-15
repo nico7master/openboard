@@ -610,6 +610,56 @@ def innovator(who, state, params, tick, rng) -> list[Transaction]:
     return out
 
 
+def _under_capacity(state: WorldState, good: str, params: dict[str, Any]) -> bool:
+    """Structural under-capacity test for a citizen-consumed good: the
+    durable sale-rate EMA (engine-maintained `demand_ema`) is below the
+    population's per-tick need (pop x quota). Dribble listings make a
+    good technically 'covered' while 90% of citizens go unmet (water:
+    8 coops / 1000 citizens, 916 unserved bids, zero foundings in 650
+    ticks — society study 2026-09-14); this test sees through that.
+
+    Durable-signals-only by design: the previous served-volume hatch
+    scanned the state.applied event tail, which production loops and
+    probe harnesses WIPE every tick, so it evaluated on ~zero history.
+    """
+    pop = len(state.balances)
+    if pop <= 0:
+        return False
+    quota = (params.get("essential_need_quota") or {}).get(good)
+    if quota is None:
+        quota = (params.get("needs") or {}).get(good)
+    if quota:
+        need = pop * int(quota)
+    else:
+        # no declared quota: EMA translation of the legacy heuristic
+        # (20-tick served total < pop//10  =>  per-tick < pop//200)
+        need = max(1, pop // 200)
+    return state.demand_ema.get(good, 0) < need
+
+
+def _kcal_food_shortage(state: WorldState, params: dict[str, Any]) -> set[str]:
+    """True-need balance 2026-09-15: translate the kcal group hunger
+    signal (the single "food" streak key) into the concrete under-capacity
+    kcal goods founders can act on — no recipe produces a good literally
+    named "food". A good qualifies only when its sale-rate EMA is below
+    the population need (durable signal, D18-safe). Threshold 3 ticks:
+    substitution saves most citizens during brief dips; persistent group
+    hunger means a real capacity gap.
+    """
+    worst_food = 0
+    for _s in state.unmet_needs.values():
+        t = int(_s.get("food") or 0)
+        if t > worst_food:
+            worst_food = t
+    if worst_food < 3:
+        return set()
+    kcal_cfg = params.get("kcal_needs") or {}
+    kmap = kcal_cfg.get("kcal_per_unit") or {}
+    if not (kcal_cfg.get("enabled") and kmap):
+        return set()
+    return {g for g in kmap if _under_capacity(state, g, params)}
+
+
 def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
     """A2 emergent entrepreneurship: detects a chronic shortage (a good
     unmet for >= 5 ticks with zero active listings) and founds a co-op to
@@ -643,6 +693,13 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
                     if any((l.get("qty") or 0) > 0 for l in ls)}
         _shortage_goods |= {g for g, t in _worst.items()
                             if g not in _covered and t >= 5}
+        # 2026-09-14: dribble-listed goods that are structurally
+        # under-capacity count as shortages for mobility too — water sat
+        # 'covered' by dribble listings with 916 unserved bids for 650
+        # ticks while 8 water coops served 1000 citizens.
+        _shortage_goods |= {g for g in _covered
+                            if g in _worst and _worst[g] >= 5
+                            and _under_capacity(state, g, params)}
         # unfulfilled coop-bid pressure: bids minus cleared input flows,
         # last 20 ticks — recurring bids mean demand outruns supply even
         # when listings appear intermittently
@@ -682,6 +739,28 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
         # field last_produce_tick is exact and window-independent.
         _sc_lpt = _sc.get("last_produce_tick")
         _produced_recent = _sc_lpt is not None and (tick - _sc_lpt) <= 10
+        # true-need balance 2026-09-15 (spec §3): capacity REPLICATION.
+        # The D18 guard below keeps founders inside coops that produce a
+        # shortage good — correct for ESCAPE (leaving never gets you that
+        # good) but it absorbed the entire founder cast at t=6: all six
+        # joined shortage-good coops and stayed forever while the good
+        # stayed structurally under-capacity for 650 ticks (society study
+        # founder probe: total founder movement after t=6 was zero).
+        # Mobility is the founder's job: when MY OWN good is under-capacity
+        # economy-wide, a mature coop can spare one member to found a
+        # second producer of the same recipe. Flap-proof by construction:
+        # the new coop has a fresh founded_tick, so the maturity gate
+        # blocks re-leaving — one new coop per founder per ~60 ticks, a
+        # controlled capacity ratchet instead of the 5,508-event churn
+        # D18 fixed.
+        _my_under = any(_under_capacity(state, g, params) for g in _my_goods)
+        _mature = (tick - int(_sc.get("founded_tick") or 0)) >= 60
+        _roomy = len(_sc.get("members") or []) > 2
+        if _my_under and _mature and _roomy and _produced_recent:
+            # 2026-09-02 rule honored: personal-needs buys already sit in
+            # `out` — the leave must not discard them.
+            out.append(_tx(tick, who, "LEAVE_COOP", {"coop_id": seated}, v))
+            return out
         # D18 orchard-flap fix: leaving a coop that itself produces a
         # shortage good never helps you GET that good — and a stalled
         # producer needs its members to stay so production resumes when
@@ -711,33 +790,23 @@ def entrepreneur(who, state, params, tick, rng) -> list[Transaction]:
                if any((l.get("qty") or 0) > 0 for l in ls)}
     candidates = [(g, t) for g, t in sorted(worst.items())
                   if g not in covered and t >= 5]
-    # D18 capacity starvation: a good can be 'covered' (listed in
-    # dribbles) yet chronically short when demand outgrew its producers'
-    # capacity — fish was listed ~1 unit/tick by ONE fishery (1 run/day =
-    # 50 fish) while 181/181 citizens went unmet; 'covered' closed both
-    # the join path and the founding path forever. A worst-streak test
-    # FAILS here: the dribble service RESETS individual streaks before
-    # they reach the bound (sampled streak 11 at t600, never 30), so the
-    # signal must be aggregate: how much of the good did ALL citizens
-    # actually BUY (clear events) vs how big the population is, over a
-    # 20-tick window. Served < 10% of population => structural
-    # under-capacity, founding-grade evidence.
-    _served: dict[str, int] = {}
-    _tail3 = state.applied[-max(0, len(state.applied) - 8000):] if len(state.applied) > 8000 else state.applied
-    _from3 = tick - 20
-    for _e in _tail3:
-        if _from3 > 0 and (_e_t := _e.get('tick', 0)) and _e_t < _from3:
-            continue
-        # the real event is MARKET_CLEAR_ESSENTIAL with a `sold` field
-        # (verified: {'action': 'MARKET_CLEAR_ESSENTIAL', 'good': 'bread',
-        #  'listed': 111, 'sold': 111, buyers: [...]} — 'qty' is None)
-        if _e.get('action') == 'MARKET_CLEAR_ESSENTIAL':
-            _g3 = _e.get('good')
-            if _g3:
-                _served[_g3] = _served.get(_g3, 0) + int(_e.get('sold') or 0)
-    _pop = len(state.balances)
+    # true-need balance 2026-09-15: the kcal group reports ONE "food"
+    # streak key — translate it into concrete under-capacity kcal goods
+    # so founders target the actual missing producer (bread, fish, ...).
+    _food_gaps = _kcal_food_shortage(state, params)
+    for _g in sorted(_food_gaps):
+        candidates.append((_g, 50))
+    # D18 capacity starvation + 2026-09-14 root cause: a good can be
+    # 'covered' (dribble listings) yet structurally under-capacity — fish
+    # listed ~1 unit/tick while 181/181 citizens unmet; water 8 coops /
+    # 1000 citizens with 916 unserved bids and ZERO foundings in 650
+    # ticks (society study). The old escape hatch read served volume
+    # from the state.applied event tail, which production loops and
+    # probe harnesses WIPE every tick — it evaluated on ~zero history.
+    # Replacement: durable engine signal demand_ema (per-tick sale-rate
+    # EMA) vs the population's per-tick need.
     for g in sorted(covered):
-        if g in worst and worst[g] >= 5 and _served.get(g, 0) < _pop // 10:
+        if g in worst and worst[g] >= 5 and _under_capacity(state, g, params):
             candidates.append((g, worst[g] * 10))
     # 2026-09-01: producer-input demand is invisible to citizen unmet
     # streaks — the capital chain (hand_tools 7,741 coop bids vs 6 clears,

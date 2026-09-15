@@ -71,12 +71,13 @@ def test_snapshot_omits_empty_memory():
 def test_unmet_streak_bumps_memory_in_engine():
     p = _params()
     s = _world(p)
-    # c1 needs cheese but has none — force an unmet consumption day
-    s.citizen_inventory['c1']['cheese'] = 0
+    # true-need balance: cheese is a kcal-group food — foods report the
+    # single 'food' key, no per-food bumps. Use water (per-good need).
+    s.citizen_inventory['c1']['water'] = 0
     needs = (s.active_ruleset_params().get('needs') or {})
-    if not needs or 'cheese' not in needs:
-        needs = {'cheese': 2}
+    if not needs or 'water' not in needs:
+        needs = {'water': 2}
         s.active_ruleset_params()['needs'] = needs
     led = Ledger()
     apply_tick(s, led, [], current_tick=2)
-    assert s.shortage_memory.get('c1|cheese', 0) == 250
+    assert s.shortage_memory.get('c1|water', 0) == 250

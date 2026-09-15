@@ -178,7 +178,9 @@ class TestProduce:
         apply_tick(state, ledger, [produce(6, "bob", "fishers", "fishing", 1)], current_tick=6)
         assert ledger.accepted_count() == 6
         inv = state.coops["fishers"]["inventory"]
-        assert inv["fish"] == 50
+        # fishing batch rescaled 50 -> 200 (true-need balance, 2026-09-15):
+        # daily-draw kcal demand needs city-scale batches
+        assert inv["fish"] == 200
         assert inv["electricity"] == 500 - 8
         assert state.coops["fishers"]["labor_pool_hours"] == 2
 

@@ -167,6 +167,103 @@ def test_funding_phase_invariant_neutral_and_gated() -> None:
         + sum(s2.research_funding.values()) == 1_000
 
 
+# ---------------------------------------------------------------- reserve
+
+
+def test_funding_reserve_floor_protects_pool() -> None:
+    """Spec 2026-09-13 (research-funding-fix): research_share_bp applies
+    only to the pool ABOVE an optional reserve_floor — the pre-fix tap
+    taxed the whole STOCK every tick and compounding killed the Society
+    Pool (2.07B -> ~0 by t=180 at 250bp, sweeps/p4/FINDINGS.md)."""
+    # 1) pool at/below the floor: funding pauses entirely
+    s = _world(3)
+    s.surplus_pool = 1_000
+    params = {"research": {"enabled": True, "research_share_bp": 500,
+                           "reserve_floor": 1_000}}
+    assert fund_pool_phase(s, 1, params) == []
+    assert s.surplus_pool == 1_000 and s.innovation_pool == 0
+
+    # 2) only the EXCESS above the floor is taxed, exact share
+    s2 = _world(3)
+    s2.surplus_pool = 3_000
+    params2 = {"research": {"enabled": True, "research_share_bp": 500,
+                            "reserve_floor": 1_000}}
+    events = fund_pool_phase(s2, 1, params2)
+    # taxable = 3000 - 1000 = 2000, take = 5% (500bp) = 100
+    assert len(events) == 1 and events[0]["amount"] == 100
+    assert s2.surplus_pool == 2_900 and s2.innovation_pool == 100
+    # conservation law unchanged: surplus + innovation + know-how buckets
+    assert s2.surplus_pool + s2.innovation_pool \
+        + sum(s2.research_funding.values()) == 3_000
+
+    # 3) absent floor => pre-fix arithmetic (old worlds replay identical)
+    s3 = _world(3)
+    s3.surplus_pool = 10_000
+    params3 = {"research": {"enabled": True, "research_share_bp": 500}}
+    fund_pool_phase(s3, 1, params3)
+    assert s3.surplus_pool == 9_500 and s3.innovation_pool == 500
+
+    # 4) negative floor clamps to 0 (same behavior as absent)
+    s4 = _world(3)
+    s4.surplus_pool = 10_000
+    params4 = {"research": {"enabled": True, "research_share_bp": 500,
+                            "reserve_floor": -5_000}}
+    fund_pool_phase(s4, 1, params4)
+    assert s4.surplus_pool == 9_500 and s4.innovation_pool == 500
+
+
+# --------------------------------------------------------------- start_tick
+
+
+def test_funding_start_tick_sequencing() -> None:
+    """Amendment 2026-09-13 (society-in-motion): optional research.start_tick
+    delays the FIRST funding tick. Inert before start_tick, active from it,
+    share/floor arithmetic unchanged."""
+    params = {"research": {"enabled": True, "research_share_bp": 500,
+                           "start_tick": 50}}
+    # inert strictly before start_tick
+    s = _world(3)
+    s.surplus_pool = 10_000
+    assert fund_pool_phase(s, 49, params) == []
+    assert s.surplus_pool == 10_000 and s.innovation_pool == 0
+    # active exactly at start_tick
+    events = fund_pool_phase(s, 50, params)
+    assert len(events) == 1 and events[0]["amount"] == 500
+    assert s.surplus_pool == 9_500 and s.innovation_pool == 500
+    # still active after
+    events = fund_pool_phase(s, 51, params)
+    assert len(events) == 1 and events[0]["amount"] == 475
+    # negative clamps to 0 (immediate start, old behavior)
+    s2 = _world(3)
+    s2.surplus_pool = 10_000
+    params_neg = {"research": {"enabled": True, "research_share_bp": 500,
+                               "start_tick": -10}}
+    fund_pool_phase(s2, 1, params_neg)
+    assert s2.surplus_pool == 9_500 and s2.innovation_pool == 500
+    # start_tick composes with reserve_floor: below the floor nothing funds
+    # even after start_tick
+    s3 = _world(3)
+    s3.surplus_pool = 1_000
+    params3 = {"research": {"enabled": True, "research_share_bp": 500,
+                            "start_tick": 50, "reserve_floor": 1_000}}
+    assert fund_pool_phase(s3, 100, params3) == []
+    assert s3.surplus_pool == 1_000 and s3.innovation_pool == 0
+
+
+def test_funding_start_tick_absent_replays_identically() -> None:
+    """start_tick absent/0 => immediate funding = old byte-identical
+    behavior (no delay, same amounts)."""
+    for start in (None, 0):
+        s = _world(3)
+        s.surplus_pool = 10_000
+        params = {"research": {"enabled": True, "research_share_bp": 500}}
+        if start is not None:
+            params["research"]["start_tick"] = start
+        events = fund_pool_phase(s, 1, params)
+        assert len(events) == 1 and events[0]["amount"] == 500
+        assert s.surplus_pool == 9_500 and s.innovation_pool == 500
+
+
 # ---------------------------------------------------------------- unlocks
 
 

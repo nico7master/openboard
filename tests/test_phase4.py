@@ -283,17 +283,19 @@ class TestEssentials:
         state = genesis_state(dict(CITIZENS))
         ledger = Ledger()
         apply_tick(state, ledger, [found_coop(1, "alice", "farmers", ["alice", "bob"])])
-        state.coops["farmers"]["inventory"]["grain"] = 100
-        floor = state.good_cost_baseline["grain"]
+        # true-need balance: grain left the citizen basket (intermediate);
+        # bread is the staple — quota 1. Mechanics unchanged: floor price.
+        state.coops["farmers"]["inventory"]["bread"] = 100
+        floor = state.good_cost_baseline["bread"]
 
         apply_tick(state, ledger, [
-            list_good(2, "alice", "farmers", "grain", 50),
-            buy_essential(2, "carol", "grain", 5),
+            list_good(2, "alice", "farmers", "bread", 50),
+            buy_essential(2, "carol", "bread", 1),
         ], current_tick=2)
 
-        assert state.citizen_inventory["carol"]["grain"] == 5
-        assert state.balances["carol"] == 600 - 5 * floor
-        assert state.coops["farmers"]["treasury"] == 5 * floor
+        assert state.citizen_inventory["carol"]["bread"] == 1
+        assert state.balances["carol"] == 600 - 1 * floor
+        assert state.coops["farmers"]["treasury"] == 1 * floor
         assert state.surplus_pool == 0  # essentials at cost — no surplus
 
     def test_essential_priority_over_bids(self):
@@ -301,22 +303,22 @@ class TestEssentials:
         state = genesis_state(dict(CITIZENS))
         ledger = Ledger()
         apply_tick(state, ledger, [found_coop(1, "alice", "farmers", ["alice", "bob"])])
-        state.coops["farmers"]["inventory"]["grain"] = 10
-        floor = state.good_cost_baseline["grain"]
+        state.coops["farmers"]["inventory"]["bread"] = 10
+        floor = state.good_cost_baseline["bread"]
 
         apply_tick(state, ledger, [
-            list_good(2, "alice", "farmers", "grain", 10),
-            buy_essential(2, "carol", "grain", 4),  # essential takes priority
-            bid(2, "dave", "grain", floor + 3, 10),  # market bid gets the rest
+            list_good(2, "alice", "farmers", "bread", 10),
+            buy_essential(2, "carol", "bread", 1),  # essential takes priority (quota 1)
+            bid(2, "dave", "bread", floor + 3, 10),  # market bid gets the rest
         ], current_tick=2)
 
         # carol got her ration at floor
-        assert state.citizen_inventory["carol"]["grain"] == 4
-        assert state.balances["carol"] == 600 - 4 * floor
-        # dave got the remaining 6 at his bid price
-        assert state.citizen_inventory["dave"]["grain"] == 6
+        assert state.citizen_inventory["carol"]["bread"] == 1
+        assert state.balances["carol"] == 600 - 1 * floor
+        # dave got the remaining 9 at his bid price
+        assert state.citizen_inventory["dave"]["bread"] == 9
         # surplus from dave's purchase above floor
-        assert state.surplus_pool == 6 * 3
+        assert state.surplus_pool == 9 * 3
 
     def test_essential_not_essential_good(self):
         state = genesis_state(dict(CITIZENS))

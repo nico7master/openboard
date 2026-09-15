@@ -167,11 +167,11 @@ def test_essential_never_pays_premium():
                     payload={"coop_id": "bakery", "good": "bread", "qty": 10},
                     ruleset_version=1),
         Transaction(tick=3, sender="c2", action="BUY_ESSENTIAL",
-                    payload={"good": "bread", "qty": 4},  # validator: {good, qty}
+                    payload={"good": "bread", "qty": 1},  # quota 1 (true-need balance)
                     ruleset_version=1),
     ], current_tick=3)
     paid = before - s.balances["c2"]
-    assert paid == 4 * floor  # floor, NOT 4 * premium price
+    assert paid == 1 * floor  # floor, NOT premium price
 
 
 def test_crisis_zeroes_scarcity_premium():

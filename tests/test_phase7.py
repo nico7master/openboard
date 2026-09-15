@@ -174,11 +174,12 @@ class TestGovernanceAttacks:
         citizens = {"alice": 500, "bob": 500, "carol": 500, "dave": 500, "eve": 500}
         state = genesis_state(citizens, ruleset_params=params)
         ledger = Ledger()
-        state.citizen_inventory["eve"] = {"grain": 40}  # threshold 30
+        # true-need balance: bread quota 1 -> hoard threshold 3x1=3
+        state.citizen_inventory["eve"] = {"bread": 4}  # 4 > threshold 3
 
         apply_tick(state, ledger, [Transaction(
             tick=1, sender="carol", action="INTERVENE",
-            payload={"intervention": {"type": "DISSOLVE_HOARD", "target": "eve", "good": "grain"}},
+            payload={"intervention": {"type": "DISSOLVE_HOARD", "target": "eve", "good": "bread"}},
             ruleset_version=1,
         )], current_tick=1)
         apply_tick(state, ledger, [
@@ -188,5 +189,5 @@ class TestGovernanceAttacks:
         ], current_tick=2)
         apply_tick(state, ledger, [], current_tick=3)  # settle
 
-        assert state.citizen_inventory["eve"]["grain"] == 30
-        assert state.common_pool["grain"] == 10
+        assert state.citizen_inventory["eve"]["bread"] == 3
+        assert state.common_pool["bread"] == 1

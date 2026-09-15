@@ -139,7 +139,9 @@ def test_wind_farm_produces_without_inputs():
     inputs — real competition for coal power."""
     r = EXTENDED_RECIPES["wind_farm"]
     assert r.inputs == {}
-    assert r.outputs == {"electricity": 100}
+    # wind batch rescaled 100 -> 1000 (true-need balance: zero-input
+    # margin so the 1-tick electricity blip never returns; 2026-09-15)
+    assert r.outputs == {"electricity": 1000}
 
 
 # ------------------------------------------------------- capital backstop

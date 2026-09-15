@@ -44,21 +44,29 @@ class TestConsumePhase:
         s.citizen_inventory["b"] = {"water": 5}
         led = Ledger()
         apply_tick(s, led, [], current_tick=1)
-        assert s.citizen_inventory["a"]["bread"] == 2  # 3 - quota 1
+        # true-need balance: citizen 'a' holds only bread — the kcal group
+        # is short (1 loaf = 650 < 2900), so the compensating pass eats a
+        # second loaf beyond the preference cap (cap 1, ceiling 2x).
+        assert s.citizen_inventory["a"]["bread"] == 1  # 3 - (1 cap + 1 comp)
         assert s.citizen_inventory["a"]["water"] == 0
         assert s.citizen_inventory["a"]["electricity"] == 1
-        assert s.consumed_totals == {"bread": 1, "water": 2, "electricity": 1}
+        assert s.consumed_totals == {"bread": 2, "water": 2, "electricity": 1}
 
     def test_unmet_escalates_and_resets(self):
         s = genesis_state({"a": 100}, ruleset_params=circular_params())
         led = Ledger()
         apply_tick(s, led, [], current_tick=1)
         apply_tick(s, led, [], current_tick=2)
-        assert s.unmet_needs["a"]["bread"] == 2
-        s.citizen_inventory["a"]["bread"] = 4
+        # true-need balance: foods report ONE group streak key "food"
+        # (empty pantry -> 0 kcal < daily target)
+        assert s.unmet_needs["a"]["food"] == 2
+        # mixed pantry: bread 2x650 + canned_food 3x800 = 3700 kcal >= 2900
+        # — canned_food is a stock good (no needs cap): the famine buffer
+        s.citizen_inventory["a"] = {"bread": 2, "canned_food": 3}
         apply_tick(s, led, [], current_tick=3)
-        assert "bread" not in s.unmet_needs.get("a", {})
-        assert s.consumed_totals["bread"] == 1  # only tick 3 had bread to consume
+        assert "food" not in s.unmet_needs.get("a", {})
+        # tick 3: cap 1 + compensating 1 (650 kcal < 2900) = 2 loaves
+        assert s.consumed_totals["bread"] == 2
 
     def test_consumed_events_deterministic_order(self):
         s = genesis_state({"b": 100, "a": 100}, ruleset_params=circular_params())
@@ -117,9 +125,11 @@ class TestSurplusSpendPhase:
         bal_before = s.balances["a"]
         led = Ledger()
         apply_tick(s, led, [], current_tick=1)
-        # refund = units consumed x cost baseline (bread baseline = 3)
-        assert s.services_paid == 3
-        assert s.balances["a"] == bal_before + s.dividends_paid + 3
+        # refund = units consumed x cost baseline (bread baseline = 3).
+        # true-need balance: cap 1 + compensating pass 1 (650 kcal < 2900)
+        # = 2 loaves consumed -> 6 refunded.
+        assert s.services_paid == 6
+        assert s.balances["a"] == bal_before + s.dividends_paid + 6
 
     def test_services_only_fund_essentials(self):
         p = circular_params()

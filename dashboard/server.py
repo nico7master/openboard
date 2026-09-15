@@ -65,12 +65,12 @@ def _coop_recipe_intent(plan: dict) -> str | None:
 
 
 SPECIALISTS = {
-    "farmer": make_specialist("grain_farming", "grain", {"water": 5}, stock_target=450),
+    "farmer": make_specialist("grain_farming", "grain", {"water": 10}, stock_target=450),
     "miller": make_specialist("grain_to_flour", "flour", {"grain": 10}, stock_target=260),
     "baker": make_specialist("flour_to_bread", "bread", {"flour": 5}, stock_target=420),
     "miner": make_specialist("coal_mining", "coal", {}, stock_target=120, fallback_recipe_id="primitive_coal_mining"),
-    "power_worker": make_specialist("electricity_coal", "electricity", {"coal": 4}, stock_target=250),
-    "water_worker": make_specialist("water_service", "water", {"electricity": 5}, stock_target=250),
+    "power_worker": make_specialist("electricity_coal", "electricity", {"coal": 48}, stock_target=250),
+    "water_worker": make_specialist("water_service", "water", {"electricity": 15}, stock_target=250),
     # Stage 3: toolsmith chain (recipes live in the extended catalog)
     "logger": make_specialist("logging", "timber", {}, stock_target=40, fallback_recipe_id="primitive_logging"),
     "sawyer": make_specialist("sawmill", "lumber", {"timber": 5}, stock_target=40),
@@ -90,9 +90,9 @@ SPECIALISTS = {
     "wind_worker": make_specialist("wind_farm", "electricity", {}, stock_target=250),
     # Stage 4: breadth — every good has a producer
     "fisher": make_specialist("fishing", "fish", {}, stock_target=60),
-    "orchardist": make_specialist("orchard", "fruit", {"water": 4}, stock_target=80),
-    "vegetable_farmer": make_specialist("vegetable_farming", "vegetables", {"water": 6}, stock_target=100),
-    "herder": make_specialist("livestock", "meat", {"grain": 20, "water": 10}, stock_target=40),
+    "orchardist": make_specialist("orchard", "fruit", {"water": 8}, stock_target=80),
+    "vegetable_farmer": make_specialist("vegetable_farming", "vegetables", {"water": 12}, stock_target=100),
+    "herder": make_specialist("livestock", "meat", {"grain": 60, "water": 30}, stock_target=40),
     "dairy_worker": make_specialist("cheesemaking", "cheese", {"milk": 40}, stock_target=30),
     "canner": make_specialist("canning", "canned_food", {"vegetables": 8, "fruit": 4}, stock_target=40),
     "cook": make_specialist("meal_service", "meals", {"vegetables": 3, "meat": 2, "bread": 2}, stock_target=40),
@@ -104,12 +104,12 @@ SPECIALISTS = {
     "brickmaker": make_specialist("brickmaking", "bricks", {"sand": 3, "water": 2}, stock_target=400),
     "quarryman": make_specialist("quarrying", "stone", {}, stock_target=60, fallback_recipe_id="primitive_quarrying"),
     "builder": make_specialist("housing_service", "housing", {"lumber": 2, "bricks": 50, "steel": 1}, stock_target=10),
-    "healer": make_specialist("healthcare_service", "healthcare", {}, stock_target=20),
-    "teacher": make_specialist("education_service", "education", {}, stock_target=10),
-    "carer": make_specialist("childcare_service", "childcare", {}, stock_target=20),
-    "driver": make_specialist("transport_service", "transport", {"electricity": 10}, stock_target=60),
+    "healer": make_specialist("healthcare_service", "healthcare", {}, stock_target=200),
+    "teacher": make_specialist("education_service", "education", {}, stock_target=200),
+    "carer": make_specialist("childcare_service", "childcare", {}, stock_target=200),
+    "driver": make_specialist("transport_service", "transport", {"electricity": 10}, stock_target=400),
     "fixer": make_specialist("maintenance_service", "maintenance", {"hand_tools": 1}, stock_target=20),
-    "refiner": make_specialist("heating_fuel_refining", "heating_fuel", {"coal": 2, "water": 1}, stock_target=60),
+    "refiner": make_specialist("heating_fuel_refining", "heating_fuel", {"coal": 24, "water": 3}, stock_target=1300),
     "herbalist": make_specialist("herbal_medicine", "medicine", {"fruit": 5, "water": 2}, stock_target=20),
     # Endowments-off bootstrap: labor-only toolmaking lets society make
     # its first tools by hand when no capital seeds exist
@@ -496,7 +496,11 @@ class Run:
         # vs 6 clears) with no founder ever responding. Seed 3 free-handed
         # entrepreneurs: they watch chronic unfilled coop-bid pressure and
         # citizen unmet streaks, then FOUND_COOP with the matching recipe.
-        for i in range(6):
+        # true-need balance 2026-09-15 (spec §3.2): founder cast scales
+        # with population — 6 was a small-world constant. Init worlds run
+        # the baseline cast (small); scale_world tops founders up to ~1%
+        # of the scaled population (min 4) — see stage6_scale_gate.py.
+        for i in range(4):
             name = f"founder_{chr(ord('a') + i)}"
             self._inject({"after_tick": 1, "op": "add_citizen",
                           "name": name, "balance": 500})
@@ -816,21 +820,36 @@ class Run:
         # quotas are integer-native via needs_cycle (consume quota every
         # N ticks). Triage overrides make need-goods essential so citizens
         # can BUY_ESSENTIAL them at cost floors.
+        # 2026-09-15 TRUE-NEED BALANCE: the old basket demanded ~8,800
+        # kcal/citizen/tick (3.8x physiology, forced identical diets) while
+        # water 1/tick (~1L) and electricity 1/tick (1 kWh) sat below real
+        # human use. New model: per-good quotas are preference/variety CAPS;
+        # actual hunger = kcal SUBSTITUTION GROUP (kcal_needs) — food-unmet
+        # iff total kcal < daily target. Utilities at physical per-head
+        # levels; durables/services on consumption cycles.
         params["needs"] = {
-            "bread": 1, "water": 1, "electricity": 1,
-            "vegetables": 5, "fruit": 5, "meat": 4, "milk": 4, "eggs": 4,
-            "cheese": 1, "meals": 2, "fish": 3,
+            "bread": 1, "water": 3, "electricity": 12,
+            "grain": 1,  # the staple: 3400 kcal closes the budget
+            "vegetables": 1, "fruit": 1, "meat": 1, "milk": 1, "eggs": 1,
+            "meals": 1, "fish": 1,
             "clothing": 1, "healthcare": 1, "education": 1, "childcare": 1,
-            "housing": 1, "transport": 2, "heating_fuel": 2, "medicine": 1,
+            "housing": 1, "transport": 2, "heating_fuel": 6, "medicine": 1,
             "maintenance": 1, "books": 1, "furniture": 1, "household_goods": 1,
         }
+        params["kcal_needs"] = {
+            "enabled": True,
+            "daily_kcal": 2900,  # ~2,300 physiological + activity/waste margin
+            "kcal_per_unit": {
+                "bread": 650, "meals": 700, "vegetables": 400, "fruit": 250,
+                "eggs": 80, "fish": 200, "meat": 250, "milk": 300,
+                "cheese": 400, "canned_food": 800, "grain": 3400, "flour": 3600,
+            },
+        }
         params["needs_cycle"] = {
-            "vegetables": 20, "fruit": 20, "meat": 25, "milk": 25, "eggs": 25,
-            "cheese": 100, "meals": 50, "fish": 33,
-            "clothing": 100, "healthcare": 100, "education": 200,
-            "childcare": 100, "housing": 500, "transport": 50,
-            "heating_fuel": 50, "medicine": 200, "maintenance": 100,
-            "books": 100, "furniture": 500, "household_goods": 100,
+            "clothing": 30, "healthcare": 10, "education": 10,
+            "childcare": 5, "housing": 360, "transport": 1,
+            "heating_fuel": 1, "medicine": 30, "maintenance": 30,
+            "books": 90, "furniture": 360, "household_goods": 30,
         }
         params["surplus_spending"] = {
             "dividend_share_bp": 5_000,       # 50% of spendable pool

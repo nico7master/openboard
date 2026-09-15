@@ -202,12 +202,33 @@ def fund_pool_phase(
     state: WorldState, tick: int, params: dict[str, Any]
 ) -> list[dict[str, Any]]:
     """Move research_share_bp of the surplus pool into the innovation pool
-    each tick (deterministic, integer floor). Emits RESEARCH_FUND."""
+    each tick (deterministic, integer floor). Emits RESEARCH_FUND.
+
+    Spec 2026-09-13 (research-funding-fix): the share applies to the pool
+    ABOVE an optional `reserve_floor` — a stock-proportional tap on the
+    whole balance compounds (observed: 2.07B pool dead by t=180 at 250bp,
+    sweeps/p4/FINDINGS.md), so the floor protects the dividend reserve.
+    Floor absent/0 => exactly the pre-fix arithmetic (old worlds replay
+    byte-identically); negatives clamp to 0; at/below the floor funding
+    pauses (no event).
+
+    Amendment 2026-09-13 (society-in-motion study, Part B sequencing):
+    optional `start_tick` delays the FIRST funding tick — no RESEARCH_FUND
+    fires while tick < start_tick. Absent/0 => funding starts immediately
+    (old behavior, replay-identical); negatives clamp to 0. Sequencing
+    only: nothing before start_tick is back-filled, the share and floor
+    arithmetic are untouched from start_tick on.
+    """
     cfg = params.get("research") or {}
     if not cfg.get("enabled"):
         return []
+    start = max(0, int(cfg.get("start_tick", 0)))
+    if tick < start:
+        return []
     bp = max(0, min(10_000, int(cfg.get("research_share_bp", 500))))
-    take = state.surplus_pool * bp // 10_000
+    floor = max(0, int(cfg.get("reserve_floor", 0)))
+    taxable = max(0, state.surplus_pool - floor)
+    take = taxable * bp // 10_000
     if take <= 0:
         return []
     state.surplus_pool -= take
@@ -317,7 +338,9 @@ def research_effect_bp(state: WorldState, recipe: dict[str, Any], params: dict[s
     if fnd <= 0:
         return 0
     per = int(cfg.get("output_bonus_bp_per_10k", 250))
-    cap = int(cfg.get("max_output_bonus_bp", 2_500))
+    # true-need balance 2026-09-15: 25% cap -> 50%. Research becomes a real
+    # growth dial over the recalibrated sane base (spec 2026-09-15 §5).
+    cap = int(cfg.get("max_output_bonus_bp", 5_000))
     return min(cap, fnd * per // 10_000)
 
 

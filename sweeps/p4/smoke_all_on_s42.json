@@ -1,0 +1,78 @@
+{
+  "arm": "all_on",
+  "d_foreign": 84000,
+  "final": {
+    "bread_inv": 778,
+    "deaths": 0,
+    "foreign_balance": 114000,
+    "found_late": 0,
+    "gini": 6113,
+    "grain_inv": 2275,
+    "pool_units": 1489773420,
+    "pop": 187,
+    "produced": 379,
+    "unmet": 1
+  },
+  "land": {
+    "bought_n": 23,
+    "bought_units": 1180000,
+    "foreclosures": 0,
+    "lvt_units": 826,
+    "sold_n": 23,
+    "sold_units": 1062000
+  },
+  "money_delta": -429620952,
+  "seed": 42,
+  "series": [
+    [
+      5,
+      187,
+      6066,
+      184,
+      1780756103,
+      74,
+      0,
+      3,
+      995,
+      60000
+    ],
+    [
+      10,
+      187,
+      6140,
+      1,
+      1567254604,
+      291,
+      0,
+      789,
+      1899,
+      102000
+    ],
+    [
+      12,
+      187,
+      6113,
+      1,
+      1489773420,
+      379,
+      0,
+      778,
+      2275,
+      114000
+    ]
+  ],
+  "shocks": {},
+  "smoke": true,
+  "ticks": 12,
+  "trade": {
+    "export_earnings": 16000,
+    "export_units": 40,
+    "exports": 4,
+    "import_units": 650,
+    "imports": 65,
+    "tariff_units": 6500
+  },
+  "trade_ok": true,
+  "trader_funding": 15000000,
+  "wall_s": 1.3
+}

@@ -77,7 +77,12 @@ def test_needs_cycle_defers_consumption_to_cycle_day():
         apply_tick(s, Ledger(), [], current_tick=t)
     assert s.citizen_inventory["c0"]["meat"] == 10  # nothing consumed yet
     apply_tick(s, Ledger(), [], current_tick=25)  # cycle day
-    assert s.citizen_inventory["c0"]["meat"] == 8
+    # true-need balance: on the cycle day the kcal group is short (2 meat
+    # = 500 kcal < 2900), so the compensating pass eats up to the 2x
+    # preference ceiling (the buy-ahead pairing): 2 + 2 = 4 eaten.
+    # Meat alone still can't meet the budget -> 'food' streak recorded.
+    assert s.citizen_inventory["c0"]["meat"] == 6
+    assert "food" in s.unmet_needs["c0"]
 
 
 def test_needs_cycle_off_replays_legacy():

@@ -35,12 +35,16 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets")
+OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
     "transfer_limit": 0,  # 0 = unlimited
-    "max_coop_members": 20,
+    # 2026-09-15 true-need balance: 20 had no documented rationale (engine
+    # fallback said 12) and capped essential throughput (8 water coops x 20
+    # members = 160 workers for 966 citizens). 50 = generous workplace,
+    # still rule-change/votable in-game.
+    "max_coop_members": 50,
     "min_coop_members": 2,
     "triage_overrides": {},
     "wage_multiplier_bp": 10_000,  # basis points: 10000 = 1.0x
@@ -52,30 +56,73 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
         "hand_tools": 5,
         "machines": 1,
     },
+    # 2026-09-15 true-need balance: old basket demanded ~81,000 kcal/citizen/
+    # tick (~35x physiology, forced 12 identical foods, triple-counted starch
+    # via grain+flour+bread). New basket ~2,900 kcal/tick (~2,300 physiological
+    # + activity/waste margin); intermediates (grain/flour) and stock/preference
+    # goods (canned_food, cheese) leave the daily need. Durables/services cycle
+    # (needs_cycle): a house is bought once a year, not every tick.
     "essential_need_quota": {
-        "grain": 10,
-        "vegetables": 8,
-        "fruit": 5,
-        "fish": 4,
-        "meat": 2,
-        "eggs": 6,
-        "milk": 6,
-        "flour": 5,
-        "bread": 4,
-        "canned_food": 3,
-        "cheese": 1,
-        "meals": 3,
+        # grain is the STAPLE (gate diagnosis 2026-09-15): 1 unit = 3,400
+        # kcal ~= a full day's subsistence food. It closes the calorie
+        # budget on its own — without a citizen-accessible staple the food
+        # group never closed (worst streak 2000/2000).
+        "grain": 1,
+        "vegetables": 1,
+        "fruit": 1,
+        "fish": 1,
+        "meat": 1,
+        "eggs": 1,
+        "milk": 1,
+        "bread": 1,
+        "meals": 1,
         "housing": 1,
-        "electricity": 50,
-        "heating_fuel": 20,
-        "water": 10,
+        "electricity": 12,
+        "heating_fuel": 6,
+        "water": 3,
         "healthcare": 2,
         # Stage 4: every need-good must be purchasable via BUY_ESSENTIAL —
         # a need-good missing here is silently unbought (observed:
         # transport/books/clothing listed but zero citizen purchases)
-        "transport": 4, "clothing": 2, "education": 1,
-        "childcare": 2, "books": 2, "furniture": 1,
-        "household_goods": 2, "maintenance": 2, "medicine": 1,
+        "transport": 2, "clothing": 1, "education": 1,
+        "childcare": 1, "books": 1, "furniture": 1,
+        "household_goods": 1, "maintenance": 1, "medicine": 1,
+    },
+    # true-need balance: durables and sessions are bought on cycles, not
+    # every tick (a house lasts ~a year of ticks, a garment ~a month).
+    "needs_cycle": {
+        "housing": 360,
+        "furniture": 360,
+        "clothing": 30,
+        "household_goods": 30,
+        "maintenance": 30,
+        "medicine": 30,
+        "books": 90,
+        "education": 10,
+        "childcare": 5,
+        "healthcare": 10,
+    },
+    # true-need balance: foods form a kcal SUBSTITUTION GROUP — a citizen is
+    # food-unmet only when total kcal from ALL foods < daily_kcal. Per-good
+    # quotas above become preference/variety caps, not starvation lines.
+    # Absent/disabled -> legacy per-good semantics (replay-safe).
+    "kcal_needs": {
+        "enabled": True,
+        "daily_kcal": 2900,
+        "kcal_per_unit": {
+            "grain": 3400,
+            "flour": 3600,
+            "bread": 650,
+            "meals": 700,
+            "vegetables": 400,
+            "fruit": 250,
+            "eggs": 80,
+            "fish": 200,
+            "meat": 250,
+            "milk": 300,
+            "canned_food": 800,
+            "cheese": 400,
+        },
     },
     "surplus_reserve_cap": 5_000,
     "governance": {

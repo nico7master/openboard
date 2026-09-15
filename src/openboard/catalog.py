@@ -99,34 +99,34 @@ def _r(recipe_id, inputs, labor_hours, energy, outputs) -> Recipe:
 
 RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
     # Food processing
-    _r("grain_to_flour", {"grain": 10}, 2, 1, {"flour": 9}),
-    _r("flour_to_bread", {"flour": 5}, 3, 2, {"bread": 20}),
+    _r("grain_to_flour", {"grain": 10}, 2, 1, {"flour": 20}),
+    _r("flour_to_bread", {"flour": 5}, 3, 2, {"bread": 40}),
     _r("canning", {"vegetables": 8, "fruit": 4}, 4, 2, {"canned_food": 12}),
     _r("cheesemaking", {"milk": 40}, 5, 2, {"cheese": 8}),
-    _r("meal_service", {"vegetables": 3, "meat": 2, "bread": 2}, 6, 1, {"meals": 10}),
+    _r("meal_service", {"vegetables": 3, "meat": 2, "bread": 2}, 6, 1, {"meals": 20}),
     # Materials processing
     _r("sawmill", {"timber": 5}, 8, 4, {"lumber": 4}),
     _r("brickmaking", {"sand": 3, "water": 2}, 10, 6, {"bricks": 100}),
     _r("steelmaking", {"iron_ore": 5, "coal": 3}, 24, 20, {"steel": 4}),
     _r("glassmaking", {"sand": 4}, 12, 10, {"glass": 6}),
-    _r("fabric_weaving", {"grain": 2, "water": 3}, 15, 4, {"fabric": 6}),
+    _r("fabric_weaving", {"grain": 2, "water": 3}, 15, 4, {"fabric": 36}),
     # Tools & machines
     _r("hand_tools_craft", {"steel": 2, "lumber": 1}, 20, 5, {"hand_tools": 5}),
     _r("machine_building", {"steel": 10, "electronics": 4, "glass": 2}, 60, 30, {"machines": 1}),
     _r("electronics_assembly", {"steel": 1, "glass": 2, "coal": 1}, 30, 15, {"electronics": 3}),
     # Consumer goods
-    _r("clothing_sewing", {"fabric": 10}, 12, 3, {"clothing": 8}),
+    _r("clothing_sewing", {"fabric": 10}, 12, 3, {"clothing": 48}),
     _r("furniture_craft", {"lumber": 3, "fabric": 2, "steel": 1}, 25, 5, {"furniture": 2}),
     _r("household_goods_craft", {"steel": 1, "glass": 1, "fabric": 1}, 10, 4, {"household_goods": 3}),
     _r("book_printing", {"fabric": 1, "water": 1}, 8, 2, {"books": 10}),
     # Energy & infrastructure
-    _r("electricity_coal", {"coal": 4}, 10, 0, {"electricity": 100}),
+    _r("electricity_coal", {"coal": 48}, 10, 0, {"electricity": 1200}),
     # Agriculture (primary — outputs from land + water + labor)
-    _r("grain_farming", {"water": 5}, 40, 3, {"grain": 100}),
-    _r("vegetable_farming", {"water": 6}, 50, 3, {"vegetables": 80}),
-    _r("orchard", {"water": 4}, 35, 2, {"fruit": 60}),
-    _r("fishing", {}, 30, 8, {"fish": 50}),
-    _r("livestock", {"grain": 20, "water": 10}, 60, 4, {"meat": 18, "milk": 18, "eggs": 18}),
+    _r("grain_farming", {"water": 10}, 40, 3, {"grain": 800}),
+    _r("vegetable_farming", {"water": 12}, 50, 3, {"vegetables": 200}),
+    _r("orchard", {"water": 8}, 35, 2, {"fruit": 200}),
+    _r("fishing", {}, 30, 8, {"fish": 200}),
+    _r("livestock", {"grain": 60, "water": 30}, 60, 12, {"meat": 150, "milk": 150, "eggs": 150}),
     # 2026-09-02 3rd pass REVERTED: labor 45 raised grain appetite
     # (20/run x more runs) and regressed the gate (meat 4, milk 7).
     # The 60h cadence with cast margin is the honest fix.
@@ -145,16 +145,16 @@ RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
     _r("logging", {"hand_tools": 1}, 30, 5, {"timber": 10}),
     _r("quarrying", {"hand_tools": 1}, 40, 8, {"stone": 12}),
     _r("iron_mining", {"hand_tools": 1, "machines": 1}, 50, 20, {"iron_ore": 20}),
-    _r("coal_mining", {"hand_tools": 1, "machines": 1}, 55, 22, {"coal": 24}),
+    _r("coal_mining", {"hand_tools": 1, "machines": 1}, 55, 22, {"coal": 600}),
     _r("sand_extraction", {"hand_tools": 1}, 20, 4, {"sand": 15}),
     # Services (labor + energy -> service)
-    _r("healthcare_service", {}, 8, 1, {"healthcare": 4}),
-    _r("education_service", {}, 8, 1, {"education": 1}),
-    _r("childcare_service", {}, 8, 1, {"childcare": 8}),
+    _r("healthcare_service", {}, 8, 1, {"healthcare": 96}),
+    _r("education_service", {}, 8, 1, {"education": 48}),
+    _r("childcare_service", {}, 8, 1, {"childcare": 96}),
     _r("maintenance_service", {"hand_tools": 1}, 6, 1, {"maintenance": 1}),
-    _r("transport_service", {"electricity": 10}, 5, 0, {"transport": 20}),
+    _r("transport_service", {"electricity": 10}, 5, 0, {"transport": 120}),
     _r("housing_service", {"lumber": 2, "bricks": 50, "steel": 1}, 100, 15, {"housing": 2}),
-    _r("water_service", {"electricity": 5}, 15, 0, {"water": 40}),
+    _r("water_service", {"electricity": 15}, 15, 0, {"water": 240}),
 ]}
 
 # Note: medicine and heating_fuel have no starter recipe yet — production
@@ -178,9 +178,9 @@ RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
 EXTENDED_RECIPES: dict[str, Recipe] = {r.recipe_id: r for r in [
     _r("machine_building_batch", {"steel": 20, "electronics": 6, "glass": 4}, 120, 60, {"machines": 8}),
     _r("steelmaking_batch", {"iron_ore": 20, "coal": 12}, 90, 80, {"steel": 20}),
-    _r("wind_farm", {}, 25, 0, {"electricity": 100}),
+    _r("wind_farm", {}, 25, 0, {"electricity": 1000}),
     # Stage 4 breadth: goods with no recipe + the bootstrap tool
-    _r("heating_fuel_refining", {"coal": 2, "water": 1}, 8, 4, {"heating_fuel": 10}),
+    _r("heating_fuel_refining", {"coal": 24, "water": 3}, 8, 12, {"heating_fuel": 240}),
     _r("herbal_medicine", {"fruit": 5, "water": 2}, 10, 1, {"medicine": 3}),
     # Labor-only toolmaking: society can bootstrap its first tools from
     # bare labor when no endowments exist. Low yield on purpose — it is

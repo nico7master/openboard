@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT / "dashboard"))
 
 from server import (  # noqa: E402
     BASELINE_BOTS, BASELINE_COOPS, CAPITAL_BOOTSTRAP, SPECIALISTS, Run,
+    ARCHETYPES,
 )
 
 TARGET_CITIZENS = 1000
@@ -168,6 +169,22 @@ def scale_world(run, target):
     for coop_id, goods in capital_seeds:
         run._inject({"after_tick": proc, "op": "capital",
                      "coop": coop_id, "goods": goods})
+    # true-need balance 2026-09-15 (spec §3.2): founder cast scales with
+    # population. 6 founders was a small-world constant — 966 citizens
+    # get ~1% mobility reserve (min 4). Without this the founding lever
+    # is staffed by 6 citizens against a 966-citizen economy (society
+    # study founder probe: all six absorbed by t=6, zero movement after).
+    _founders = [n for n in run.bots if n.startswith("founder_")]
+    _want = max(4, target // 100)
+    _fn = ARCHETYPES["entrepreneur"]
+    _next_i = len(_founders)
+    while len(_founders) < _want:
+        name = f"founder_{chr(ord('a') + _next_i % 26)}{_next_i // 26 or ''}"
+        _next_i += 1
+        run._inject({"after_tick": tick1, "op": "add_citizen",
+                     "name": name, "balance": 500})
+        run.bots[name] = {"fn": _fn, "coop": None, "arch": "entrepreneur"}
+        _founders.append(name)
     # 2026-09-10 evidence ladder (machflow966 + refresh_probe): at scale the
     # MARKET path for capital replacement is unaffordable - machine price
     # (~5,600cr amortized labor) exceeds small-coop savings, power coops

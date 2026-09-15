@@ -1,0 +1,506 @@
+[
+  {
+    "arm": "trade_only",
+    "cons_ok": true,
+    "d_foreign": 6567100,
+    "d_research": 0,
+    "drought_unmet": 951,
+    "final": {
+      "gini": 2687,
+      "pool": 1673522733,
+      "pop": 951,
+      "produced": 75686,
+      "unmet": 656
+    },
+    "land": {
+      "bought_n": 0,
+      "bought_units": 0,
+      "foreclosures": 0,
+      "lvt_units": 0,
+      "sold_n": 0,
+      "sold_units": 0
+    },
+    "money_delta": -6567100,
+    "ref": {
+      "drought_unmet": 966,
+      "gini": 2540,
+      "name": "skills_off_s{seed}.json",
+      "pool": 1688376106,
+      "pop": 966,
+      "produced": 73516,
+      "unmet": 371
+    },
+    "seed": 7,
+    "trade": {
+      "export_earnings": 1667900,
+      "export_units": 3695,
+      "exports": 199,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 289.6
+  },
+  {
+    "arm": "trade_only",
+    "cons_ok": true,
+    "d_foreign": 6514900,
+    "d_research": 0,
+    "drought_unmet": 771,
+    "final": {
+      "gini": 2671,
+      "pool": 1674405504,
+      "pop": 951,
+      "produced": 73502,
+      "unmet": 256
+    },
+    "land": {
+      "bought_n": 0,
+      "bought_units": 0,
+      "foreclosures": 0,
+      "lvt_units": 0,
+      "sold_n": 0,
+      "sold_units": 0
+    },
+    "money_delta": -6514900,
+    "ref": {
+      "drought_unmet": 946,
+      "gini": 2590,
+      "name": "skills_off_s{seed}.json",
+      "pool": 1685724225,
+      "pop": 966,
+      "produced": 74089,
+      "unmet": 616
+    },
+    "seed": 42,
+    "trade": {
+      "export_earnings": 1720100,
+      "export_units": 3806,
+      "exports": 206,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 297.3
+  },
+  {
+    "arm": "trade_only",
+    "cons_ok": true,
+    "d_foreign": 6305400,
+    "d_research": 0,
+    "drought_unmet": 931,
+    "final": {
+      "gini": 2605,
+      "pool": 1671278761,
+      "pop": 951,
+      "produced": 75864,
+      "unmet": 256
+    },
+    "land": {
+      "bought_n": 0,
+      "bought_units": 0,
+      "foreclosures": 0,
+      "lvt_units": 0,
+      "sold_n": 0,
+      "sold_units": 0
+    },
+    "money_delta": -6305400,
+    "ref": {
+      "drought_unmet": 966,
+      "gini": 2664,
+      "name": "skills_off_s{seed}.json",
+      "pool": 1694475522,
+      "pop": 966,
+      "produced": 71184,
+      "unmet": 321
+    },
+    "seed": 123,
+    "trade": {
+      "export_earnings": 1929600,
+      "export_units": 4170,
+      "exports": 223,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 277.9
+  },
+  {
+    "arm": "land_trade",
+    "cons_ok": true,
+    "d_foreign": 6505900,
+    "d_research": 0,
+    "drought_unmet": 940,
+    "final": {
+      "gini": 2788,
+      "pool": 1676642634,
+      "pop": 940,
+      "produced": 75407,
+      "unmet": 85
+    },
+    "land": {
+      "bought_n": 23,
+      "bought_units": 1180000,
+      "foreclosures": 15,
+      "lvt_units": 31798,
+      "sold_n": 8,
+      "sold_units": 1935000
+    },
+    "money_delta": -6505900,
+    "ref": {
+      "drought_unmet": 954,
+      "gini": 2616,
+      "name": "dump_s{seed}.json",
+      "pool": 1686925209,
+      "pop": 954,
+      "produced": 0,
+      "unmet": 449
+    },
+    "seed": 7,
+    "trade": {
+      "export_earnings": 1729100,
+      "export_units": 3908,
+      "exports": 209,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 272.0
+  },
+  {
+    "arm": "land_trade",
+    "cons_ok": true,
+    "d_foreign": 6509800,
+    "d_research": 0,
+    "drought_unmet": 785,
+    "final": {
+      "gini": 4352,
+      "pool": 1676740032,
+      "pop": 940,
+      "produced": 73828,
+      "unmet": 144
+    },
+    "land": {
+      "bought_n": 23,
+      "bought_units": 1180000,
+      "foreclosures": 15,
+      "lvt_units": 31798,
+      "sold_n": 8,
+      "sold_units": 1935000
+    },
+    "money_delta": -6509800,
+    "ref": {
+      "drought_unmet": 954,
+      "gini": 2689,
+      "name": "dump_s{seed}.json",
+      "pool": 1694272755,
+      "pop": 954,
+      "produced": 0,
+      "unmet": 1
+    },
+    "seed": 42,
+    "trade": {
+      "export_earnings": 1725200,
+      "export_units": 3707,
+      "exports": 203,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 282.6
+  },
+  {
+    "arm": "land_trade",
+    "cons_ok": true,
+    "d_foreign": 6544200,
+    "d_research": 0,
+    "drought_unmet": 860,
+    "final": {
+      "gini": 2703,
+      "pool": 1673908003,
+      "pop": 940,
+      "produced": 74500,
+      "unmet": 396
+    },
+    "land": {
+      "bought_n": 23,
+      "bought_units": 1180000,
+      "foreclosures": 15,
+      "lvt_units": 31798,
+      "sold_n": 8,
+      "sold_units": 1935000
+    },
+    "money_delta": -6544200,
+    "ref": {
+      "drought_unmet": 954,
+      "gini": 2547,
+      "name": "dump_s{seed}.json",
+      "pool": 1684444288,
+      "pop": 954,
+      "produced": 0,
+      "unmet": 309
+    },
+    "seed": 123,
+    "trade": {
+      "export_earnings": 1690800,
+      "export_units": 3783,
+      "exports": 202,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 276.8
+  },
+  {
+    "arm": "disaster_trade",
+    "cons_ok": true,
+    "d_foreign": 6598800,
+    "d_research": 0,
+    "drought_unmet": 951,
+    "final": {
+      "gini": 2652,
+      "pool": 1671737238,
+      "pop": 951,
+      "produced": 76717,
+      "unmet": 299
+    },
+    "land": {
+      "bought_n": 0,
+      "bought_units": 0,
+      "foreclosures": 0,
+      "lvt_units": 0,
+      "sold_n": 0,
+      "sold_units": 0
+    },
+    "money_delta": -6598800,
+    "ref": {
+      "drought_unmet": 906,
+      "gini": 2529,
+      "name": "disaster_s{seed}.json",
+      "pool": 1688119937,
+      "pop": 966,
+      "produced": 74285,
+      "unmet": 886
+    },
+    "seed": 7,
+    "trade": {
+      "export_earnings": 1636200,
+      "export_units": 3657,
+      "exports": 198,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 305.9
+  },
+  {
+    "arm": "disaster_trade",
+    "cons_ok": true,
+    "d_foreign": 6518500,
+    "d_research": 0,
+    "drought_unmet": 811,
+    "final": {
+      "gini": 2676,
+      "pool": 1674937042,
+      "pop": 951,
+      "produced": 73236,
+      "unmet": 656
+    },
+    "land": {
+      "bought_n": 0,
+      "bought_units": 0,
+      "foreclosures": 0,
+      "lvt_units": 0,
+      "sold_n": 0,
+      "sold_units": 0
+    },
+    "money_delta": -6518500,
+    "ref": {
+      "drought_unmet": 966,
+      "gini": 2610,
+      "name": "disaster_s{seed}.json",
+      "pool": 1688891959,
+      "pop": 966,
+      "produced": 73419,
+      "unmet": 616
+    },
+    "seed": 42,
+    "trade": {
+      "export_earnings": 1716500,
+      "export_units": 3791,
+      "exports": 205,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 300.4
+  },
+  {
+    "arm": "disaster_trade",
+    "cons_ok": true,
+    "d_foreign": 6284600,
+    "d_research": 0,
+    "drought_unmet": 871,
+    "final": {
+      "gini": 2642,
+      "pool": 1672118975,
+      "pop": 951,
+      "produced": 75645,
+      "unmet": 256
+    },
+    "land": {
+      "bought_n": 0,
+      "bought_units": 0,
+      "foreclosures": 0,
+      "lvt_units": 0,
+      "sold_n": 0,
+      "sold_units": 0
+    },
+    "money_delta": -6284600,
+    "ref": {
+      "drought_unmet": 916,
+      "gini": 2598,
+      "name": "disaster_s{seed}.json",
+      "pool": 1691576919,
+      "pop": 966,
+      "produced": 71952,
+      "unmet": 261
+    },
+    "seed": 123,
+    "trade": {
+      "export_earnings": 1950400,
+      "export_units": 4201,
+      "exports": 224,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 281.5
+  },
+  {
+    "arm": "all_on",
+    "cons_ok": true,
+    "d_foreign": 6687000,
+    "d_research": 1828000782,
+    "drought_unmet": 497,
+    "final": {
+      "gini": 7853,
+      "pool": 20,
+      "pop": 940,
+      "produced": 60887,
+      "unmet": 497
+    },
+    "land": {
+      "bought_n": 23,
+      "bought_units": 1180000,
+      "foreclosures": 15,
+      "lvt_units": 31798,
+      "sold_n": 8,
+      "sold_units": 1935000
+    },
+    "money_delta": -1834687782,
+    "ref": {
+      "drought_unmet": 951,
+      "gini": 2652,
+      "name": "disaster_trade_s{seed}.json",
+      "pool": 1671737238,
+      "pop": 951,
+      "produced": 76717,
+      "unmet": 299
+    },
+    "seed": 7,
+    "trade": {
+      "export_earnings": 1548000,
+      "export_units": 3186,
+      "exports": 215,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 226.8
+  },
+  {
+    "arm": "all_on",
+    "cons_ok": true,
+    "d_foreign": 6493000,
+    "d_research": 1827794702,
+    "drought_unmet": 566,
+    "final": {
+      "gini": 8140,
+      "pool": 10,
+      "pop": 940,
+      "produced": 60909,
+      "unmet": 566
+    },
+    "land": {
+      "bought_n": 23,
+      "bought_units": 1180000,
+      "foreclosures": 15,
+      "lvt_units": 31798,
+      "sold_n": 8,
+      "sold_units": 1935000
+    },
+    "money_delta": -1834287702,
+    "ref": {
+      "drought_unmet": 811,
+      "gini": 2676,
+      "name": "disaster_trade_s{seed}.json",
+      "pool": 1674937042,
+      "pop": 951,
+      "produced": 73236,
+      "unmet": 656
+    },
+    "seed": 42,
+    "trade": {
+      "export_earnings": 1742000,
+      "export_units": 3671,
+      "exports": 241,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 221.0
+  },
+  {
+    "arm": "all_on",
+    "cons_ok": true,
+    "d_foreign": 6411800,
+    "d_research": 1827842358,
+    "drought_unmet": 694,
+    "final": {
+      "gini": 7852,
+      "pool": 3,
+      "pop": 940,
+      "produced": 61631,
+      "unmet": 639
+    },
+    "land": {
+      "bought_n": 23,
+      "bought_units": 1180000,
+      "foreclosures": 15,
+      "lvt_units": 31798,
+      "sold_n": 8,
+      "sold_units": 1935000
+    },
+    "money_delta": -1834254158,
+    "ref": {
+      "drought_unmet": 871,
+      "gini": 2642,
+      "name": "disaster_trade_s{seed}.json",
+      "pool": 1672118975,
+      "pop": 951,
+      "produced": 75645,
+      "unmet": 256
+    },
+    "seed": 123,
+    "trade": {
+      "export_earnings": 1823200,
+      "export_units": 3874,
+      "exports": 253,
+      "import_units": 32550,
+      "imports": 3255,
+      "tariff_units": 413250
+    },
+    "wall_s": 223.0
+  }
+]

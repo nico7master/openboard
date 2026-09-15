@@ -1,0 +1,295 @@
+{
+  "arm": "disaster",
+  "final": {
+    "deaths_total": 0,
+    "food_inv": {
+      "bread": 571,
+      "canned_food": 48,
+      "cheese": 8,
+      "eggs": 100,
+      "fish": 24,
+      "flour": 237,
+      "fruit": 132,
+      "grain": 1140,
+      "meals": 0,
+      "meat": 100,
+      "milk": 123,
+      "vegetables": 78
+    },
+    "found_count": 43,
+    "gini": 990,
+    "hand_tools": 106,
+    "machines": 64,
+    "pool_units": 2087073907,
+    "pop": 181,
+    "produced_total": 359,
+    "spoil_total": 0,
+    "unmet": 0
+  },
+  "found_coops": [
+    {
+      "coop_id": "bakers",
+      "sender": "baker_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "city_bakers",
+      "sender": "baker_c",
+      "tick": 2
+    },
+    {
+      "coop_id": "brickworks",
+      "sender": "brickmaker_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "housing_guild",
+      "sender": "builder_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "cannery",
+      "sender": "canner_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "childcare_co",
+      "sender": "carer_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "furniture_shop",
+      "sender": "carpenter_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "kitchen",
+      "sender": "cook_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "dairy",
+      "sender": "dairy_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "transport_co",
+      "sender": "driver_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "electronics_co",
+      "sender": "elec_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "farmers",
+      "sender": "farmer_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "farmers_north",
+      "sender": "farmer_c",
+      "tick": 2
+    },
+    {
+      "coop_id": "fishery",
+      "sender": "fisher_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "maintenance_co",
+      "sender": "fixer_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "glassworks",
+      "sender": "glass_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "clinic",
+      "sender": "healer_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "apothecary",
+      "sender": "herbalist_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "livestock_co",
+      "sender": "herder_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "household_co",
+      "sender": "homewright_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "iron_miners",
+      "sender": "iron_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "loggers",
+      "sender": "logger_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "machine_works",
+      "sender": "mach_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "millers",
+      "sender": "miller_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "miners",
+      "sender": "miner_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "orchard_co",
+      "sender": "orchard_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "power_plant",
+      "sender": "power_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "printshop",
+      "sender": "printer_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "quarry_co",
+      "sender": "quarryman_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "livestock_north",
+      "sender": "rancher_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "fuel_works",
+      "sender": "refiner_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "sand_co",
+      "sender": "sand_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "sawmill_co",
+      "sender": "sawyer_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "steelworks",
+      "sender": "steel_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "tailors",
+      "sender": "tailor_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "school",
+      "sender": "teacher_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "toolworks",
+      "sender": "tool_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "vegetable_farm",
+      "sender": "veg_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "water_works",
+      "sender": "water_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "water_works_north",
+      "sender": "water_c",
+      "tick": 2
+    },
+    {
+      "coop_id": "water_works_east",
+      "sender": "water_i",
+      "tick": 2
+    },
+    {
+      "coop_id": "weavers",
+      "sender": "weaver_a",
+      "tick": 2
+    },
+    {
+      "coop_id": "wind_farm",
+      "sender": "wind_a",
+      "tick": 2
+    }
+  ],
+  "money_delta": 0,
+  "money_ok": true,
+  "seed": 42,
+  "series": [
+    [
+      5,
+      181,
+      813,
+      178,
+      2088014205,
+      73,
+      0,
+      39,
+      0,
+      43
+    ],
+    [
+      10,
+      181,
+      950,
+      0,
+      2087182403,
+      271,
+      0,
+      170,
+      0,
+      43
+    ],
+    [
+      12,
+      181,
+      990,
+      0,
+      2087073907,
+      359,
+      0,
+      170,
+      0,
+      43
+    ]
+  ],
+  "shocks": {
+    "counts": {},
+    "first_tick": {}
+  },
+  "smoke": true,
+  "spoil_by_good": {},
+  "ticks": 12,
+  "wall_s": 1.3
+}

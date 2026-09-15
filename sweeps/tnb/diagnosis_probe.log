@@ -1,0 +1,91 @@
+Traceback (most recent call last):
+  File "/tmp/tnb_probe.py", line 5, in <module>
+    from server import Run, BASELINE_BOTS, BASELINE_COOPS
+  File "/a0/usr/projects/openboard-economy/dashboard/server.py", line 22, in <module>
+    from flask import Flask, jsonify, request, send_from_directory
+ModuleNotFoundError: No module named 'flask'
+baseline cast size: 178
+=== food-chain coop staffing ===
+apothecary               recipe=herbal_medicine        members=2
+bakers                   recipe=flour_to_bread         members=4
+brickworks               recipe=brickmaking            members=2
+cannery                  recipe=canning                members=2
+childcare_co             recipe=childcare_service      members=2
+city_bakers              recipe=flour_to_bread         members=3
+clinic                   recipe=healthcare_service     members=2
+dairy                    recipe=cheesemaking           members=3
+electronics_co           recipe=electronics_assembly   members=2
+farmers                  recipe=grain_farming          members=8
+farmers_north            recipe=grain_farming          members=5
+fishery                  recipe=fishing                members=4
+fuel_works               recipe=heating_fuel_refining  members=7
+furniture_shop           recipe=furniture_craft        members=4
+glassworks               recipe=glassmaking            members=2
+household_co             recipe=household_goods_craft  members=5
+housing_guild            recipe=housing_service        members=4
+iron_miners              recipe=iron_mining            members=4
+kitchen                  recipe=meal_service           members=7
+livestock_co             recipe=livestock              members=8
+livestock_north          recipe=livestock              members=8
+loggers                  recipe=logging                members=2
+machine_works            recipe=machine_building_batch members=3
+maintenance_co           recipe=maintenance_service    members=6
+millers                  recipe=grain_to_flour         members=3
+miners                   recipe=coal_mining            members=12
+orchard_co               recipe=orchard                members=5
+power_plant              recipe=electricity_coal       members=4
+printshop                recipe=book_printing          members=2
+quarry_co                recipe=quarrying              members=5
+sand_co                  recipe=sand_extraction        members=2
+sawmill_co               recipe=sawmill                members=2
+school                   recipe=education_service      members=6
+steelworks               recipe=steelmaking_batch      members=3
+tailors                  recipe=clothing_sewing        members=2
+toolworks                recipe=hand_tools_craft       members=3
+transport_co             recipe=transport_service      members=2
+vegetable_farm           recipe=vegetable_farming      members=7
+water_works              recipe=water_service          members=4
+water_works_east         recipe=water_service          members=4
+water_works_north        recipe=water_service          members=4
+weavers                  recipe=fabric_weaving         members=2
+wind_farm                recipe=wind_farm              members=4
+--- t=25 pop=179 food_unmet=179 avg_pantry_kcal=0
+  bread         produced=   3880 bought=   3229 listed_now=    0
+  canned_food   produced=     48 bought=      0 listed_now=    0
+  cheese        produced=     16 bought=      0 listed_now=    0
+  eggs          produced=    180 bought=    170 listed_now=    0
+  fish          produced=   1100 bought=   1049 listed_now=    0
+  flour         produced=   1251 bought=      0 listed_now=    0
+  fruit         produced=   1380 bought=   1171 listed_now=    0
+  grain         produced=   4200 bought=      0 listed_now=    0
+  meals         produced=    270 bought=    270 listed_now=    0
+  meat          produced=    180 bought=    115 listed_now=    0
+  milk          produced=    180 bought=     86 listed_now=    0
+  vegetables    produced=   1840 bought=   1666 listed_now=    0
+--- t=60 pop=179 food_unmet=179 avg_pantry_kcal=0
+  bread         produced=  10040 bought=   9516 listed_now=    0
+  canned_food   produced=     48 bought=      0 listed_now=    0
+  cheese        produced=     16 bought=      0 listed_now=    0
+  eggs          produced=    180 bought=    170 listed_now=    0
+  fish          produced=   2800 bought=   2756 listed_now=    0
+  flour         produced=   2817 bought=      0 listed_now=    0
+  fruit         produced=   3000 bought=   2631 listed_now=    0
+  grain         produced=   8000 bought=      0 listed_now=    0
+  meals         produced=    270 bought=    270 listed_now=    0
+  meat          produced=    180 bought=    115 listed_now=    0
+  milk          produced=    180 bought=     86 listed_now=    0
+  vegetables    produced=   2640 bought=   2476 listed_now=    0
+--- t=120 pop=179 food_unmet=179 avg_pantry_kcal=0
+  bread         produced=  18400 bought=  18152 listed_now=    0
+  canned_food   produced=     48 bought=      0 listed_now=    0
+  cheese        produced=     16 bought=      0 listed_now=    0
+  eggs          produced=    180 bought=    170 listed_now=    0
+  fish          produced=   3450 bought=   3450 listed_now=    0
+  flour         produced=   5058 bought=      0 listed_now=    0
+  fruit         produced=   3000 bought=   2636 listed_now=    0
+  grain         produced=   8000 bought=      0 listed_now=    0
+  meals         produced=    270 bought=    270 listed_now=    0
+  meat          produced=    180 bought=    115 listed_now=    0
+  milk          produced=    180 bought=     86 listed_now=    0
+  vegetables    produced=   2640 bought=   2476 listed_now=    0
+PROBE_DONE

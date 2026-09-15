@@ -1,0 +1,9940 @@
+{
+ "pairs": {
+  "pair1_spoilage_x_disasters": {
+   "arms": {
+    "A": "spoil_long",
+    "AB": "spoil_disaster",
+    "B": "disaster",
+    "base": "base"
+   },
+   "finals": {
+    "A": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2564,
+      "pool_units": 1687708576,
+      "pop": 966,
+      "produced": 73773,
+      "unmet": 804,
+      "unmet_streak_max": 55
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2585,
+      "pool_units": 1688082449,
+      "pop": 966,
+      "produced": 73486,
+      "unmet": 291,
+      "unmet_streak_max": 181
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2582,
+      "pool_units": 1688678931,
+      "pop": 966,
+      "produced": 74246,
+      "unmet": 508,
+      "unmet_streak_max": 114
+     }
+    },
+    "AB": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2573,
+      "pool_units": 1690610825,
+      "pop": 966,
+      "produced": 73284,
+      "unmet": 429,
+      "unmet_streak_max": 55
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2593,
+      "pool_units": 1690866175,
+      "pop": 966,
+      "produced": 73184,
+      "unmet": 357,
+      "unmet_streak_max": 181
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2605,
+      "pool_units": 1691578662,
+      "pop": 966,
+      "produced": 74503,
+      "unmet": 71,
+      "unmet_streak_max": 78
+     }
+    },
+    "B": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2529,
+      "pool_units": 1688119937,
+      "pop": 966,
+      "produced": 74285,
+      "unmet": 886,
+      "unmet_streak_max": 80
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2610,
+      "pool_units": 1688891959,
+      "pop": 966,
+      "produced": 73419,
+      "unmet": 616,
+      "unmet_streak_max": 74
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2598,
+      "pool_units": 1691576919,
+      "pop": 966,
+      "produced": 71952,
+      "unmet": 261,
+      "unmet_streak_max": 50
+     }
+    },
+    "base": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2540,
+      "pool_units": 1688376106,
+      "pop": 966,
+      "produced": 73516,
+      "unmet": 371,
+      "unmet_streak_max": 80
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2590,
+      "pool_units": 1685724225,
+      "pop": 966,
+      "produced": 74089,
+      "unmet": 616,
+      "unmet_streak_max": 43
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2664,
+      "pool_units": 1694475522,
+      "pop": 966,
+      "produced": 71184,
+      "unmet": 321,
+      "unmet_streak_max": 50
+     }
+    }
+   },
+   "interaction": {
+    "deaths": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "found_total": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "gini": {
+     "median": 20,
+     "per_seed": {
+      "7": 20,
+      "42": -12,
+      "123": 89
+     }
+    },
+    "pool_units": {
+     "median": 3158418,
+     "per_seed": {
+      "7": 3158418,
+      "42": -384008,
+      "123": 5798334
+     }
+    },
+    "produced": {
+     "median": -511,
+     "per_seed": {
+      "7": -1258,
+      "42": 368,
+      "123": -511
+     }
+    },
+    "unmet": {
+     "median": -377,
+     "per_seed": {
+      "7": -890,
+      "42": 66,
+      "123": -377
+     }
+    },
+    "unmet_streak_max": {
+     "median": -31,
+     "per_seed": {
+      "7": 0,
+      "42": -31,
+      "123": -36
+     }
+    }
+   }
+  },
+  "pair2_skills_x_research": {
+   "arms": {
+    "A": "skills_on",
+    "AB": "skills_research",
+    "B": "research_fixed",
+    "base": "base2"
+   },
+   "finals": {
+    "A": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2713,
+      "pool_units": 1674428936,
+      "pop": 966,
+      "produced": 71510,
+      "unmet": 65,
+      "unmet_streak_max": 50
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 3572,
+      "pool_units": 1675600256,
+      "pop": 966,
+      "produced": 70936,
+      "unmet": 471,
+      "unmet_streak_max": 90
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2727,
+      "pool_units": 1672500970,
+      "pop": 966,
+      "produced": 72855,
+      "unmet": 239,
+      "unmet_streak_max": 50
+     }
+    },
+    "AB": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2932,
+      "pool_units": 656225098,
+      "pop": 966,
+      "produced": 77529,
+      "unmet": 0,
+      "unmet_streak_max": 6
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 3116,
+      "pool_units": 654204483,
+      "pop": 966,
+      "produced": 77360,
+      "unmet": 0,
+      "unmet_streak_max": 8
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 3378,
+      "pool_units": 652880646,
+      "pop": 966,
+      "produced": 77326,
+      "unmet": 0,
+      "unmet_streak_max": 6
+     }
+    },
+    "B": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2868,
+      "pool_units": 664022524,
+      "pop": 966,
+      "produced": 82450,
+      "unmet": 0,
+      "unmet_streak_max": 6
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2618,
+      "pool_units": 662911933,
+      "pop": 966,
+      "produced": 82809,
+      "unmet": 0,
+      "unmet_streak_max": 6
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2613,
+      "pool_units": 663737504,
+      "pop": 966,
+      "produced": 82089,
+      "unmet": 175,
+      "unmet_streak_max": 6
+     }
+    },
+    "base": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2540,
+      "pool_units": 1688376106,
+      "pop": 966,
+      "produced": 73516,
+      "unmet": 371,
+      "unmet_streak_max": 80
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2590,
+      "pool_units": 1685724225,
+      "pop": 966,
+      "produced": 74089,
+      "unmet": 616,
+      "unmet_streak_max": 43
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2664,
+      "pool_units": 1694475522,
+      "pop": 966,
+      "produced": 71184,
+      "unmet": 321,
+      "unmet_streak_max": 50
+     }
+    }
+   },
+   "interaction": {
+    "deaths": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "found_total": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "gini": {
+     "median": -109,
+     "per_seed": {
+      "7": -109,
+      "42": -484,
+      "123": 702
+     }
+    },
+    "pool_units": {
+     "median": 6149744,
+     "per_seed": {
+      "7": 6149744,
+      "42": 1416519,
+      "123": 11117694
+     }
+    },
+    "produced": {
+     "median": -2915,
+     "per_seed": {
+      "7": -2915,
+      "42": -2296,
+      "123": -6434
+     }
+    },
+    "unmet": {
+     "median": 145,
+     "per_seed": {
+      "7": 306,
+      "42": 145,
+      "123": -93
+     }
+    },
+    "unmet_streak_max": {
+     "median": 0,
+     "per_seed": {
+      "7": 30,
+      "42": -45,
+      "123": 0
+     }
+    }
+   }
+  },
+  "pair3_tax_x_landdump": {
+   "arms": {
+    "A": "tax800",
+    "AB": "tax_dump",
+    "B": "land_dump",
+    "base": "base3"
+   },
+   "finals": {
+    "A": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2540,
+      "pool_units": 1688376106,
+      "pop": 966,
+      "produced": 73516,
+      "unmet": 371,
+      "unmet_streak_max": 80
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2590,
+      "pool_units": 1685724225,
+      "pop": 966,
+      "produced": 74089,
+      "unmet": 616,
+      "unmet_streak_max": 43
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2664,
+      "pool_units": 1694475522,
+      "pop": 966,
+      "produced": 71184,
+      "unmet": 321,
+      "unmet_streak_max": 50
+     }
+    },
+    "AB": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2616,
+      "pool_units": 1686925209,
+      "pop": 954,
+      "produced": 75010,
+      "unmet": 449,
+      "unmet_streak_max": 649
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2689,
+      "pool_units": 1694272755,
+      "pop": 954,
+      "produced": 71457,
+      "unmet": 1,
+      "unmet_streak_max": 649
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2547,
+      "pool_units": 1684444288,
+      "pop": 954,
+      "produced": 74426,
+      "unmet": 309,
+      "unmet_streak_max": 649
+     }
+    },
+    "B": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2616,
+      "pool_units": 1686925209,
+      "pop": 954,
+      "produced": 75010,
+      "unmet": 449,
+      "unmet_streak_max": 649
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2689,
+      "pool_units": 1694272755,
+      "pop": 954,
+      "produced": 71457,
+      "unmet": 1,
+      "unmet_streak_max": 649
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2547,
+      "pool_units": 1684444288,
+      "pop": 954,
+      "produced": 74426,
+      "unmet": 309,
+      "unmet_streak_max": 649
+     }
+    },
+    "base": {
+     "7": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2540,
+      "pool_units": 1688376106,
+      "pop": 966,
+      "produced": 73516,
+      "unmet": 371,
+      "unmet_streak_max": 80
+     },
+     "42": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2590,
+      "pool_units": 1685724225,
+      "pop": 966,
+      "produced": 74089,
+      "unmet": 616,
+      "unmet_streak_max": 43
+     },
+     "123": {
+      "crisis_state": {},
+      "deaths": 0,
+      "foreign_balance": 0,
+      "found_total": 124,
+      "gini": 2664,
+      "pool_units": 1694475522,
+      "pop": 966,
+      "produced": 71184,
+      "unmet": 321,
+      "unmet_streak_max": 50
+     }
+    }
+   },
+   "interaction": {
+    "deaths": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "found_total": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "gini": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "pool_units": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "produced": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "unmet": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    },
+    "unmet_streak_max": {
+     "median": 0,
+     "per_seed": {
+      "7": 0,
+      "42": 0,
+      "123": 0
+     }
+    }
+   }
+  }
+ },
+ "sequencing": {
+  "seq_crisis": {
+   "crisis_late100": {
+    "7": {
+     "crisis_state": {
+      "active": true,
+      "declared_tick": 600,
+      "kind": "pandemic",
+      "ratified": true,
+      "ratify_by": null,
+      "source": "vote",
+      "votes_against": 0,
+      "votes_for": 0
+     },
+     "deaths": 0,
+     "foreign_balance": 0,
+     "found_total": 124,
+     "gini": 7295,
+     "pool_units": 45092144,
+     "pop": 966,
+     "produced": 61059,
+     "unmet": 0,
+     "unmet_streak_max": 53
+    },
+    "42": {
+     "crisis_state": {
+      "active": true,
+      "declared_tick": 600,
+      "kind": "pandemic",
+      "ratified": true,
+      "ratify_by": null,
+      "source": "vote",
+      "votes_against": 0,
+      "votes_for": 0
+     },
+     "deaths": 0,
+     "foreign_balance": 0,
+     "found_total": 124,
+     "gini": 5530,
+     "pool_units": 1710966259,
+     "pop": 966,
+     "produced": 62173,
+     "unmet": 534,
+     "unmet_streak_max": 69
+    },
+    "123": {
+     "crisis_state": {
+      "active": true,
+      "declared_tick": 600,
+      "kind": "pandemic",
+      "ratified": true,
+      "ratify_by": null,
+      "source": "vote",
+      "votes_against": 0,
+      "votes_for": 0
+     },
+     "deaths": 0,
+     "foreign_balance": 0,
+     "found_total": 124,
+     "gini": 3091,
+     "pool_units": 1710605563,
+     "pop": 966,
+     "produced": 61570,
+     "unmet": 966,
+     "unmet_streak_max": 63
+    }
+   },
+   "crisis_onset": {
+    "7": {
+     "crisis_state": {
+      "active": false,
+      "declared_tick": 500,
+      "ended_tick": 600,
+      "kind": "pandemic",
+      "ratified": true,
+      "ratify_by": null,
+      "source": "vote",
+      "votes_against": 0,
+      "votes_for": 0
+     },
+     "deaths": 0,
+     "foreign_balance": 0,
+     "found_total": 124,
+     "gini": 2580,
+     "pool_units": 1642707610,
+     "pop": 966,
+     "produced": 58681,
+     "unmet": 451,
+     "unmet_streak_max": 81
+    },
+    "42": {
+     "crisis_state": {
+      "active": false,
+      "declared_tick": 500,
+      "ended_tick": 600,
+      "kind": "pandemic",
+      "ratified": true,
+      "ratify_by": null,
+      "source": "vote",
+      "votes_against": 0,
+      "votes_for": 0
+     },
+     "deaths": 0,
+     "foreign_balance": 0,
+     "found_total": 124,
+     "gini": 3965,
+     "pool_units": 80651739,
+     "pop": 966,
+     "produced": 56418,
+     "unmet": 96,
+     "unmet_streak_max": 144
+    },
+    "123": {
+     "crisis_state": {
+      "active": false,
+      "declared_tick": 500,
+      "ended_tick": 600,
+      "kind": "pandemic",
+      "ratified": true,
+      "ratify_by": null,
+      "source": "vote",
+      "votes_against": 0,
+      "votes_for": 0
+     },
+     "deaths": 0,
+     "foreign_balance": 0,
+     "found_total": 124,
+     "gini": 2558,
+     "pool_units": 1641289821,
+     "pop": 966,
+     "produced": 55631,
+     "unmet": 354,
+     "unmet_streak_max": 102
+    }
+   }
+  },
+  "seq_research": {
+   "research_early": {
+    "7": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 5828600,
+     "found_total": 123,
+     "gini": 2732,
+     "pool_units": 695568741,
+     "pop": 951,
+     "produced": 81637,
+     "unmet": 5,
+     "unmet_streak_max": 601
+    },
+    "42": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 5843600,
+     "found_total": 123,
+     "gini": 2713,
+     "pool_units": 698619882,
+     "pop": 951,
+     "produced": 81427,
+     "unmet": 358,
+     "unmet_streak_max": 601
+    },
+    "123": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 5879000,
+     "found_total": 123,
+     "gini": 2751,
+     "pool_units": 696409260,
+     "pop": 951,
+     "produced": 81395,
+     "unmet": 5,
+     "unmet_streak_max": 601
+    }
+   },
+   "research_late": {
+    "7": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 6119000,
+     "found_total": 123,
+     "gini": 2610,
+     "pool_units": 922829236,
+     "pop": 951,
+     "produced": 80725,
+     "unmet": 5,
+     "unmet_streak_max": 601
+    },
+    "42": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 6079400,
+     "found_total": 123,
+     "gini": 2625,
+     "pool_units": 917227389,
+     "pop": 951,
+     "produced": 77255,
+     "unmet": 5,
+     "unmet_streak_max": 601
+    },
+    "123": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 6016600,
+     "found_total": 123,
+     "gini": 2634,
+     "pool_units": 922518210,
+     "pop": 951,
+     "produced": 79368,
+     "unmet": 5,
+     "unmet_streak_max": 601
+    }
+   },
+   "research_never": {
+    "7": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 6597100,
+     "found_total": 123,
+     "gini": 2687,
+     "pool_units": 1673522733,
+     "pop": 951,
+     "produced": 75686,
+     "unmet": 656,
+     "unmet_streak_max": 601
+    },
+    "42": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 6544900,
+     "found_total": 123,
+     "gini": 2671,
+     "pool_units": 1674405504,
+     "pop": 951,
+     "produced": 73502,
+     "unmet": 256,
+     "unmet_streak_max": 601
+    },
+    "123": {
+     "crisis_state": {},
+     "deaths": 0,
+     "foreign_balance": 6335400,
+     "found_total": 123,
+     "gini": 2605,
+     "pool_units": 1671278761,
+     "pop": 951,
+     "produced": 75864,
+     "unmet": 256,
+     "unmet_streak_max": 601
+    }
+   }
+  }
+ },
+ "stories": {
+  "base2_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9185,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 59
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9112,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 29,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 486,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9136,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 378,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 628,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9006,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 366,
+     "top_coop_bp": 16,
+     "unmet": 278
+    },
+    {
+     "bot20_bp": 606,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9034,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 360,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 745,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8920,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 335,
+     "top_coop_bp": 11,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 810,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8864,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 326,
+     "top_coop_bp": 9,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 851,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 320,
+     "top_coop_bp": 7,
+     "unmet": 430
+    },
+    {
+     "bot20_bp": 848,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8826,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 326,
+     "top_coop_bp": 7,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 910,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8773,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 317,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 880,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8790,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 767
+    },
+    {
+     "bot20_bp": 915,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8762,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 323,
+     "top_coop_bp": 6,
+     "unmet": 716
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8774,
+     "real_wage": 14,
+     "t": 650,
+     "top1_bp": 321,
+     "top_coop_bp": 4,
+     "unmet": 321
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 767,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 880,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8790,
+    "real_wage": 10,
+    "t": 550,
+    "top1_bp": 330,
+    "top_coop_bp": 6,
+    "unmet": 767
+   },
+   "t_start": 2
+  },
+  "base2_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 361,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 489,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9130,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 381,
+     "top_coop_bp": 23,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 615,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9017,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 368,
+     "top_coop_bp": 16,
+     "unmet": 170
+    },
+    {
+     "bot20_bp": 601,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9044,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 355,
+     "top_coop_bp": 12,
+     "unmet": 404
+    },
+    {
+     "bot20_bp": 690,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8974,
+     "real_wage": 11,
+     "t": 300,
+     "top1_bp": 336,
+     "top_coop_bp": 11,
+     "unmet": 779
+    },
+    {
+     "bot20_bp": 798,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8885,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 317,
+     "top_coop_bp": 9,
+     "unmet": 374
+    },
+    {
+     "bot20_bp": 842,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8839,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 519
+    },
+    {
+     "bot20_bp": 855,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8822,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 323,
+     "top_coop_bp": 7,
+     "unmet": 433
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8783,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 312,
+     "top_coop_bp": 6,
+     "unmet": 218
+    },
+    {
+     "bot20_bp": 878,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8792,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 951,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8729,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 320,
+     "top_coop_bp": 5,
+     "unmet": 671
+    },
+    {
+     "bot20_bp": 928,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8758,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 314,
+     "top_coop_bp": 5,
+     "unmet": 616
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 200,
+     "peak_unmet": 779,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 690,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8974,
+    "real_wage": 11,
+    "t": 300,
+    "top1_bp": 336,
+    "top_coop_bp": 11,
+    "unmet": 779
+   },
+   "t_start": 2
+  },
+  "base2_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 377,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9183,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 19
+    },
+    {
+     "bot20_bp": 527,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 360,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 487,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9134,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 379,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 633,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9002,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 365,
+     "top_coop_bp": 17,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 607,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9035,
+     "real_wage": 11,
+     "t": 250,
+     "top1_bp": 358,
+     "top_coop_bp": 14,
+     "unmet": 365
+    },
+    {
+     "bot20_bp": 704,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8956,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 340,
+     "top_coop_bp": 11,
+     "unmet": 25
+    },
+    {
+     "bot20_bp": 803,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8873,
+     "real_wage": 11,
+     "t": 350,
+     "top1_bp": 324,
+     "top_coop_bp": 10,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 868,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8816,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 316,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 862,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8814,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 324,
+     "top_coop_bp": 7,
+     "unmet": 409
+    },
+    {
+     "bot20_bp": 911,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8775,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 314,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 924,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8745,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 331,
+     "top_coop_bp": 5,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 997,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8678,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 325,
+     "top_coop_bp": 5,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 980,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8699,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 321,
+     "top_coop_bp": 4,
+     "unmet": 371
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 250,
+     "peak_unmet": 966,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 997,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8678,
+    "real_wage": 10,
+    "t": 600,
+    "top1_bp": 325,
+    "top_coop_bp": 5,
+    "unmet": 966
+   },
+   "t_start": 2
+  },
+  "base3_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9185,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 59
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9112,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 29,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 486,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9136,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 378,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 628,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9006,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 366,
+     "top_coop_bp": 16,
+     "unmet": 278
+    },
+    {
+     "bot20_bp": 606,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9034,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 360,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 745,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8920,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 335,
+     "top_coop_bp": 11,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 810,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8864,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 326,
+     "top_coop_bp": 9,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 851,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 320,
+     "top_coop_bp": 7,
+     "unmet": 430
+    },
+    {
+     "bot20_bp": 848,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8826,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 326,
+     "top_coop_bp": 7,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 910,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8773,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 317,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 880,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8790,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 767
+    },
+    {
+     "bot20_bp": 915,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8762,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 323,
+     "top_coop_bp": 6,
+     "unmet": 716
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8774,
+     "real_wage": 14,
+     "t": 650,
+     "top1_bp": 321,
+     "top_coop_bp": 4,
+     "unmet": 321
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 767,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 880,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8790,
+    "real_wage": 10,
+    "t": 550,
+    "top1_bp": 330,
+    "top_coop_bp": 6,
+    "unmet": 767
+   },
+   "t_start": 2
+  },
+  "base3_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 361,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 489,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9130,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 381,
+     "top_coop_bp": 23,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 615,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9017,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 368,
+     "top_coop_bp": 16,
+     "unmet": 170
+    },
+    {
+     "bot20_bp": 601,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9044,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 355,
+     "top_coop_bp": 12,
+     "unmet": 404
+    },
+    {
+     "bot20_bp": 690,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8974,
+     "real_wage": 11,
+     "t": 300,
+     "top1_bp": 336,
+     "top_coop_bp": 11,
+     "unmet": 779
+    },
+    {
+     "bot20_bp": 798,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8885,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 317,
+     "top_coop_bp": 9,
+     "unmet": 374
+    },
+    {
+     "bot20_bp": 842,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8839,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 519
+    },
+    {
+     "bot20_bp": 855,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8822,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 323,
+     "top_coop_bp": 7,
+     "unmet": 433
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8783,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 312,
+     "top_coop_bp": 6,
+     "unmet": 218
+    },
+    {
+     "bot20_bp": 878,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8792,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 951,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8729,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 320,
+     "top_coop_bp": 5,
+     "unmet": 671
+    },
+    {
+     "bot20_bp": 928,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8758,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 314,
+     "top_coop_bp": 5,
+     "unmet": 616
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 200,
+     "peak_unmet": 779,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 690,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8974,
+    "real_wage": 11,
+    "t": 300,
+    "top1_bp": 336,
+    "top_coop_bp": 11,
+    "unmet": 779
+   },
+   "t_start": 2
+  },
+  "base3_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 377,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9183,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 19
+    },
+    {
+     "bot20_bp": 527,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 360,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 487,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9134,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 379,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 633,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9002,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 365,
+     "top_coop_bp": 17,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 607,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9035,
+     "real_wage": 11,
+     "t": 250,
+     "top1_bp": 358,
+     "top_coop_bp": 14,
+     "unmet": 365
+    },
+    {
+     "bot20_bp": 704,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8956,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 340,
+     "top_coop_bp": 11,
+     "unmet": 25
+    },
+    {
+     "bot20_bp": 803,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8873,
+     "real_wage": 11,
+     "t": 350,
+     "top1_bp": 324,
+     "top_coop_bp": 10,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 868,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8816,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 316,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 862,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8814,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 324,
+     "top_coop_bp": 7,
+     "unmet": 409
+    },
+    {
+     "bot20_bp": 911,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8775,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 314,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 924,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8745,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 331,
+     "top_coop_bp": 5,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 997,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8678,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 325,
+     "top_coop_bp": 5,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 980,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8699,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 321,
+     "top_coop_bp": 4,
+     "unmet": 371
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 250,
+     "peak_unmet": 966,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 997,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8678,
+    "real_wage": 10,
+    "t": 600,
+    "top1_bp": 325,
+    "top_coop_bp": 5,
+    "unmet": 966
+   },
+   "t_start": 2
+  },
+  "base_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9185,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 59
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9112,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 29,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 486,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9136,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 378,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 628,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9006,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 366,
+     "top_coop_bp": 16,
+     "unmet": 278
+    },
+    {
+     "bot20_bp": 606,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9034,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 360,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 745,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8920,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 335,
+     "top_coop_bp": 11,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 810,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8864,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 326,
+     "top_coop_bp": 9,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 851,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 320,
+     "top_coop_bp": 7,
+     "unmet": 430
+    },
+    {
+     "bot20_bp": 848,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8826,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 326,
+     "top_coop_bp": 7,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 910,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8773,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 317,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 880,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8790,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 767
+    },
+    {
+     "bot20_bp": 915,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8762,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 323,
+     "top_coop_bp": 6,
+     "unmet": 716
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8774,
+     "real_wage": 14,
+     "t": 650,
+     "top1_bp": 321,
+     "top_coop_bp": 4,
+     "unmet": 321
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 767,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 880,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8790,
+    "real_wage": 10,
+    "t": 550,
+    "top1_bp": 330,
+    "top_coop_bp": 6,
+    "unmet": 767
+   },
+   "t_start": 2
+  },
+  "base_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 361,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 489,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9130,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 381,
+     "top_coop_bp": 23,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 615,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9017,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 368,
+     "top_coop_bp": 16,
+     "unmet": 170
+    },
+    {
+     "bot20_bp": 601,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9044,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 355,
+     "top_coop_bp": 12,
+     "unmet": 404
+    },
+    {
+     "bot20_bp": 690,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8974,
+     "real_wage": 11,
+     "t": 300,
+     "top1_bp": 336,
+     "top_coop_bp": 11,
+     "unmet": 779
+    },
+    {
+     "bot20_bp": 798,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8885,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 317,
+     "top_coop_bp": 9,
+     "unmet": 374
+    },
+    {
+     "bot20_bp": 842,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8839,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 519
+    },
+    {
+     "bot20_bp": 855,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8822,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 323,
+     "top_coop_bp": 7,
+     "unmet": 433
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8783,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 312,
+     "top_coop_bp": 6,
+     "unmet": 218
+    },
+    {
+     "bot20_bp": 878,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8792,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 951,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8729,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 320,
+     "top_coop_bp": 5,
+     "unmet": 671
+    },
+    {
+     "bot20_bp": 928,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8758,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 314,
+     "top_coop_bp": 5,
+     "unmet": 616
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 200,
+     "peak_unmet": 779,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 690,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8974,
+    "real_wage": 11,
+    "t": 300,
+    "top1_bp": 336,
+    "top_coop_bp": 11,
+    "unmet": 779
+   },
+   "t_start": 2
+  },
+  "base_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 377,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9183,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 19
+    },
+    {
+     "bot20_bp": 527,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 360,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 487,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9134,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 379,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 633,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9002,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 365,
+     "top_coop_bp": 17,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 607,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9035,
+     "real_wage": 11,
+     "t": 250,
+     "top1_bp": 358,
+     "top_coop_bp": 14,
+     "unmet": 365
+    },
+    {
+     "bot20_bp": 704,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8956,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 340,
+     "top_coop_bp": 11,
+     "unmet": 25
+    },
+    {
+     "bot20_bp": 803,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8873,
+     "real_wage": 11,
+     "t": 350,
+     "top1_bp": 324,
+     "top_coop_bp": 10,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 868,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8816,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 316,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 862,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8814,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 324,
+     "top_coop_bp": 7,
+     "unmet": 409
+    },
+    {
+     "bot20_bp": 911,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8775,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 314,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 924,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8745,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 331,
+     "top_coop_bp": 5,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 997,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8678,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 325,
+     "top_coop_bp": 5,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 980,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8699,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 321,
+     "top_coop_bp": 4,
+     "unmet": 371
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 250,
+     "peak_unmet": 966,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 997,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8678,
+    "real_wage": 10,
+    "t": 600,
+    "top1_bp": 325,
+    "top_coop_bp": 5,
+    "unmet": 966
+   },
+   "t_start": 2
+  },
+  "crisis_late100_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9185,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 59
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9112,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 29,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 486,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9136,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 378,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 628,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9006,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 366,
+     "top_coop_bp": 16,
+     "unmet": 75
+    },
+    {
+     "bot20_bp": 648,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8989,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 363,
+     "top_coop_bp": 13,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 701,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8942,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 357,
+     "top_coop_bp": 11,
+     "unmet": 634
+    },
+    {
+     "bot20_bp": 763,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8893,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 344,
+     "top_coop_bp": 10,
+     "unmet": 224
+    },
+    {
+     "bot20_bp": 856,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8813,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 331,
+     "top_coop_bp": 8,
+     "unmet": 406
+    },
+    {
+     "bot20_bp": 690,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8460,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 850,
+     "top_coop_bp": 8,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 747,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8472,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 781,
+     "top_coop_bp": 7,
+     "unmet": 906
+    },
+    {
+     "bot20_bp": 732,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8521,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 747,
+     "top_coop_bp": 6,
+     "unmet": 844
+    },
+    {
+     "bot20_bp": 763,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8550,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 687,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 788,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8560,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 652,
+     "top_coop_bp": 5,
+     "unmet": 966
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 966,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 690,
+    "bread_idx": 13,
+    "div_pp": 200,
+    "mid60_bp": 8460,
+    "real_wage": 10,
+    "t": 450,
+    "top1_bp": 850,
+    "top_coop_bp": 8,
+    "unmet": 966
+   },
+   "t_start": 2
+  },
+  "crisis_late100_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 361,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 489,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9130,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 381,
+     "top_coop_bp": 23,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 615,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9018,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 367,
+     "top_coop_bp": 16,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 351,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 7562,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 2087,
+     "top_coop_bp": 269,
+     "unmet": 461
+    },
+    {
+     "bot20_bp": 391,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 7439,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 2170,
+     "top_coop_bp": 12,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 345,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7770,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 1885,
+     "top_coop_bp": 11,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 504,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7907,
+     "real_wage": 13,
+     "t": 400,
+     "top1_bp": 1589,
+     "top_coop_bp": 8,
+     "unmet": 315
+    },
+    {
+     "bot20_bp": 554,
+     "bread_idx": 6,
+     "div_pp": 200,
+     "mid60_bp": 7992,
+     "real_wage": 21,
+     "t": 450,
+     "top1_bp": 1454,
+     "top_coop_bp": 7,
+     "unmet": 726
+    },
+    {
+     "bot20_bp": 667,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8058,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 1275,
+     "top_coop_bp": 7,
+     "unmet": 633
+    },
+    {
+     "bot20_bp": 313,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8293,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 1394,
+     "top_coop_bp": 6,
+     "unmet": 482
+    },
+    {
+     "bot20_bp": 401,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8319,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 1280,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 408,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 7623,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 1969,
+     "top_coop_bp": 5,
+     "unmet": 534
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 250,
+     "peak_unmet": 766,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 345,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 7770,
+    "real_wage": 10,
+    "t": 350,
+    "top1_bp": 1885,
+    "top_coop_bp": 11,
+    "unmet": 766
+   },
+   "t_start": 2
+  },
+  "crisis_late100_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 377,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9183,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 19
+    },
+    {
+     "bot20_bp": 527,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 360,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 487,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9134,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 379,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 633,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9002,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 365,
+     "top_coop_bp": 17,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 642,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8999,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 359,
+     "top_coop_bp": 25,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 891,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 6861,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 2248,
+     "top_coop_bp": 135,
+     "unmet": 886
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 6232,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 3393,
+     "top_coop_bp": 1,
+     "unmet": 566
+    },
+    {
+     "bot20_bp": 407,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 6308,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 3285,
+     "top_coop_bp": 2,
+     "unmet": 886
+    },
+    {
+     "bot20_bp": 421,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 6362,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 3217,
+     "top_coop_bp": 7,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 200,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8210,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 1590,
+     "top_coop_bp": 8,
+     "unmet": 768
+    },
+    {
+     "bot20_bp": 205,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8225,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 1570,
+     "top_coop_bp": 0,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 220,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8232,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 1548,
+     "top_coop_bp": 1,
+     "unmet": 542
+    },
+    {
+     "bot20_bp": 230,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8240,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 1530,
+     "top_coop_bp": 0,
+     "unmet": 0
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 300,
+     "peak_unmet": 886,
+     "to": 600
+    }
+   ],
+   "peak": {
+    "bot20_bp": 891,
+    "bread_idx": 13,
+    "div_pp": 200,
+    "mid60_bp": 6861,
+    "real_wage": 10,
+    "t": 300,
+    "top1_bp": 2248,
+    "top_coop_bp": 135,
+    "unmet": 886
+   },
+   "t_start": 2
+  },
+  "crisis_onset_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9185,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 59
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9112,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 29,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 497,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 9123,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 380,
+     "top_coop_bp": 23,
+     "unmet": 404
+    },
+    {
+     "bot20_bp": 686,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8948,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 366,
+     "top_coop_bp": 17,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 616,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9005,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 379,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 677,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8955,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 368,
+     "top_coop_bp": 12,
+     "unmet": 846
+    },
+    {
+     "bot20_bp": 761,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8885,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 354,
+     "top_coop_bp": 11,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 987,
+     "bread_idx": 16,
+     "div_pp": 200,
+     "mid60_bp": 8748,
+     "real_wage": 8,
+     "t": 400,
+     "top1_bp": 265,
+     "top_coop_bp": 14,
+     "unmet": 886
+    },
+    {
+     "bot20_bp": 921,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8738,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 341,
+     "top_coop_bp": 5,
+     "unmet": 141
+    },
+    {
+     "bot20_bp": 956,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8716,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 328,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 934,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8742,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 324,
+     "top_coop_bp": 5,
+     "unmet": 806
+    },
+    {
+     "bot20_bp": 973,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8708,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 319,
+     "top_coop_bp": 4,
+     "unmet": 737
+    },
+    {
+     "bot20_bp": 966,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8717,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 317,
+     "top_coop_bp": 4,
+     "unmet": 354
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 966,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 686,
+    "bread_idx": 13,
+    "div_pp": 200,
+    "mid60_bp": 8948,
+    "real_wage": 10,
+    "t": 200,
+    "top1_bp": 366,
+    "top_coop_bp": 17,
+    "unmet": 966
+   },
+   "t_start": 2
+  },
+  "crisis_onset_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9112,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 524,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 9092,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 384,
+     "top_coop_bp": 22,
+     "unmet": 485
+    },
+    {
+     "bot20_bp": 650,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8971,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 379,
+     "top_coop_bp": 19,
+     "unmet": 215
+    },
+    {
+     "bot20_bp": 598,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 395,
+     "top_coop_bp": 14,
+     "unmet": 202
+    },
+    {
+     "bot20_bp": 667,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8961,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 372,
+     "top_coop_bp": 12,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 807,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8823,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 370,
+     "top_coop_bp": 20,
+     "unmet": 796
+    },
+    {
+     "bot20_bp": 405,
+     "bread_idx": 1,
+     "div_pp": 200,
+     "mid60_bp": 8753,
+     "real_wage": 133,
+     "t": 400,
+     "top1_bp": 842,
+     "top_coop_bp": 1,
+     "unmet": 896
+    },
+    {
+     "bot20_bp": 413,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8203,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 1384,
+     "top_coop_bp": 0,
+     "unmet": 741
+    },
+    {
+     "bot20_bp": 437,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8205,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 1358,
+     "top_coop_bp": 1,
+     "unmet": 166
+    },
+    {
+     "bot20_bp": 447,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8579,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 974,
+     "top_coop_bp": 1,
+     "unmet": 486
+    },
+    {
+     "bot20_bp": 472,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8567,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 961,
+     "top_coop_bp": 0,
+     "unmet": 246
+    },
+    {
+     "bot20_bp": 484,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8564,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 952,
+     "top_coop_bp": 1,
+     "unmet": 96
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 150,
+     "peak_unmet": 896,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 405,
+    "bread_idx": 1,
+    "div_pp": 200,
+    "mid60_bp": 8753,
+    "real_wage": 133,
+    "t": 400,
+    "top1_bp": 842,
+    "top_coop_bp": 1,
+    "unmet": 896
+   },
+   "t_start": 2
+  },
+  "crisis_onset_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 377,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9183,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 19
+    },
+    {
+     "bot20_bp": 527,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 360,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 505,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8189,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 1306,
+     "top_coop_bp": 23,
+     "unmet": 726
+    },
+    {
+     "bot20_bp": 637,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8264,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 1099,
+     "top_coop_bp": 18,
+     "unmet": 726
+    },
+    {
+     "bot20_bp": 638,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8395,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 967,
+     "top_coop_bp": 14,
+     "unmet": 810
+    },
+    {
+     "bot20_bp": 703,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8456,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 841,
+     "top_coop_bp": 12,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 771,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8481,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 748,
+     "top_coop_bp": 11,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 758,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8569,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 673,
+     "top_coop_bp": 10,
+     "unmet": 406
+    },
+    {
+     "bot20_bp": 749,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8615,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 636,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 820,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8605,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 575,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 779,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8660,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 561,
+     "top_coop_bp": 8,
+     "unmet": 666
+    },
+    {
+     "bot20_bp": 1029,
+     "bread_idx": 13,
+     "div_pp": 200,
+     "mid60_bp": 8517,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 454,
+     "top_coop_bp": 6,
+     "unmet": 366
+    },
+    {
+     "bot20_bp": 975,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8588,
+     "real_wage": 11,
+     "t": 650,
+     "top1_bp": 437,
+     "top_coop_bp": 4,
+     "unmet": 451
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 150,
+     "peak_unmet": 966,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 703,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8456,
+    "real_wage": 10,
+    "t": 300,
+    "top1_bp": 841,
+    "top_coop_bp": 12,
+    "unmet": 966
+   },
+   "t_start": 2
+  },
+  "disaster_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9185,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 59
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9112,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 29,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 486,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9136,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 378,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 628,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9006,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 366,
+     "top_coop_bp": 16,
+     "unmet": 278
+    },
+    {
+     "bot20_bp": 606,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9034,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 360,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 745,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8920,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 335,
+     "top_coop_bp": 11,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 810,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8864,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 326,
+     "top_coop_bp": 9,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 851,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 320,
+     "top_coop_bp": 7,
+     "unmet": 430
+    },
+    {
+     "bot20_bp": 850,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8823,
+     "real_wage": 11,
+     "t": 450,
+     "top1_bp": 327,
+     "top_coop_bp": 7,
+     "unmet": 686
+    },
+    {
+     "bot20_bp": 911,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8771,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 318,
+     "top_coop_bp": 7,
+     "unmet": 68
+    },
+    {
+     "bot20_bp": 875,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8794,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 331,
+     "top_coop_bp": 6,
+     "unmet": 38
+    },
+    {
+     "bot20_bp": 953,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8727,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 320,
+     "top_coop_bp": 5,
+     "unmet": 428
+    },
+    {
+     "bot20_bp": 942,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8740,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 318,
+     "top_coop_bp": 4,
+     "unmet": 261
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 686,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 850,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8823,
+    "real_wage": 11,
+    "t": 450,
+    "top1_bp": 327,
+    "top_coop_bp": 7,
+    "unmet": 686
+   },
+   "t_start": 2
+  },
+  "disaster_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 361,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 489,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9130,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 381,
+     "top_coop_bp": 23,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 615,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9017,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 368,
+     "top_coop_bp": 16,
+     "unmet": 170
+    },
+    {
+     "bot20_bp": 601,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9044,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 355,
+     "top_coop_bp": 12,
+     "unmet": 404
+    },
+    {
+     "bot20_bp": 690,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8974,
+     "real_wage": 11,
+     "t": 300,
+     "top1_bp": 336,
+     "top_coop_bp": 11,
+     "unmet": 779
+    },
+    {
+     "bot20_bp": 798,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8885,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 317,
+     "top_coop_bp": 9,
+     "unmet": 374
+    },
+    {
+     "bot20_bp": 842,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8839,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 519
+    },
+    {
+     "bot20_bp": 854,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8822,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 324,
+     "top_coop_bp": 7,
+     "unmet": 382
+    },
+    {
+     "bot20_bp": 906,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8780,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 314,
+     "top_coop_bp": 6,
+     "unmet": 662
+    },
+    {
+     "bot20_bp": 916,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8753,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 331,
+     "top_coop_bp": 6,
+     "unmet": 603
+    },
+    {
+     "bot20_bp": 954,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8725,
+     "real_wage": 11,
+     "t": 600,
+     "top1_bp": 321,
+     "top_coop_bp": 5,
+     "unmet": 597
+    },
+    {
+     "bot20_bp": 937,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8744,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 319,
+     "top_coop_bp": 4,
+     "unmet": 616
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 200,
+     "peak_unmet": 779,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 690,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8974,
+    "real_wage": 11,
+    "t": 300,
+    "top1_bp": 336,
+    "top_coop_bp": 11,
+    "unmet": 779
+   },
+   "t_start": 2
+  },
+  "disaster_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 377,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9183,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 19
+    },
+    {
+     "bot20_bp": 527,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 360,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 487,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9134,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 379,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 633,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9002,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 365,
+     "top_coop_bp": 17,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 607,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9035,
+     "real_wage": 11,
+     "t": 250,
+     "top1_bp": 358,
+     "top_coop_bp": 14,
+     "unmet": 365
+    },
+    {
+     "bot20_bp": 704,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8956,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 340,
+     "top_coop_bp": 11,
+     "unmet": 25
+    },
+    {
+     "bot20_bp": 803,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8873,
+     "real_wage": 11,
+     "t": 350,
+     "top1_bp": 324,
+     "top_coop_bp": 10,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 868,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8816,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 316,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 859,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8817,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 324,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 913,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8773,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 314,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 885,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8789,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 326,
+     "top_coop_bp": 6,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 962,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8720,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 318,
+     "top_coop_bp": 5,
+     "unmet": 426
+    },
+    {
+     "bot20_bp": 974,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8712,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 314,
+     "top_coop_bp": 4,
+     "unmet": 886
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 250,
+     "peak_unmet": 886,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 974,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8712,
+    "real_wage": 10,
+    "t": 650,
+    "top1_bp": 314,
+    "top_coop_bp": 4,
+    "unmet": 886
+   },
+   "t_start": 2
+  },
+  "land_dump_s123": {
+   "arc": [
+    {
+     "bot20_bp": 248,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9011,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 173,
+     "unmet": 7
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9180,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 445,
+     "top_coop_bp": 54,
+     "unmet": 126
+    },
+    {
+     "bot20_bp": 515,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8822,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 663,
+     "top_coop_bp": 29,
+     "unmet": 3
+    },
+    {
+     "bot20_bp": 495,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8911,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 594,
+     "top_coop_bp": 21,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 631,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8853,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 516,
+     "top_coop_bp": 16,
+     "unmet": 117
+    },
+    {
+     "bot20_bp": 606,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8916,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 478,
+     "top_coop_bp": 13,
+     "unmet": 463
+    },
+    {
+     "bot20_bp": 717,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8856,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 427,
+     "top_coop_bp": 11,
+     "unmet": 204
+    },
+    {
+     "bot20_bp": 795,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8808,
+     "real_wage": 13,
+     "t": 350,
+     "top1_bp": 397,
+     "top_coop_bp": 10,
+     "unmet": 559
+    },
+    {
+     "bot20_bp": 853,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8768,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 379,
+     "top_coop_bp": 8,
+     "unmet": 99
+    },
+    {
+     "bot20_bp": 859,
+     "bread_idx": 1,
+     "div_pp": 200,
+     "mid60_bp": 8767,
+     "real_wage": 166,
+     "t": 450,
+     "top1_bp": 374,
+     "top_coop_bp": 7,
+     "unmet": 454
+    },
+    {
+     "bot20_bp": 912,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8729,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 359,
+     "top_coop_bp": 6,
+     "unmet": 258
+    },
+    {
+     "bot20_bp": 912,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8727,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 361,
+     "top_coop_bp": 6,
+     "unmet": 954
+    },
+    {
+     "bot20_bp": 981,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8675,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 344,
+     "top_coop_bp": 5,
+     "unmet": 274
+    },
+    {
+     "bot20_bp": 957,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8704,
+     "real_wage": 13,
+     "t": 650,
+     "top1_bp": 339,
+     "top_coop_bp": 5,
+     "unmet": 309
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 954,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 912,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8727,
+    "real_wage": 10,
+    "t": 550,
+    "top1_bp": 361,
+    "top_coop_bp": 6,
+    "unmet": 954
+   },
+   "t_start": 2
+  },
+  "land_dump_s42": {
+   "arc": [
+    {
+     "bot20_bp": 248,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9011,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 173,
+     "unmet": 7
+    },
+    {
+     "bot20_bp": 371,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 445,
+     "top_coop_bp": 54,
+     "unmet": 126
+    },
+    {
+     "bot20_bp": 508,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 663,
+     "top_coop_bp": 30,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 487,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8920,
+     "real_wage": 11,
+     "t": 150,
+     "top1_bp": 593,
+     "top_coop_bp": 22,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 636,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8848,
+     "real_wage": 11,
+     "t": 200,
+     "top1_bp": 516,
+     "top_coop_bp": 17,
+     "unmet": 397
+    },
+    {
+     "bot20_bp": 610,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8903,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 487,
+     "top_coop_bp": 13,
+     "unmet": 286
+    },
+    {
+     "bot20_bp": 688,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8871,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 441,
+     "top_coop_bp": 11,
+     "unmet": 604
+    },
+    {
+     "bot20_bp": 779,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8813,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 408,
+     "top_coop_bp": 10,
+     "unmet": 159
+    },
+    {
+     "bot20_bp": 827,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8787,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 386,
+     "top_coop_bp": 8,
+     "unmet": 54
+    },
+    {
+     "bot20_bp": 844,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8776,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 380,
+     "top_coop_bp": 7,
+     "unmet": 133
+    },
+    {
+     "bot20_bp": 916,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8728,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 356,
+     "top_coop_bp": 7,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 910,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8726,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 364,
+     "top_coop_bp": 6,
+     "unmet": 454
+    },
+    {
+     "bot20_bp": 927,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8719,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 354,
+     "top_coop_bp": 5,
+     "unmet": 914
+    },
+    {
+     "bot20_bp": 913,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8738,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 349,
+     "top_coop_bp": 5,
+     "unmet": 1
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 914,
+     "to": 600
+    }
+   ],
+   "peak": {
+    "bot20_bp": 927,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8719,
+    "real_wage": 10,
+    "t": 600,
+    "top1_bp": 354,
+    "top_coop_bp": 5,
+    "unmet": 914
+   },
+   "t_start": 2
+  },
+  "land_dump_s7": {
+   "arc": [
+    {
+     "bot20_bp": 248,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9011,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 173,
+     "unmet": 7
+    },
+    {
+     "bot20_bp": 374,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9180,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 446,
+     "top_coop_bp": 54,
+     "unmet": 126
+    },
+    {
+     "bot20_bp": 511,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8824,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 665,
+     "top_coop_bp": 31,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 494,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8910,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 596,
+     "top_coop_bp": 21,
+     "unmet": 163
+    },
+    {
+     "bot20_bp": 637,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8842,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 521,
+     "top_coop_bp": 17,
+     "unmet": 254
+    },
+    {
+     "bot20_bp": 658,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8870,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 472,
+     "top_coop_bp": 13,
+     "unmet": 407
+    },
+    {
+     "bot20_bp": 719,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8844,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 437,
+     "top_coop_bp": 11,
+     "unmet": 594
+    },
+    {
+     "bot20_bp": 807,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8788,
+     "real_wage": 13,
+     "t": 350,
+     "top1_bp": 405,
+     "top_coop_bp": 10,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 862,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8757,
+     "real_wage": 13,
+     "t": 400,
+     "top1_bp": 381,
+     "top_coop_bp": 8,
+     "unmet": 308
+    },
+    {
+     "bot20_bp": 855,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8771,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 374,
+     "top_coop_bp": 7,
+     "unmet": 166
+    },
+    {
+     "bot20_bp": 913,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8731,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 356,
+     "top_coop_bp": 6,
+     "unmet": 497
+    },
+    {
+     "bot20_bp": 914,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8721,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 365,
+     "top_coop_bp": 6,
+     "unmet": 376
+    },
+    {
+     "bot20_bp": 922,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8726,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 352,
+     "top_coop_bp": 5,
+     "unmet": 594
+    },
+    {
+     "bot20_bp": 907,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8751,
+     "real_wage": 13,
+     "t": 650,
+     "top1_bp": 342,
+     "top_coop_bp": 5,
+     "unmet": 449
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 594,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 719,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8844,
+    "real_wage": 10,
+    "t": 300,
+    "top1_bp": 437,
+    "top_coop_bp": 11,
+    "unmet": 594
+   },
+   "t_start": 2
+  },
+  "research_early_s123": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 254,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 6350,
+     "real_wage": 6,
+     "t": 50,
+     "top1_bp": 3396,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 412,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 7333,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 2255,
+     "top_coop_bp": 25,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 436,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 7806,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 1758,
+     "top_coop_bp": 20,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 575,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8084,
+     "real_wage": 7,
+     "t": 200,
+     "top1_bp": 1341,
+     "top_coop_bp": 16,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 595,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8296,
+     "real_wage": 7,
+     "t": 250,
+     "top1_bp": 1109,
+     "top_coop_bp": 12,
+     "unmet": 14
+    },
+    {
+     "bot20_bp": 658,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8416,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 926,
+     "top_coop_bp": 11,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 727,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8469,
+     "real_wage": 7,
+     "t": 350,
+     "top1_bp": 804,
+     "top_coop_bp": 9,
+     "unmet": 182
+    },
+    {
+     "bot20_bp": 810,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8494,
+     "real_wage": 17,
+     "t": 400,
+     "top1_bp": 696,
+     "top_coop_bp": 7,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 861,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8506,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 633,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 16,
+     "div_pp": 200,
+     "mid60_bp": 8543,
+     "real_wage": 8,
+     "t": 500,
+     "top1_bp": 552,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 902,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8597,
+     "real_wage": 7,
+     "t": 550,
+     "top1_bp": 501,
+     "top_coop_bp": 5,
+     "unmet": 287
+    },
+    {
+     "bot20_bp": 913,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8642,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 445,
+     "top_coop_bp": 5,
+     "unmet": 36
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8698,
+     "real_wage": 7,
+     "t": 650,
+     "top1_bp": 397,
+     "top_coop_bp": 4,
+     "unmet": 5
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 287,
+     "to": 550
+    }
+   ],
+   "peak": {
+    "bot20_bp": 902,
+    "bread_idx": 18,
+    "div_pp": 200,
+    "mid60_bp": 8597,
+    "real_wage": 7,
+    "t": 550,
+    "top1_bp": 501,
+    "top_coop_bp": 5,
+    "unmet": 287
+   },
+   "t_start": 2
+  },
+  "research_early_s42": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 256,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 6350,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 3394,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 409,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 7332,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 2259,
+     "top_coop_bp": 27,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 432,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 7808,
+     "real_wage": 9,
+     "t": 150,
+     "top1_bp": 1760,
+     "top_coop_bp": 20,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 574,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8079,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 1347,
+     "top_coop_bp": 15,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 590,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8298,
+     "real_wage": 7,
+     "t": 250,
+     "top1_bp": 1112,
+     "top_coop_bp": 12,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 663,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8410,
+     "real_wage": 7,
+     "t": 300,
+     "top1_bp": 927,
+     "top_coop_bp": 10,
+     "unmet": 138
+    },
+    {
+     "bot20_bp": 747,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8453,
+     "real_wage": 13,
+     "t": 350,
+     "top1_bp": 800,
+     "top_coop_bp": 9,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 793,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8503,
+     "real_wage": 7,
+     "t": 400,
+     "top1_bp": 704,
+     "top_coop_bp": 7,
+     "unmet": 397
+    },
+    {
+     "bot20_bp": 846,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8521,
+     "real_wage": 7,
+     "t": 450,
+     "top1_bp": 633,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 898,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8549,
+     "real_wage": 7,
+     "t": 500,
+     "top1_bp": 553,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 914,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8577,
+     "real_wage": 14,
+     "t": 550,
+     "top1_bp": 509,
+     "top_coop_bp": 5,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 913,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8642,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 445,
+     "top_coop_bp": 4,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 901,
+     "bread_idx": 17,
+     "div_pp": 200,
+     "mid60_bp": 8698,
+     "real_wage": 9,
+     "t": 650,
+     "top1_bp": 401,
+     "top_coop_bp": 4,
+     "unmet": 358
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 397,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 793,
+    "bread_idx": 18,
+    "div_pp": 200,
+    "mid60_bp": 8503,
+    "real_wage": 7,
+    "t": 400,
+    "top1_bp": 704,
+    "top_coop_bp": 7,
+    "unmet": 397
+   },
+   "t_start": 2
+  },
+  "research_early_s7": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 257,
+     "bread_idx": 22,
+     "div_pp": 200,
+     "mid60_bp": 6347,
+     "real_wage": 7,
+     "t": 50,
+     "top1_bp": 3396,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 415,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 7333,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 2252,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 436,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 7805,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 1759,
+     "top_coop_bp": 20,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 575,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8083,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 1342,
+     "top_coop_bp": 15,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 597,
+     "bread_idx": 16,
+     "div_pp": 200,
+     "mid60_bp": 8296,
+     "real_wage": 8,
+     "t": 250,
+     "top1_bp": 1107,
+     "top_coop_bp": 12,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 669,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8415,
+     "real_wage": 7,
+     "t": 300,
+     "top1_bp": 916,
+     "top_coop_bp": 10,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 756,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8448,
+     "real_wage": 18,
+     "t": 350,
+     "top1_bp": 796,
+     "top_coop_bp": 9,
+     "unmet": 77
+    },
+    {
+     "bot20_bp": 798,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8503,
+     "real_wage": 17,
+     "t": 400,
+     "top1_bp": 699,
+     "top_coop_bp": 7,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 843,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8521,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 636,
+     "top_coop_bp": 7,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 902,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8548,
+     "real_wage": 7,
+     "t": 500,
+     "top1_bp": 550,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 909,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8585,
+     "real_wage": 13,
+     "t": 550,
+     "top1_bp": 506,
+     "top_coop_bp": 5,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 914,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8642,
+     "real_wage": 7,
+     "t": 600,
+     "top1_bp": 444,
+     "top_coop_bp": 5,
+     "unmet": 460
+    },
+    {
+     "bot20_bp": 906,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8696,
+     "real_wage": 13,
+     "t": 650,
+     "top1_bp": 398,
+     "top_coop_bp": 4,
+     "unmet": 5
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 460,
+     "to": 600
+    }
+   ],
+   "peak": {
+    "bot20_bp": 914,
+    "bread_idx": 18,
+    "div_pp": 200,
+    "mid60_bp": 8642,
+    "real_wage": 7,
+    "t": 600,
+    "top1_bp": 444,
+    "top_coop_bp": 5,
+    "unmet": 460
+   },
+   "t_start": 2
+  },
+  "research_fixed_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 377,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9171,
+     "real_wage": 16,
+     "t": 50,
+     "top1_bp": 452,
+     "top_coop_bp": 52,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 511,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9118,
+     "real_wage": 17,
+     "t": 100,
+     "top1_bp": 371,
+     "top_coop_bp": 32,
+     "unmet": 37
+    },
+    {
+     "bot20_bp": 479,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9131,
+     "real_wage": 14,
+     "t": 150,
+     "top1_bp": 390,
+     "top_coop_bp": 25,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 618,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9011,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 371,
+     "top_coop_bp": 18,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 605,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9043,
+     "real_wage": 17,
+     "t": 250,
+     "top1_bp": 352,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 700,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8974,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 326,
+     "top_coop_bp": 10,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 772,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8913,
+     "real_wage": 13,
+     "t": 350,
+     "top1_bp": 315,
+     "top_coop_bp": 10,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 823,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8866,
+     "real_wage": 16,
+     "t": 400,
+     "top1_bp": 311,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8783,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 312,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 938,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8763,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 299,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 907,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8775,
+     "real_wage": 17,
+     "t": 550,
+     "top1_bp": 318,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 931,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8761,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 308,
+     "top_coop_bp": 4,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 914,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8782,
+     "real_wage": 14,
+     "t": 650,
+     "top1_bp": 304,
+     "top_coop_bp": 4,
+     "unmet": 175
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 650,
+     "peak_unmet": 175,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 914,
+    "bread_idx": 9,
+    "div_pp": 200,
+    "mid60_bp": 8782,
+    "real_wage": 14,
+    "t": 650,
+    "top1_bp": 304,
+    "top_coop_bp": 4,
+    "unmet": 175
+   },
+   "t_start": 2
+  },
+  "research_fixed_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 380,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9168,
+     "real_wage": 17,
+     "t": 50,
+     "top1_bp": 452,
+     "top_coop_bp": 52,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 514,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9117,
+     "real_wage": 16,
+     "t": 100,
+     "top1_bp": 369,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 477,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9115,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 408,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 619,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9003,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 378,
+     "top_coop_bp": 17,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 625,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9026,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 349,
+     "top_coop_bp": 12,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 697,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8977,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 326,
+     "top_coop_bp": 11,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 776,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8912,
+     "real_wage": 13,
+     "t": 350,
+     "top1_bp": 312,
+     "top_coop_bp": 10,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 817,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8871,
+     "real_wage": 16,
+     "t": 400,
+     "top1_bp": 312,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 890,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8798,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 312,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 926,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8773,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 301,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 903,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8787,
+     "real_wage": 13,
+     "t": 550,
+     "top1_bp": 310,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 927,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8773,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 300,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 907,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8793,
+     "real_wage": 13,
+     "t": 650,
+     "top1_bp": 300,
+     "top_coop_bp": 4,
+     "unmet": 0
+    }
+   ],
+   "famine_windows": [],
+   "peak": {
+    "bot20_bp": 252,
+    "bread_idx": 100,
+    "div_pp": 200,
+    "mid60_bp": 9007,
+    "real_wage": 2,
+    "t": 2,
+    "top1_bp": 741,
+    "top_coop_bp": 174,
+    "unmet": 6
+   },
+   "t_start": 2
+  },
+  "research_fixed_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 391,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9157,
+     "real_wage": 16,
+     "t": 50,
+     "top1_bp": 452,
+     "top_coop_bp": 52,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 511,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9118,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 371,
+     "top_coop_bp": 33,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 479,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9135,
+     "real_wage": 16,
+     "t": 150,
+     "top1_bp": 386,
+     "top_coop_bp": 22,
+     "unmet": 194
+    },
+    {
+     "bot20_bp": 627,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9001,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 372,
+     "top_coop_bp": 18,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 625,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9029,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 346,
+     "top_coop_bp": 12,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 684,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8989,
+     "real_wage": 14,
+     "t": 300,
+     "top1_bp": 327,
+     "top_coop_bp": 11,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 771,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8915,
+     "real_wage": 13,
+     "t": 350,
+     "top1_bp": 314,
+     "top_coop_bp": 10,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 823,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8866,
+     "real_wage": 13,
+     "t": 400,
+     "top1_bp": 311,
+     "top_coop_bp": 7,
+     "unmet": 41
+    },
+    {
+     "bot20_bp": 898,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8792,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 310,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 941,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8760,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 299,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 906,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8789,
+     "real_wage": 15,
+     "t": 550,
+     "top1_bp": 305,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 822,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8770,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 408,
+     "top_coop_bp": 26,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 810,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8772,
+     "real_wage": 17,
+     "t": 650,
+     "top1_bp": 418,
+     "top_coop_bp": 4,
+     "unmet": 0
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 150,
+     "peak_unmet": 194,
+     "to": 150
+    }
+   ],
+   "peak": {
+    "bot20_bp": 479,
+    "bread_idx": 10,
+    "div_pp": 200,
+    "mid60_bp": 9135,
+    "real_wage": 16,
+    "t": 150,
+    "top1_bp": 386,
+    "top_coop_bp": 22,
+    "unmet": 194
+   },
+   "t_start": 2
+  },
+  "research_late_s123": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 254,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 6350,
+     "real_wage": 6,
+     "t": 50,
+     "top1_bp": 3396,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 422,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7359,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 2219,
+     "top_coop_bp": 25,
+     "unmet": 142
+    },
+    {
+     "bot20_bp": 441,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7849,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 1710,
+     "top_coop_bp": 19,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 576,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8116,
+     "real_wage": 5,
+     "t": 200,
+     "top1_bp": 1308,
+     "top_coop_bp": 15,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 610,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8314,
+     "real_wage": 5,
+     "t": 250,
+     "top1_bp": 1076,
+     "top_coop_bp": 11,
+     "unmet": 411
+    },
+    {
+     "bot20_bp": 681,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8407,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 912,
+     "top_coop_bp": 10,
+     "unmet": 61
+    },
+    {
+     "bot20_bp": 735,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8470,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 795,
+     "top_coop_bp": 9,
+     "unmet": 735
+    },
+    {
+     "bot20_bp": 820,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8488,
+     "real_wage": 5,
+     "t": 400,
+     "top1_bp": 692,
+     "top_coop_bp": 7,
+     "unmet": 470
+    },
+    {
+     "bot20_bp": 832,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8538,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 630,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 932,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8515,
+     "real_wage": 7,
+     "t": 500,
+     "top1_bp": 553,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 956,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8543,
+     "real_wage": 17,
+     "t": 550,
+     "top1_bp": 501,
+     "top_coop_bp": 5,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 958,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8598,
+     "real_wage": 9,
+     "t": 600,
+     "top1_bp": 444,
+     "top_coop_bp": 5,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 954,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8646,
+     "real_wage": 7,
+     "t": 650,
+     "top1_bp": 400,
+     "top_coop_bp": 4,
+     "unmet": 5
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 735,
+     "to": 400
+    }
+   ],
+   "peak": {
+    "bot20_bp": 735,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8470,
+    "real_wage": 10,
+    "t": 350,
+    "top1_bp": 795,
+    "top_coop_bp": 9,
+    "unmet": 735
+   },
+   "t_start": 2
+  },
+  "research_late_s42": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 256,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 6350,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 3394,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 419,
+     "bread_idx": 22,
+     "div_pp": 200,
+     "mid60_bp": 7359,
+     "real_wage": 7,
+     "t": 100,
+     "top1_bp": 2222,
+     "top_coop_bp": 25,
+     "unmet": 480
+    },
+    {
+     "bot20_bp": 423,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7867,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 1710,
+     "top_coop_bp": 19,
+     "unmet": 218
+    },
+    {
+     "bot20_bp": 570,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8132,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 1298,
+     "top_coop_bp": 15,
+     "unmet": 770
+    },
+    {
+     "bot20_bp": 619,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8312,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 1069,
+     "top_coop_bp": 11,
+     "unmet": 501
+    },
+    {
+     "bot20_bp": 687,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8400,
+     "real_wage": 5,
+     "t": 300,
+     "top1_bp": 913,
+     "top_coop_bp": 11,
+     "unmet": 551
+    },
+    {
+     "bot20_bp": 749,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8459,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 792,
+     "top_coop_bp": 10,
+     "unmet": 411
+    },
+    {
+     "bot20_bp": 826,
+     "bread_idx": 22,
+     "div_pp": 200,
+     "mid60_bp": 8484,
+     "real_wage": 6,
+     "t": 400,
+     "top1_bp": 690,
+     "top_coop_bp": 8,
+     "unmet": 617
+    },
+    {
+     "bot20_bp": 837,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8531,
+     "real_wage": 9,
+     "t": 450,
+     "top1_bp": 632,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 946,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8498,
+     "real_wage": 7,
+     "t": 500,
+     "top1_bp": 556,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 953,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8538,
+     "real_wage": 13,
+     "t": 550,
+     "top1_bp": 509,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 966,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8590,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 444,
+     "top_coop_bp": 5,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 958,
+     "bread_idx": 17,
+     "div_pp": 200,
+     "mid60_bp": 8646,
+     "real_wage": 7,
+     "t": 650,
+     "top1_bp": 396,
+     "top_coop_bp": 4,
+     "unmet": 5
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 770,
+     "to": 400
+    }
+   ],
+   "peak": {
+    "bot20_bp": 570,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8132,
+    "real_wage": 10,
+    "t": 200,
+    "top1_bp": 1298,
+    "top_coop_bp": 15,
+    "unmet": 770
+   },
+   "t_start": 2
+  },
+  "research_late_s7": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 257,
+     "bread_idx": 22,
+     "div_pp": 200,
+     "mid60_bp": 6347,
+     "real_wage": 7,
+     "t": 50,
+     "top1_bp": 3396,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 417,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7365,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 2218,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 430,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 7867,
+     "real_wage": 6,
+     "t": 150,
+     "top1_bp": 1703,
+     "top_coop_bp": 19,
+     "unmet": 312
+    },
+    {
+     "bot20_bp": 577,
+     "bread_idx": 23,
+     "div_pp": 200,
+     "mid60_bp": 8126,
+     "real_wage": 7,
+     "t": 200,
+     "top1_bp": 1297,
+     "top_coop_bp": 16,
+     "unmet": 417
+    },
+    {
+     "bot20_bp": 588,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8332,
+     "real_wage": 5,
+     "t": 250,
+     "top1_bp": 1080,
+     "top_coop_bp": 11,
+     "unmet": 356
+    },
+    {
+     "bot20_bp": 670,
+     "bread_idx": 23,
+     "div_pp": 200,
+     "mid60_bp": 8421,
+     "real_wage": 7,
+     "t": 300,
+     "top1_bp": 909,
+     "top_coop_bp": 10,
+     "unmet": 36
+    },
+    {
+     "bot20_bp": 736,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8474,
+     "real_wage": 5,
+     "t": 350,
+     "top1_bp": 790,
+     "top_coop_bp": 10,
+     "unmet": 223
+    },
+    {
+     "bot20_bp": 822,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8496,
+     "real_wage": 5,
+     "t": 400,
+     "top1_bp": 682,
+     "top_coop_bp": 7,
+     "unmet": 356
+    },
+    {
+     "bot20_bp": 823,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8748,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 429,
+     "top_coop_bp": 7,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 941,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8678,
+     "real_wage": 7,
+     "t": 500,
+     "top1_bp": 381,
+     "top_coop_bp": 6,
+     "unmet": 25
+    },
+    {
+     "bot20_bp": 948,
+     "bread_idx": 18,
+     "div_pp": 200,
+     "mid60_bp": 8703,
+     "real_wage": 9,
+     "t": 550,
+     "top1_bp": 349,
+     "top_coop_bp": 5,
+     "unmet": 270
+    },
+    {
+     "bot20_bp": 953,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8743,
+     "real_wage": 14,
+     "t": 600,
+     "top1_bp": 304,
+     "top_coop_bp": 5,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 941,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8758,
+     "real_wage": 13,
+     "t": 650,
+     "top1_bp": 301,
+     "top_coop_bp": 4,
+     "unmet": 5
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 417,
+     "to": 550
+    }
+   ],
+   "peak": {
+    "bot20_bp": 577,
+    "bread_idx": 23,
+    "div_pp": 200,
+    "mid60_bp": 8126,
+    "real_wage": 7,
+    "t": 200,
+    "top1_bp": 1297,
+    "top_coop_bp": 16,
+    "unmet": 417
+   },
+   "t_start": 2
+  },
+  "research_never_s123": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 254,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 6350,
+     "real_wage": 6,
+     "t": 50,
+     "top1_bp": 3396,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 422,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7359,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 2219,
+     "top_coop_bp": 25,
+     "unmet": 142
+    },
+    {
+     "bot20_bp": 441,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7849,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 1710,
+     "top_coop_bp": 19,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 576,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8116,
+     "real_wage": 5,
+     "t": 200,
+     "top1_bp": 1308,
+     "top_coop_bp": 15,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 610,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8314,
+     "real_wage": 5,
+     "t": 250,
+     "top1_bp": 1076,
+     "top_coop_bp": 11,
+     "unmet": 411
+    },
+    {
+     "bot20_bp": 681,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8407,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 912,
+     "top_coop_bp": 10,
+     "unmet": 61
+    },
+    {
+     "bot20_bp": 735,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8470,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 795,
+     "top_coop_bp": 9,
+     "unmet": 735
+    },
+    {
+     "bot20_bp": 820,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8488,
+     "real_wage": 5,
+     "t": 400,
+     "top1_bp": 692,
+     "top_coop_bp": 7,
+     "unmet": 470
+    },
+    {
+     "bot20_bp": 820,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8548,
+     "real_wage": 5,
+     "t": 450,
+     "top1_bp": 632,
+     "top_coop_bp": 6,
+     "unmet": 243
+    },
+    {
+     "bot20_bp": 890,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8557,
+     "real_wage": 5,
+     "t": 500,
+     "top1_bp": 553,
+     "top_coop_bp": 6,
+     "unmet": 61
+    },
+    {
+     "bot20_bp": 932,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8565,
+     "real_wage": 5,
+     "t": 550,
+     "top1_bp": 503,
+     "top_coop_bp": 5,
+     "unmet": 643
+    },
+    {
+     "bot20_bp": 945,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8611,
+     "real_wage": 5,
+     "t": 600,
+     "top1_bp": 444,
+     "top_coop_bp": 5,
+     "unmet": 225
+    },
+    {
+     "bot20_bp": 941,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8664,
+     "real_wage": 5,
+     "t": 650,
+     "top1_bp": 395,
+     "top_coop_bp": 4,
+     "unmet": 256
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 735,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 735,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8470,
+    "real_wage": 10,
+    "t": 350,
+    "top1_bp": 795,
+    "top_coop_bp": 9,
+    "unmet": 735
+   },
+   "t_start": 2
+  },
+  "research_never_s42": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 256,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 6350,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 3394,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 419,
+     "bread_idx": 22,
+     "div_pp": 200,
+     "mid60_bp": 7359,
+     "real_wage": 7,
+     "t": 100,
+     "top1_bp": 2222,
+     "top_coop_bp": 25,
+     "unmet": 480
+    },
+    {
+     "bot20_bp": 423,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7867,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 1710,
+     "top_coop_bp": 19,
+     "unmet": 218
+    },
+    {
+     "bot20_bp": 570,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8132,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 1298,
+     "top_coop_bp": 15,
+     "unmet": 770
+    },
+    {
+     "bot20_bp": 619,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8312,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 1069,
+     "top_coop_bp": 11,
+     "unmet": 501
+    },
+    {
+     "bot20_bp": 687,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8400,
+     "real_wage": 5,
+     "t": 300,
+     "top1_bp": 913,
+     "top_coop_bp": 11,
+     "unmet": 551
+    },
+    {
+     "bot20_bp": 749,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8459,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 792,
+     "top_coop_bp": 10,
+     "unmet": 411
+    },
+    {
+     "bot20_bp": 826,
+     "bread_idx": 22,
+     "div_pp": 200,
+     "mid60_bp": 8484,
+     "real_wage": 6,
+     "t": 400,
+     "top1_bp": 690,
+     "top_coop_bp": 8,
+     "unmet": 617
+    },
+    {
+     "bot20_bp": 840,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8529,
+     "real_wage": 5,
+     "t": 450,
+     "top1_bp": 631,
+     "top_coop_bp": 7,
+     "unmet": 385
+    },
+    {
+     "bot20_bp": 903,
+     "bread_idx": 23,
+     "div_pp": 200,
+     "mid60_bp": 8540,
+     "real_wage": 5,
+     "t": 500,
+     "top1_bp": 557,
+     "top_coop_bp": 6,
+     "unmet": 506
+    },
+    {
+     "bot20_bp": 897,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8599,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 504,
+     "top_coop_bp": 5,
+     "unmet": 688
+    },
+    {
+     "bot20_bp": 915,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8640,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 445,
+     "top_coop_bp": 5,
+     "unmet": 356
+    },
+    {
+     "bot20_bp": 955,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8652,
+     "real_wage": 6,
+     "t": 650,
+     "top1_bp": 393,
+     "top_coop_bp": 4,
+     "unmet": 256
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 770,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 570,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8132,
+    "real_wage": 10,
+    "t": 200,
+    "top1_bp": 1298,
+    "top_coop_bp": 15,
+    "unmet": 770
+   },
+   "t_start": 2
+  },
+  "research_never_s7": {
+   "arc": [
+    {
+     "bot20_bp": 102,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 3868,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 6030,
+     "top_coop_bp": 80,
+     "unmet": 11
+    },
+    {
+     "bot20_bp": 257,
+     "bread_idx": 22,
+     "div_pp": 200,
+     "mid60_bp": 6347,
+     "real_wage": 7,
+     "t": 50,
+     "top1_bp": 3396,
+     "top_coop_bp": 36,
+     "unmet": 51
+    },
+    {
+     "bot20_bp": 417,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 7365,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 2218,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 430,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 7867,
+     "real_wage": 6,
+     "t": 150,
+     "top1_bp": 1703,
+     "top_coop_bp": 19,
+     "unmet": 312
+    },
+    {
+     "bot20_bp": 577,
+     "bread_idx": 23,
+     "div_pp": 200,
+     "mid60_bp": 8126,
+     "real_wage": 7,
+     "t": 200,
+     "top1_bp": 1297,
+     "top_coop_bp": 16,
+     "unmet": 417
+    },
+    {
+     "bot20_bp": 588,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8332,
+     "real_wage": 5,
+     "t": 250,
+     "top1_bp": 1080,
+     "top_coop_bp": 11,
+     "unmet": 356
+    },
+    {
+     "bot20_bp": 670,
+     "bread_idx": 23,
+     "div_pp": 200,
+     "mid60_bp": 8421,
+     "real_wage": 7,
+     "t": 300,
+     "top1_bp": 909,
+     "top_coop_bp": 10,
+     "unmet": 36
+    },
+    {
+     "bot20_bp": 736,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8474,
+     "real_wage": 5,
+     "t": 350,
+     "top1_bp": 790,
+     "top_coop_bp": 10,
+     "unmet": 223
+    },
+    {
+     "bot20_bp": 822,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8496,
+     "real_wage": 5,
+     "t": 400,
+     "top1_bp": 682,
+     "top_coop_bp": 7,
+     "unmet": 356
+    },
+    {
+     "bot20_bp": 820,
+     "bread_idx": 23,
+     "div_pp": 200,
+     "mid60_bp": 8558,
+     "real_wage": 5,
+     "t": 450,
+     "top1_bp": 622,
+     "top_coop_bp": 6,
+     "unmet": 601
+    },
+    {
+     "bot20_bp": 876,
+     "bread_idx": 24,
+     "div_pp": 200,
+     "mid60_bp": 8575,
+     "real_wage": 5,
+     "t": 500,
+     "top1_bp": 549,
+     "top_coop_bp": 6,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 889,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8610,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 501,
+     "top_coop_bp": 6,
+     "unmet": 264
+    },
+    {
+     "bot20_bp": 938,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8624,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 438,
+     "top_coop_bp": 5,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 921,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8689,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 390,
+     "top_coop_bp": 4,
+     "unmet": 656
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 656,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 921,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8689,
+    "real_wage": 10,
+    "t": 650,
+    "top1_bp": 390,
+    "top_coop_bp": 4,
+    "unmet": 656
+   },
+   "t_start": 2
+  },
+  "skills_on_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 380,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9175,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 445,
+     "top_coop_bp": 51,
+     "unmet": 61
+    },
+    {
+     "bot20_bp": 514,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 9119,
+     "real_wage": 15,
+     "t": 100,
+     "top1_bp": 367,
+     "top_coop_bp": 32,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 498,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 9114,
+     "real_wage": 15,
+     "t": 150,
+     "top1_bp": 388,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 626,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9002,
+     "real_wage": 15,
+     "t": 200,
+     "top1_bp": 372,
+     "top_coop_bp": 15,
+     "unmet": 389
+    },
+    {
+     "bot20_bp": 628,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9027,
+     "real_wage": 16,
+     "t": 250,
+     "top1_bp": 345,
+     "top_coop_bp": 12,
+     "unmet": 217
+    },
+    {
+     "bot20_bp": 750,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8927,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 323,
+     "top_coop_bp": 10,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 738,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8949,
+     "real_wage": 15,
+     "t": 350,
+     "top1_bp": 313,
+     "top_coop_bp": 9,
+     "unmet": 619
+    },
+    {
+     "bot20_bp": 868,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 13,
+     "t": 400,
+     "top1_bp": 303,
+     "top_coop_bp": 7,
+     "unmet": 470
+    },
+    {
+     "bot20_bp": 855,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8842,
+     "real_wage": 12,
+     "t": 450,
+     "top1_bp": 303,
+     "top_coop_bp": 6,
+     "unmet": 549
+    },
+    {
+     "bot20_bp": 907,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8797,
+     "real_wage": 12,
+     "t": 500,
+     "top1_bp": 296,
+     "top_coop_bp": 6,
+     "unmet": 321
+    },
+    {
+     "bot20_bp": 888,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8803,
+     "real_wage": 15,
+     "t": 550,
+     "top1_bp": 309,
+     "top_coop_bp": 5,
+     "unmet": 105
+    },
+    {
+     "bot20_bp": 915,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8788,
+     "real_wage": 12,
+     "t": 600,
+     "top1_bp": 297,
+     "top_coop_bp": 5,
+     "unmet": 471
+    },
+    {
+     "bot20_bp": 895,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8806,
+     "real_wage": 17,
+     "t": 650,
+     "top1_bp": 299,
+     "top_coop_bp": 22,
+     "unmet": 239
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 619,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 738,
+    "bread_idx": 11,
+    "div_pp": 200,
+    "mid60_bp": 8949,
+    "real_wage": 15,
+    "t": 350,
+    "top1_bp": 313,
+    "top_coop_bp": 9,
+    "unmet": 619
+   },
+   "t_start": 2
+  },
+  "skills_on_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 378,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9178,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 444,
+     "top_coop_bp": 51,
+     "unmet": 64
+    },
+    {
+     "bot20_bp": 505,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9132,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 363,
+     "top_coop_bp": 33,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 499,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 9115,
+     "real_wage": 14,
+     "t": 150,
+     "top1_bp": 386,
+     "top_coop_bp": 22,
+     "unmet": 326
+    },
+    {
+     "bot20_bp": 623,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9009,
+     "real_wage": 12,
+     "t": 200,
+     "top1_bp": 368,
+     "top_coop_bp": 15,
+     "unmet": 282
+    },
+    {
+     "bot20_bp": 623,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9037,
+     "real_wage": 15,
+     "t": 250,
+     "top1_bp": 340,
+     "top_coop_bp": 12,
+     "unmet": 639
+    },
+    {
+     "bot20_bp": 744,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8934,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 322,
+     "top_coop_bp": 10,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 301,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8869,
+     "real_wage": 12,
+     "t": 350,
+     "top1_bp": 830,
+     "top_coop_bp": 9,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8132,
+     "real_wage": 12,
+     "t": 400,
+     "top1_bp": 1493,
+     "top_coop_bp": 20,
+     "unmet": 824
+    },
+    {
+     "bot20_bp": 457,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8176,
+     "real_wage": 12,
+     "t": 450,
+     "top1_bp": 1367,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 595,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8216,
+     "real_wage": 15,
+     "t": 500,
+     "top1_bp": 1189,
+     "top_coop_bp": 6,
+     "unmet": 418
+    },
+    {
+     "bot20_bp": 604,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8291,
+     "real_wage": 15,
+     "t": 550,
+     "top1_bp": 1105,
+     "top_coop_bp": 5,
+     "unmet": 726
+    },
+    {
+     "bot20_bp": 662,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8346,
+     "real_wage": 11,
+     "t": 600,
+     "top1_bp": 992,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 680,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8382,
+     "real_wage": 13,
+     "t": 650,
+     "top1_bp": 938,
+     "top_coop_bp": 5,
+     "unmet": 471
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 824,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 375,
+    "bread_idx": 10,
+    "div_pp": 200,
+    "mid60_bp": 8132,
+    "real_wage": 12,
+    "t": 400,
+    "top1_bp": 1493,
+    "top_coop_bp": 20,
+    "unmet": 824
+   },
+   "t_start": 2
+  },
+  "skills_on_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 380,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9175,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 445,
+     "top_coop_bp": 51,
+     "unmet": 77
+    },
+    {
+     "bot20_bp": 515,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9123,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 32,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 499,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9114,
+     "real_wage": 15,
+     "t": 150,
+     "top1_bp": 387,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 628,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9003,
+     "real_wage": 15,
+     "t": 200,
+     "top1_bp": 369,
+     "top_coop_bp": 16,
+     "unmet": 552
+    },
+    {
+     "bot20_bp": 625,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9033,
+     "real_wage": 15,
+     "t": 250,
+     "top1_bp": 342,
+     "top_coop_bp": 12,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 752,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8930,
+     "real_wage": 12,
+     "t": 300,
+     "top1_bp": 318,
+     "top_coop_bp": 10,
+     "unmet": 2
+    },
+    {
+     "bot20_bp": 743,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8946,
+     "real_wage": 12,
+     "t": 350,
+     "top1_bp": 311,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 762,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8931,
+     "real_wage": 12,
+     "t": 400,
+     "top1_bp": 307,
+     "top_coop_bp": 7,
+     "unmet": 113
+    },
+    {
+     "bot20_bp": 840,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8847,
+     "real_wage": 12,
+     "t": 450,
+     "top1_bp": 313,
+     "top_coop_bp": 7,
+     "unmet": 463
+    },
+    {
+     "bot20_bp": 889,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8805,
+     "real_wage": 16,
+     "t": 500,
+     "top1_bp": 306,
+     "top_coop_bp": 6,
+     "unmet": 451
+    },
+    {
+     "bot20_bp": 863,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8812,
+     "real_wage": 15,
+     "t": 550,
+     "top1_bp": 325,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 887,
+     "bread_idx": 96,
+     "div_pp": 200,
+     "mid60_bp": 8802,
+     "real_wage": 1,
+     "t": 600,
+     "top1_bp": 311,
+     "top_coop_bp": 5,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 881,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 8808,
+     "real_wage": 12,
+     "t": 650,
+     "top1_bp": 311,
+     "top_coop_bp": 4,
+     "unmet": 65
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 966,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 887,
+    "bread_idx": 96,
+    "div_pp": 200,
+    "mid60_bp": 8802,
+    "real_wage": 1,
+    "t": 600,
+    "top1_bp": 311,
+    "top_coop_bp": 5,
+    "unmet": 966
+   },
+   "t_start": 2
+  },
+  "skills_research_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 354,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9191,
+     "real_wage": 17,
+     "t": 50,
+     "top1_bp": 455,
+     "top_coop_bp": 56,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 447,
+     "bread_idx": 17,
+     "div_pp": 200,
+     "mid60_bp": 9179,
+     "real_wage": 9,
+     "t": 100,
+     "top1_bp": 374,
+     "top_coop_bp": 137,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 465,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 9131,
+     "real_wage": 19,
+     "t": 150,
+     "top1_bp": 404,
+     "top_coop_bp": 24,
+     "unmet": 199
+    },
+    {
+     "bot20_bp": 579,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 9034,
+     "real_wage": 19,
+     "t": 200,
+     "top1_bp": 387,
+     "top_coop_bp": 16,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 575,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 9067,
+     "real_wage": 19,
+     "t": 250,
+     "top1_bp": 358,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 686,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8973,
+     "real_wage": 19,
+     "t": 300,
+     "top1_bp": 341,
+     "top_coop_bp": 10,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 716,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8953,
+     "real_wage": 17,
+     "t": 350,
+     "top1_bp": 331,
+     "top_coop_bp": 9,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 836,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8836,
+     "real_wage": 15,
+     "t": 400,
+     "top1_bp": 328,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 588,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8867,
+     "real_wage": 20,
+     "t": 450,
+     "top1_bp": 545,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 679,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8827,
+     "real_wage": 19,
+     "t": 500,
+     "top1_bp": 494,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 654,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8872,
+     "real_wage": 14,
+     "t": 550,
+     "top1_bp": 474,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 702,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8861,
+     "real_wage": 15,
+     "t": 600,
+     "top1_bp": 437,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 689,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8900,
+     "real_wage": 16,
+     "t": 650,
+     "top1_bp": 411,
+     "top_coop_bp": 5,
+     "unmet": 0
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 150,
+     "peak_unmet": 199,
+     "to": 150
+    }
+   ],
+   "peak": {
+    "bot20_bp": 465,
+    "bread_idx": 8,
+    "div_pp": 200,
+    "mid60_bp": 9131,
+    "real_wage": 19,
+    "t": 150,
+    "top1_bp": 404,
+    "top_coop_bp": 24,
+    "unmet": 199
+   },
+   "t_start": 2
+  },
+  "skills_research_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 358,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9190,
+     "real_wage": 16,
+     "t": 50,
+     "top1_bp": 452,
+     "top_coop_bp": 56,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 507,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9126,
+     "real_wage": 18,
+     "t": 100,
+     "top1_bp": 367,
+     "top_coop_bp": 33,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 497,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9103,
+     "real_wage": 14,
+     "t": 150,
+     "top1_bp": 400,
+     "top_coop_bp": 23,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 617,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8997,
+     "real_wage": 15,
+     "t": 200,
+     "top1_bp": 386,
+     "top_coop_bp": 16,
+     "unmet": 225
+    },
+    {
+     "bot20_bp": 615,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 9027,
+     "real_wage": 20,
+     "t": 250,
+     "top1_bp": 358,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 724,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8932,
+     "real_wage": 20,
+     "t": 300,
+     "top1_bp": 344,
+     "top_coop_bp": 11,
+     "unmet": 146
+    },
+    {
+     "bot20_bp": 699,
+     "bread_idx": 7,
+     "div_pp": 200,
+     "mid60_bp": 8973,
+     "real_wage": 17,
+     "t": 350,
+     "top1_bp": 328,
+     "top_coop_bp": 9,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 806,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8872,
+     "real_wage": 15,
+     "t": 400,
+     "top1_bp": 322,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 794,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8878,
+     "real_wage": 19,
+     "t": 450,
+     "top1_bp": 328,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 708,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8953,
+     "real_wage": 16,
+     "t": 500,
+     "top1_bp": 339,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 697,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8959,
+     "real_wage": 14,
+     "t": 550,
+     "top1_bp": 344,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 729,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8947,
+     "real_wage": 16,
+     "t": 600,
+     "top1_bp": 324,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 712,
+     "bread_idx": 7,
+     "div_pp": 200,
+     "mid60_bp": 8971,
+     "real_wage": 23,
+     "t": 650,
+     "top1_bp": 317,
+     "top_coop_bp": 5,
+     "unmet": 0
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 200,
+     "peak_unmet": 225,
+     "to": 300
+    }
+   ],
+   "peak": {
+    "bot20_bp": 617,
+    "bread_idx": 8,
+    "div_pp": 200,
+    "mid60_bp": 8997,
+    "real_wage": 15,
+    "t": 200,
+    "top1_bp": 386,
+    "top_coop_bp": 16,
+    "unmet": 225
+   },
+   "t_start": 2
+  },
+  "skills_research_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 348,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9196,
+     "real_wage": 18,
+     "t": 50,
+     "top1_bp": 456,
+     "top_coop_bp": 56,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 496,
+     "bread_idx": 10,
+     "div_pp": 200,
+     "mid60_bp": 9134,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 370,
+     "top_coop_bp": 33,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 498,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 9102,
+     "real_wage": 18,
+     "t": 150,
+     "top1_bp": 400,
+     "top_coop_bp": 23,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 618,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8995,
+     "real_wage": 19,
+     "t": 200,
+     "top1_bp": 387,
+     "top_coop_bp": 16,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 611,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 9027,
+     "real_wage": 20,
+     "t": 250,
+     "top1_bp": 362,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 707,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8952,
+     "real_wage": 20,
+     "t": 300,
+     "top1_bp": 341,
+     "top_coop_bp": 10,
+     "unmet": 84
+    },
+    {
+     "bot20_bp": 731,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8936,
+     "real_wage": 17,
+     "t": 350,
+     "top1_bp": 333,
+     "top_coop_bp": 9,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 849,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8821,
+     "real_wage": 15,
+     "t": 400,
+     "top1_bp": 330,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 821,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8851,
+     "real_wage": 19,
+     "t": 450,
+     "top1_bp": 328,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 880,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8812,
+     "real_wage": 16,
+     "t": 500,
+     "top1_bp": 308,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 839,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8827,
+     "real_wage": 16,
+     "t": 550,
+     "top1_bp": 334,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 858,
+     "bread_idx": 8,
+     "div_pp": 200,
+     "mid60_bp": 8817,
+     "real_wage": 19,
+     "t": 600,
+     "top1_bp": 325,
+     "top_coop_bp": 5,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 830,
+     "bread_idx": 9,
+     "div_pp": 200,
+     "mid60_bp": 8846,
+     "real_wage": 18,
+     "t": 650,
+     "top1_bp": 324,
+     "top_coop_bp": 5,
+     "unmet": 0
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 300,
+     "peak_unmet": 84,
+     "to": 300
+    }
+   ],
+   "peak": {
+    "bot20_bp": 707,
+    "bread_idx": 8,
+    "div_pp": 200,
+    "mid60_bp": 8952,
+    "real_wage": 20,
+    "t": 300,
+    "top1_bp": 341,
+    "top_coop_bp": 10,
+    "unmet": 84
+   },
+   "t_start": 2
+  },
+  "spoil_disaster_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 381,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9179,
+     "real_wage": 15,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 658
+    },
+    {
+     "bot20_bp": 506,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8990,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 504,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 488,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9057,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 455,
+     "top_coop_bp": 22,
+     "unmet": 239
+    },
+    {
+     "bot20_bp": 622,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8983,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 395,
+     "top_coop_bp": 19,
+     "unmet": 439
+    },
+    {
+     "bot20_bp": 607,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9018,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 375,
+     "top_coop_bp": 13,
+     "unmet": 435
+    },
+    {
+     "bot20_bp": 741,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8918,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 341,
+     "top_coop_bp": 11,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 801,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8870,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 329,
+     "top_coop_bp": 10,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 861,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8820,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 369
+    },
+    {
+     "bot20_bp": 855,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8819,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 326,
+     "top_coop_bp": 8,
+     "unmet": 323
+    },
+    {
+     "bot20_bp": 935,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8752,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 313,
+     "top_coop_bp": 6,
+     "unmet": 236
+    },
+    {
+     "bot20_bp": 951,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8719,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 302
+    },
+    {
+     "bot20_bp": 979,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8696,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 325,
+     "top_coop_bp": 5,
+     "unmet": 324
+    },
+    {
+     "bot20_bp": 957,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8720,
+     "real_wage": 11,
+     "t": 650,
+     "top1_bp": 323,
+     "top_coop_bp": 5,
+     "unmet": 71
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 658,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 381,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 9179,
+    "real_wage": 15,
+    "t": 50,
+    "top1_bp": 440,
+    "top_coop_bp": 51,
+    "unmet": 658
+   },
+   "t_start": 2
+  },
+  "spoil_disaster_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 401
+    },
+    {
+     "bot20_bp": 518,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9119,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 363,
+     "top_coop_bp": 32,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 489,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9129,
+     "real_wage": 11,
+     "t": 150,
+     "top1_bp": 382,
+     "top_coop_bp": 23,
+     "unmet": 163
+    },
+    {
+     "bot20_bp": 630,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9003,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 367,
+     "top_coop_bp": 17,
+     "unmet": 145
+    },
+    {
+     "bot20_bp": 597,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9040,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 363,
+     "top_coop_bp": 14,
+     "unmet": 362
+    },
+    {
+     "bot20_bp": 728,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8936,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 336,
+     "top_coop_bp": 11,
+     "unmet": 338
+    },
+    {
+     "bot20_bp": 790,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8888,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 322,
+     "top_coop_bp": 9,
+     "unmet": 685
+    },
+    {
+     "bot20_bp": 847,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8834,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 331
+    },
+    {
+     "bot20_bp": 843,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8832,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 325,
+     "top_coop_bp": 7,
+     "unmet": 380
+    },
+    {
+     "bot20_bp": 931,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8752,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 317,
+     "top_coop_bp": 6,
+     "unmet": 759
+    },
+    {
+     "bot20_bp": 944,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8717,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 339,
+     "top_coop_bp": 6,
+     "unmet": 666
+    },
+    {
+     "bot20_bp": 980,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8691,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 329,
+     "top_coop_bp": 5,
+     "unmet": 666
+    },
+    {
+     "bot20_bp": 954,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8724,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 322,
+     "top_coop_bp": 5,
+     "unmet": 357
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 759,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 931,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8752,
+    "real_wage": 10,
+    "t": 500,
+    "top1_bp": 317,
+    "top_coop_bp": 6,
+    "unmet": 759
+   },
+   "t_start": 2
+  },
+  "spoil_disaster_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 383,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9176,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 441,
+     "top_coop_bp": 51,
+     "unmet": 501
+    },
+    {
+     "bot20_bp": 522,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9114,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 364,
+     "top_coop_bp": 31,
+     "unmet": 318
+    },
+    {
+     "bot20_bp": 478,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9140,
+     "real_wage": 11,
+     "t": 150,
+     "top1_bp": 382,
+     "top_coop_bp": 25,
+     "unmet": 581
+    },
+    {
+     "bot20_bp": 605,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9025,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 370,
+     "top_coop_bp": 17,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 605,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9035,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 360,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 719,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8940,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 341,
+     "top_coop_bp": 11,
+     "unmet": 281
+    },
+    {
+     "bot20_bp": 795,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8881,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 324,
+     "top_coop_bp": 10,
+     "unmet": 615
+    },
+    {
+     "bot20_bp": 859,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8820,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 321,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 854,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8817,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 329,
+     "top_coop_bp": 7,
+     "unmet": 295
+    },
+    {
+     "bot20_bp": 907,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8770,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 323,
+     "top_coop_bp": 7,
+     "unmet": 305
+    },
+    {
+     "bot20_bp": 953,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8718,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 329,
+     "top_coop_bp": 6,
+     "unmet": 284
+    },
+    {
+     "bot20_bp": 987,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8696,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 317,
+     "top_coop_bp": 5,
+     "unmet": 654
+    },
+    {
+     "bot20_bp": 956,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8728,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 316,
+     "top_coop_bp": 5,
+     "unmet": 429
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 654,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 987,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8696,
+    "real_wage": 13,
+    "t": 600,
+    "top1_bp": 317,
+    "top_coop_bp": 5,
+    "unmet": 654
+   },
+   "t_start": 2
+  },
+  "spoil_long_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 381,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9179,
+     "real_wage": 15,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 658
+    },
+    {
+     "bot20_bp": 506,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8990,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 504,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 488,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9057,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 455,
+     "top_coop_bp": 22,
+     "unmet": 239
+    },
+    {
+     "bot20_bp": 622,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8983,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 395,
+     "top_coop_bp": 19,
+     "unmet": 439
+    },
+    {
+     "bot20_bp": 607,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9018,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 375,
+     "top_coop_bp": 13,
+     "unmet": 435
+    },
+    {
+     "bot20_bp": 741,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8918,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 341,
+     "top_coop_bp": 11,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 801,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8870,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 329,
+     "top_coop_bp": 10,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 861,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8820,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 369
+    },
+    {
+     "bot20_bp": 856,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8819,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 325,
+     "top_coop_bp": 7,
+     "unmet": 886
+    },
+    {
+     "bot20_bp": 908,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8775,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 317,
+     "top_coop_bp": 6,
+     "unmet": 311
+    },
+    {
+     "bot20_bp": 907,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8761,
+     "real_wage": 11,
+     "t": 550,
+     "top1_bp": 332,
+     "top_coop_bp": 6,
+     "unmet": 356
+    },
+    {
+     "bot20_bp": 988,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8690,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 322,
+     "top_coop_bp": 5,
+     "unmet": 621
+    },
+    {
+     "bot20_bp": 962,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8721,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 317,
+     "top_coop_bp": 5,
+     "unmet": 508
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 886,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 856,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8819,
+    "real_wage": 10,
+    "t": 450,
+    "top1_bp": 325,
+    "top_coop_bp": 7,
+    "unmet": 886
+   },
+   "t_start": 2
+  },
+  "spoil_long_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 401
+    },
+    {
+     "bot20_bp": 518,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9119,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 363,
+     "top_coop_bp": 32,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 489,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9129,
+     "real_wage": 11,
+     "t": 150,
+     "top1_bp": 382,
+     "top_coop_bp": 23,
+     "unmet": 163
+    },
+    {
+     "bot20_bp": 630,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9003,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 367,
+     "top_coop_bp": 17,
+     "unmet": 145
+    },
+    {
+     "bot20_bp": 597,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9040,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 363,
+     "top_coop_bp": 14,
+     "unmet": 362
+    },
+    {
+     "bot20_bp": 728,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8936,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 336,
+     "top_coop_bp": 11,
+     "unmet": 338
+    },
+    {
+     "bot20_bp": 790,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8888,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 322,
+     "top_coop_bp": 9,
+     "unmet": 685
+    },
+    {
+     "bot20_bp": 847,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8834,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 331
+    },
+    {
+     "bot20_bp": 846,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 11,
+     "t": 450,
+     "top1_bp": 325,
+     "top_coop_bp": 7,
+     "unmet": 329
+    },
+    {
+     "bot20_bp": 900,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8783,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 317,
+     "top_coop_bp": 7,
+     "unmet": 574
+    },
+    {
+     "bot20_bp": 907,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8755,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 338,
+     "top_coop_bp": 6,
+     "unmet": 571
+    },
+    {
+     "bot20_bp": 980,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8694,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 326,
+     "top_coop_bp": 5,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 958,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8722,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 320,
+     "top_coop_bp": 5,
+     "unmet": 291
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 685,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 790,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8888,
+    "real_wage": 10,
+    "t": 350,
+    "top1_bp": 322,
+    "top_coop_bp": 9,
+    "unmet": 685
+   },
+   "t_start": 2
+  },
+  "spoil_long_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 383,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9176,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 441,
+     "top_coop_bp": 51,
+     "unmet": 501
+    },
+    {
+     "bot20_bp": 522,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9114,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 364,
+     "top_coop_bp": 31,
+     "unmet": 318
+    },
+    {
+     "bot20_bp": 478,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9140,
+     "real_wage": 11,
+     "t": 150,
+     "top1_bp": 382,
+     "top_coop_bp": 25,
+     "unmet": 581
+    },
+    {
+     "bot20_bp": 605,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9025,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 370,
+     "top_coop_bp": 17,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 605,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9035,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 360,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 719,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8940,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 341,
+     "top_coop_bp": 11,
+     "unmet": 281
+    },
+    {
+     "bot20_bp": 795,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8881,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 324,
+     "top_coop_bp": 10,
+     "unmet": 615
+    },
+    {
+     "bot20_bp": 859,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8820,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 321,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 857,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8814,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 329,
+     "top_coop_bp": 7,
+     "unmet": 812
+    },
+    {
+     "bot20_bp": 910,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8769,
+     "real_wage": 11,
+     "t": 500,
+     "top1_bp": 321,
+     "top_coop_bp": 7,
+     "unmet": 553
+    },
+    {
+     "bot20_bp": 918,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8754,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 328,
+     "top_coop_bp": 6,
+     "unmet": 385
+    },
+    {
+     "bot20_bp": 985,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8701,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 314,
+     "top_coop_bp": 5,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 961,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8724,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 315,
+     "top_coop_bp": 5,
+     "unmet": 804
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 812,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 857,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8814,
+    "real_wage": 10,
+    "t": 450,
+    "top1_bp": 329,
+    "top_coop_bp": 7,
+    "unmet": 812
+   },
+   "t_start": 2
+  },
+  "tax800_s123": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9185,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 59
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9112,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 362,
+     "top_coop_bp": 29,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 486,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9136,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 378,
+     "top_coop_bp": 24,
+     "unmet": 5
+    },
+    {
+     "bot20_bp": 628,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9006,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 366,
+     "top_coop_bp": 16,
+     "unmet": 278
+    },
+    {
+     "bot20_bp": 606,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9034,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 360,
+     "top_coop_bp": 13,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 745,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8920,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 335,
+     "top_coop_bp": 11,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 810,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8864,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 326,
+     "top_coop_bp": 9,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 851,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 320,
+     "top_coop_bp": 7,
+     "unmet": 430
+    },
+    {
+     "bot20_bp": 848,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8826,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 326,
+     "top_coop_bp": 7,
+     "unmet": 266
+    },
+    {
+     "bot20_bp": 910,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8773,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 317,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 880,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8790,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 767
+    },
+    {
+     "bot20_bp": 915,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8762,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 323,
+     "top_coop_bp": 6,
+     "unmet": 716
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8774,
+     "real_wage": 14,
+     "t": 650,
+     "top1_bp": 321,
+     "top_coop_bp": 4,
+     "unmet": 321
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 767,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 880,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8790,
+    "real_wage": 10,
+    "t": 550,
+    "top1_bp": 330,
+    "top_coop_bp": 6,
+    "unmet": 767
+   },
+   "t_start": 2
+  },
+  "tax800_s42": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 376,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 526,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 361,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 489,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9130,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 381,
+     "top_coop_bp": 23,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 615,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9017,
+     "real_wage": 13,
+     "t": 200,
+     "top1_bp": 368,
+     "top_coop_bp": 16,
+     "unmet": 170
+    },
+    {
+     "bot20_bp": 601,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9044,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 355,
+     "top_coop_bp": 12,
+     "unmet": 404
+    },
+    {
+     "bot20_bp": 690,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8974,
+     "real_wage": 11,
+     "t": 300,
+     "top1_bp": 336,
+     "top_coop_bp": 11,
+     "unmet": 779
+    },
+    {
+     "bot20_bp": 798,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8885,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 317,
+     "top_coop_bp": 9,
+     "unmet": 374
+    },
+    {
+     "bot20_bp": 842,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8839,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 319,
+     "top_coop_bp": 8,
+     "unmet": 519
+    },
+    {
+     "bot20_bp": 855,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8822,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 323,
+     "top_coop_bp": 7,
+     "unmet": 433
+    },
+    {
+     "bot20_bp": 905,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8783,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 312,
+     "top_coop_bp": 6,
+     "unmet": 218
+    },
+    {
+     "bot20_bp": 878,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8792,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 330,
+     "top_coop_bp": 6,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 951,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8729,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 320,
+     "top_coop_bp": 5,
+     "unmet": 671
+    },
+    {
+     "bot20_bp": 928,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8758,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 314,
+     "top_coop_bp": 5,
+     "unmet": 616
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 200,
+     "peak_unmet": 779,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 690,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8974,
+    "real_wage": 11,
+    "t": 300,
+    "top1_bp": 336,
+    "top_coop_bp": 11,
+    "unmet": 779
+   },
+   "t_start": 2
+  },
+  "tax800_s7": {
+   "arc": [
+    {
+     "bot20_bp": 252,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9007,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 174,
+     "unmet": 6
+    },
+    {
+     "bot20_bp": 377,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9183,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 440,
+     "top_coop_bp": 51,
+     "unmet": 19
+    },
+    {
+     "bot20_bp": 527,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9113,
+     "real_wage": 11,
+     "t": 100,
+     "top1_bp": 360,
+     "top_coop_bp": 30,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 487,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9134,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 379,
+     "top_coop_bp": 22,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 633,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9002,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 365,
+     "top_coop_bp": 17,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 607,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9035,
+     "real_wage": 11,
+     "t": 250,
+     "top1_bp": 358,
+     "top_coop_bp": 14,
+     "unmet": 365
+    },
+    {
+     "bot20_bp": 704,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8956,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 340,
+     "top_coop_bp": 11,
+     "unmet": 25
+    },
+    {
+     "bot20_bp": 803,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8873,
+     "real_wage": 11,
+     "t": 350,
+     "top1_bp": 324,
+     "top_coop_bp": 10,
+     "unmet": 466
+    },
+    {
+     "bot20_bp": 868,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8816,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 316,
+     "top_coop_bp": 8,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 862,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8814,
+     "real_wage": 13,
+     "t": 450,
+     "top1_bp": 324,
+     "top_coop_bp": 7,
+     "unmet": 409
+    },
+    {
+     "bot20_bp": 911,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8775,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 314,
+     "top_coop_bp": 7,
+     "unmet": 0
+    },
+    {
+     "bot20_bp": 924,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8745,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 331,
+     "top_coop_bp": 5,
+     "unmet": 766
+    },
+    {
+     "bot20_bp": 997,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8678,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 325,
+     "top_coop_bp": 5,
+     "unmet": 966
+    },
+    {
+     "bot20_bp": 980,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8699,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 321,
+     "top_coop_bp": 4,
+     "unmet": 371
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 250,
+     "peak_unmet": 966,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 997,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8678,
+    "real_wage": 10,
+    "t": 600,
+    "top1_bp": 325,
+    "top_coop_bp": 5,
+    "unmet": 966
+   },
+   "t_start": 2
+  },
+  "tax_dump_s123": {
+   "arc": [
+    {
+     "bot20_bp": 248,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9011,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 173,
+     "unmet": 7
+    },
+    {
+     "bot20_bp": 375,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9180,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 445,
+     "top_coop_bp": 54,
+     "unmet": 126
+    },
+    {
+     "bot20_bp": 515,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8822,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 663,
+     "top_coop_bp": 29,
+     "unmet": 3
+    },
+    {
+     "bot20_bp": 495,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8911,
+     "real_wage": 13,
+     "t": 150,
+     "top1_bp": 594,
+     "top_coop_bp": 21,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 631,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8853,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 516,
+     "top_coop_bp": 16,
+     "unmet": 117
+    },
+    {
+     "bot20_bp": 606,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8916,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 478,
+     "top_coop_bp": 13,
+     "unmet": 463
+    },
+    {
+     "bot20_bp": 717,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8856,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 427,
+     "top_coop_bp": 11,
+     "unmet": 204
+    },
+    {
+     "bot20_bp": 795,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8808,
+     "real_wage": 13,
+     "t": 350,
+     "top1_bp": 397,
+     "top_coop_bp": 10,
+     "unmet": 559
+    },
+    {
+     "bot20_bp": 853,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8768,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 379,
+     "top_coop_bp": 8,
+     "unmet": 99
+    },
+    {
+     "bot20_bp": 859,
+     "bread_idx": 1,
+     "div_pp": 200,
+     "mid60_bp": 8767,
+     "real_wage": 166,
+     "t": 450,
+     "top1_bp": 374,
+     "top_coop_bp": 7,
+     "unmet": 454
+    },
+    {
+     "bot20_bp": 912,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8729,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 359,
+     "top_coop_bp": 6,
+     "unmet": 258
+    },
+    {
+     "bot20_bp": 912,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8727,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 361,
+     "top_coop_bp": 6,
+     "unmet": 954
+    },
+    {
+     "bot20_bp": 981,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8675,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 344,
+     "top_coop_bp": 5,
+     "unmet": 274
+    },
+    {
+     "bot20_bp": 957,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8704,
+     "real_wage": 13,
+     "t": 650,
+     "top1_bp": 339,
+     "top_coop_bp": 5,
+     "unmet": 309
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 954,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 912,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8727,
+    "real_wage": 10,
+    "t": 550,
+    "top1_bp": 361,
+    "top_coop_bp": 6,
+    "unmet": 954
+   },
+   "t_start": 2
+  },
+  "tax_dump_s42": {
+   "arc": [
+    {
+     "bot20_bp": 248,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9011,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 173,
+     "unmet": 7
+    },
+    {
+     "bot20_bp": 371,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9184,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 445,
+     "top_coop_bp": 54,
+     "unmet": 126
+    },
+    {
+     "bot20_bp": 508,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8829,
+     "real_wage": 10,
+     "t": 100,
+     "top1_bp": 663,
+     "top_coop_bp": 30,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 487,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8920,
+     "real_wage": 11,
+     "t": 150,
+     "top1_bp": 593,
+     "top_coop_bp": 22,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 636,
+     "bread_idx": 11,
+     "div_pp": 200,
+     "mid60_bp": 8848,
+     "real_wage": 11,
+     "t": 200,
+     "top1_bp": 516,
+     "top_coop_bp": 17,
+     "unmet": 397
+    },
+    {
+     "bot20_bp": 610,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8903,
+     "real_wage": 10,
+     "t": 250,
+     "top1_bp": 487,
+     "top_coop_bp": 13,
+     "unmet": 286
+    },
+    {
+     "bot20_bp": 688,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8871,
+     "real_wage": 13,
+     "t": 300,
+     "top1_bp": 441,
+     "top_coop_bp": 11,
+     "unmet": 604
+    },
+    {
+     "bot20_bp": 779,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8813,
+     "real_wage": 10,
+     "t": 350,
+     "top1_bp": 408,
+     "top_coop_bp": 10,
+     "unmet": 159
+    },
+    {
+     "bot20_bp": 827,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8787,
+     "real_wage": 10,
+     "t": 400,
+     "top1_bp": 386,
+     "top_coop_bp": 8,
+     "unmet": 54
+    },
+    {
+     "bot20_bp": 844,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8776,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 380,
+     "top_coop_bp": 7,
+     "unmet": 133
+    },
+    {
+     "bot20_bp": 916,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8728,
+     "real_wage": 10,
+     "t": 500,
+     "top1_bp": 356,
+     "top_coop_bp": 7,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 910,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8726,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 364,
+     "top_coop_bp": 6,
+     "unmet": 454
+    },
+    {
+     "bot20_bp": 927,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8719,
+     "real_wage": 10,
+     "t": 600,
+     "top1_bp": 354,
+     "top_coop_bp": 5,
+     "unmet": 914
+    },
+    {
+     "bot20_bp": 913,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8738,
+     "real_wage": 10,
+     "t": 650,
+     "top1_bp": 349,
+     "top_coop_bp": 5,
+     "unmet": 1
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 914,
+     "to": 600
+    }
+   ],
+   "peak": {
+    "bot20_bp": 927,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8719,
+    "real_wage": 10,
+    "t": 600,
+    "top1_bp": 354,
+    "top_coop_bp": 5,
+    "unmet": 914
+   },
+   "t_start": 2
+  },
+  "tax_dump_s7": {
+   "arc": [
+    {
+     "bot20_bp": 248,
+     "bread_idx": 100,
+     "div_pp": 200,
+     "mid60_bp": 9011,
+     "real_wage": 2,
+     "t": 2,
+     "top1_bp": 741,
+     "top_coop_bp": 173,
+     "unmet": 7
+    },
+    {
+     "bot20_bp": 374,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 9180,
+     "real_wage": 13,
+     "t": 50,
+     "top1_bp": 446,
+     "top_coop_bp": 54,
+     "unmet": 126
+    },
+    {
+     "bot20_bp": 511,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8824,
+     "real_wage": 13,
+     "t": 100,
+     "top1_bp": 665,
+     "top_coop_bp": 31,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 494,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8910,
+     "real_wage": 10,
+     "t": 150,
+     "top1_bp": 596,
+     "top_coop_bp": 21,
+     "unmet": 163
+    },
+    {
+     "bot20_bp": 637,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8842,
+     "real_wage": 10,
+     "t": 200,
+     "top1_bp": 521,
+     "top_coop_bp": 17,
+     "unmet": 254
+    },
+    {
+     "bot20_bp": 658,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8870,
+     "real_wage": 13,
+     "t": 250,
+     "top1_bp": 472,
+     "top_coop_bp": 13,
+     "unmet": 407
+    },
+    {
+     "bot20_bp": 719,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8844,
+     "real_wage": 10,
+     "t": 300,
+     "top1_bp": 437,
+     "top_coop_bp": 11,
+     "unmet": 594
+    },
+    {
+     "bot20_bp": 807,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8788,
+     "real_wage": 13,
+     "t": 350,
+     "top1_bp": 405,
+     "top_coop_bp": 10,
+     "unmet": 1
+    },
+    {
+     "bot20_bp": 862,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8757,
+     "real_wage": 13,
+     "t": 400,
+     "top1_bp": 381,
+     "top_coop_bp": 8,
+     "unmet": 308
+    },
+    {
+     "bot20_bp": 855,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8771,
+     "real_wage": 10,
+     "t": 450,
+     "top1_bp": 374,
+     "top_coop_bp": 7,
+     "unmet": 166
+    },
+    {
+     "bot20_bp": 913,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8731,
+     "real_wage": 13,
+     "t": 500,
+     "top1_bp": 356,
+     "top_coop_bp": 6,
+     "unmet": 497
+    },
+    {
+     "bot20_bp": 914,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8721,
+     "real_wage": 10,
+     "t": 550,
+     "top1_bp": 365,
+     "top_coop_bp": 6,
+     "unmet": 376
+    },
+    {
+     "bot20_bp": 922,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8726,
+     "real_wage": 13,
+     "t": 600,
+     "top1_bp": 352,
+     "top_coop_bp": 5,
+     "unmet": 594
+    },
+    {
+     "bot20_bp": 907,
+     "bread_idx": 12,
+     "div_pp": 200,
+     "mid60_bp": 8751,
+     "real_wage": 13,
+     "t": 650,
+     "top1_bp": 342,
+     "top_coop_bp": 5,
+     "unmet": 449
+    }
+   ],
+   "famine_windows": [
+    {
+     "from": 50,
+     "peak_unmet": 594,
+     "to": 650
+    }
+   ],
+   "peak": {
+    "bot20_bp": 719,
+    "bread_idx": 12,
+    "div_pp": 200,
+    "mid60_bp": 8844,
+    "real_wage": 10,
+    "t": 300,
+    "top1_bp": 437,
+    "top_coop_bp": 11,
+    "unmet": 594
+   },
+   "t_start": 2
+  }
+ }
+}

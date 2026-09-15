@@ -89,9 +89,10 @@ def test_unfunded_field_gives_no_bonus_and_cap_holds():
     assert research_effect_bp(s, s.recipes["flour_to_bread"], p) == 0
     produced, base = _produce_flour_to_bread(s, p)
     assert produced == base  # exactly base output
-    # cap: 1,000,000cr food know-how would naively give 25,000bp -> cap 2500
+    # cap: 1,000,000cr food know-how would naively give 25,000bp
+    # -> cap 5000 (true-need balance 2026-09-15, spec §5: +50% dial)
     s.research_funding["food"] = 1_000_000
-    assert research_effect_bp(s, s.recipes["flour_to_bread"], p) == 2_500
+    assert research_effect_bp(s, s.recipes["flour_to_bread"], p) == 5_000
 
 
 def test_crisis_redirects_all_innovation():

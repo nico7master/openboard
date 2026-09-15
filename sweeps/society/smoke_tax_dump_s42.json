@@ -1,0 +1,105 @@
+{
+  "arm": "tax_dump",
+  "config": {
+    "land": true,
+    "tax800": true
+  },
+  "d_foreign": 0,
+  "d_research": 0,
+  "final": {
+    "crisis_state": {},
+    "deaths": 0,
+    "foreign_balance": 0,
+    "found_total": 43,
+    "gini": 1019,
+    "pool_units": 2087052923,
+    "pop": 182,
+    "produced": 359,
+    "unmet": 1,
+    "unmet_streak_max": 11
+  },
+  "identity_ok": true,
+  "money_delta": 0,
+  "seed": 42,
+  "series": [
+    [
+      5,
+      182,
+      843,
+      179,
+      2087993795,
+      73,
+      0,
+      300
+    ],
+    [
+      10,
+      182,
+      979,
+      1,
+      2087161583,
+      271,
+      0,
+      300
+    ],
+    [
+      12,
+      182,
+      1019,
+      1,
+      2087052923,
+      359,
+      0,
+      39
+    ]
+  ],
+  "smoke": true,
+  "society": [
+    {
+      "bot20_bp": 1611,
+      "bread_idx": 100,
+      "bread_px": 300,
+      "div_pp": 200,
+      "ev_crisis_declarations": 0,
+      "ev_deaths": 0,
+      "ev_foreclosures": 0,
+      "ev_found_coop": 43,
+      "ev_insolvencies": 0,
+      "ev_shock_starts": 0,
+      "mid60_bp": 8266,
+      "pool": 2088232036,
+      "pop": 182,
+      "real_wage": 2,
+      "t": 2,
+      "top1_bp": 123,
+      "top_coop_bp": 190,
+      "unmet": 7,
+      "unmet_streak_max": 1,
+      "wage": 800
+    },
+    {
+      "bot20_bp": 1457,
+      "bread_idx": 13,
+      "bread_px": 39,
+      "div_pp": 200,
+      "ev_crisis_declarations": 0,
+      "ev_deaths": 0,
+      "ev_foreclosures": 0,
+      "ev_found_coop": 0,
+      "ev_insolvencies": 0,
+      "ev_shock_starts": 0,
+      "mid60_bp": 8400,
+      "pool": 2087052923,
+      "pop": 182,
+      "real_wage": 20,
+      "t": 12,
+      "top1_bp": 143,
+      "top_coop_bp": 127,
+      "unmet": 1,
+      "unmet_streak_max": 11,
+      "wage": 800
+    }
+  ],
+  "ticks": 12,
+  "wall_s": 1.3
+}

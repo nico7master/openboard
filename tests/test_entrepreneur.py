@@ -1,6 +1,12 @@
 """A2: emergent entrepreneurship — the entrepreneur bot detects a chronic
 shortage (unmet >= 5 ticks, zero active listings) and FOUND_COOPs with a
-declared recipe_id. Market entry without capitalists."""
+declared recipe_id. Market entry without capitalists.
+
+2026-09-14 amendment (society study root cause): a good listed in
+dribbles while demand outgrew capacity is still founding-grade — the
+under-capacity test compares the durable demand_ema against the
+population's per-tick need, not mere listing existence.
+"""
 import random
 import sys
 from pathlib import Path
@@ -58,8 +64,27 @@ def test_covered_good_ignored():
     for c in s.balances:
         s.unmet_needs[c] = {"books": 7}
     s.listings["books"] = [{"seller": "x", "floor": 5, "qty": 3, "tick": 1}]
+    # 2026-09-14 amendment: listings only 'cover' when SUPPLY MEETS DEMAND.
+    # A dribble listing while every citizen is unmet is under-capacity —
+    # founding-grade (this exact deadlock produced zero foundings in 650
+    # ticks in the society study: water 'covered' by dribbles, 916
+    # unserved bids, 8 coops per 1000 citizens).
     txs = entrepreneur("e1", s, s.active_ruleset_params(), 1, random.Random(1))
-    assert all(t.action != "FOUND_COOP" for t in txs)  # market already covers books
+    found = [t for t in txs if t.action == "FOUND_COOP"]
+    assert len(found) == 1
+    assert found[0].payload["recipe_id"] == "book_printing"
+
+
+def test_covered_and_served_no_founding():
+    s = _world()
+    for c in s.balances:
+        s.unmet_needs[c] = {"books": 7}
+    s.listings["books"] = [{"seller": "x", "floor": 5, "qty": 3, "tick": 1}]
+    # market genuinely meets per-tick need (pop 3 x quota 1 = 3/tick EMA):
+    # the shortage is distributional/transient, not structural — no founding
+    s.demand_ema["books"] = 3
+    txs = entrepreneur("e1", s, s.active_ruleset_params(), 1, random.Random(1))
+    assert all(t.action != "FOUND_COOP" for t in txs)
 
 
 def test_already_in_coop_no_action():
