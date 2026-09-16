@@ -1,5 +1,51 @@
 # Handoff: OpenBoard Economy Shipping Month Progress
 
+## Session 2026-09-16 (morning): FOUNDER DIRECTIVES + SOURCE COMPLETION — pushed, 501/501
+
+**User directives:** "implement all of it the way it is planned" (source
+document audit gaps) + governance simplification: bots have no incentive
+and are not smart — the SYSTEM proposes and they vote by default; crisis
+is auto-balanced; whistleblower stays engine-only; no Cardano yet.
+
+**Engine changes (verified: full suite 501/501 in 16:52):**
+- Default-approve voting (politics.py): politicians with no stance on a
+  proposal vote FOR it — system rebalancing never stalls on an indifferent
+  electorate. CAPTURE GUARD: default approval NEVER applies to
+  constitutional matters (voting rules/council/phase via
+  _is_constitutional), or one faction proposal would ride rubber stamps
+  to the 2/3 bar.
+- Crisis auto-balance (crisis.py + rules.py): new `crisis.auto_ratify`
+  param — shock-declared crises ratify same-tick with zero citizen votes
+  (event carries auto: true). Legacy worlds (no key) replay identically.
+  `crisis` registered in OPTIONAL_PARAMS with strict validation.
+- Source-document gaps ON by default in live games (server.py governance
+  block): whistleblower bounties (500cr reward), automatic audits (every
+  100 ticks), need_allocation priority mode. All remain votable.
+- **REAL BUG FIXED (wide blast radius):** wealth_tax.threshold was scaled
+  x100 TWICE (server _params pre-scale per D21, then genesis_state again)
+  -> 5B units -> every whole-document proposal built from a live world's
+  active params failed validate_params (100M cap). Live governance games
+  could not file ANY proposal with correct params. Removed the genesis
+  re-scale (state.py); the D21 comment in rules.py confirms 50M units is
+  the intended final value. Politics tests passed only because they
+  replaced the tax dict wholesale — invisible until founder-directive
+  tests built proposals from real live-world params.
+- Capacity audit follow-ups (catalog.py): medicine 3->5/run (the ONE true
+  gap at 83.5% coverage in the 966-citizen audit), bread 40->50/run
+  (95.7% peak slack on a single chain). Replay-safe: saves serialize
+  recipes.
+- Founder switching: verified ALREADY LIVE (true-need §3 replication
+  block in bots.py — mature+roomy coops release a member to found a
+  duplicate when the good is under-capacity). No code needed.
+
+**Commits:** 5 pushed (5c30ed0..d6039db): vote token, source-completion,
+founder directives + wealth-tax fix, gap defaults.
+
+**Watch items:** medicine ~139% / bread ~120% coverage on paper — verify
+with scripts/capacity_966_audit.py at next scale review. Politics bots
+still file ~270 doomed proposals/run (they die unnoticed now that votes
+are scarce); UI-side proposal surfacing is the natural next pass.
+
 ## Session 2026-09-15 (afternoon/evening): TRUE-NEED BALANCE — gate PASSED (3 seeds x 2000 ticks)
 
 **User directive:** "balance everything out as it should be" — replace the
