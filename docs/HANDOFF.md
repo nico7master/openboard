@@ -41,10 +41,15 @@ is auto-balanced; whistleblower stays engine-only; no Cardano yet.
 **Commits:** 5 pushed (5c30ed0..d6039db): vote token, source-completion,
 founder directives + wealth-tax fix, gap defaults.
 
-**Watch items:** medicine ~139% / bread ~120% coverage on paper — verify
-with scripts/capacity_966_audit.py at next scale review. Politics bots
-still file ~270 doomed proposals/run (they die unnoticed now that votes
-are scarce); UI-side proposal surfacing is the natural next pass.
+**Watch item CLOSED (2026-09-16, capacity_966_audit rerun s42, 949 pop,
+150 ticks):** medicine capacity 26.4 -> 44.0 units/tick (coverage 83.5%
+-> 139.1%), bread 4,053 -> 5,067 (95.7% -> 119.7%). Audit verdict: ZERO
+under-capacity goods economy-wide, kcal group 1,606% (famine impossible),
+D18 wage-debt book 19.2M / 68 coops / zero assumption events. Evidence:
+sweeps/society/capacity_966_s42{,_before_bumps}.json. Remaining open
+item: politics bots still file ~270 doomed proposals/run (they die
+unnoticed now that votes are scarce); UI-side proposal surfacing is the
+natural next pass.
 
 ## Session 2026-09-15 (afternoon/evening): TRUE-NEED BALANCE — gate PASSED (3 seeds x 2000 ticks)
 

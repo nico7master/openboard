@@ -2,7 +2,7 @@
   "seed": 42,
   "target_pop": 949,
   "ticks_driven": 150,
-  "wall_s": 88.6,
+  "wall_s": 83.2,
   "at_start": {
     "books": {
       "need_per_tick": 10.544444444444444,
@@ -24,8 +24,8 @@
     },
     "bread": {
       "need_per_tick": 4234.0,
-      "capacity_per_tick": 5066.666666666666,
-      "coverage_bp": 11966.0,
+      "capacity_per_tick": 4053.333333333333,
+      "coverage_bp": 9573.0,
       "n_producers": 5,
       "producers": [
         {
@@ -574,8 +574,8 @@
     },
     "medicine": {
       "need_per_tick": 31.633333333333333,
-      "capacity_per_tick": 44.0,
-      "coverage_bp": 13909.0,
+      "capacity_per_tick": 26.400000000000002,
+      "coverage_bp": 8345.0,
       "n_producers": 2,
       "producers": [
         {
@@ -754,8 +754,8 @@
     },
     "bread": {
       "need_per_tick": 4234.0,
-      "capacity_per_tick": 5066.666666666666,
-      "coverage_bp": 11966.0,
+      "capacity_per_tick": 4053.333333333333,
+      "coverage_bp": 9573.0,
       "n_producers": 5,
       "producers": [
         {
@@ -1304,8 +1304,8 @@
     },
     "medicine": {
       "need_per_tick": 31.633333333333333,
-      "capacity_per_tick": 44.0,
-      "coverage_bp": 13909.0,
+      "capacity_per_tick": 26.400000000000002,
+      "coverage_bp": 8345.0,
       "n_producers": 2,
       "producers": [
         {
@@ -1464,34 +1464,34 @@
     }
   },
   "demand_ema_at_end": {
-    "books": 24,
-    "bread": 557,
+    "books": 31,
+    "bread": 811,
     "canned_food": null,
     "cheese": null,
     "childcare": 947,
-    "clothing": 816,
+    "clothing": 724,
     "education": 947,
     "eggs": 947,
-    "electricity": 12447,
+    "electricity": 11800,
     "fish": 787,
-    "flour": 10326,
-    "fruit": 778,
-    "furniture": 18,
-    "grain": 1000,
+    "flour": 12641,
+    "fruit": 824,
+    "furniture": 15,
+    "grain": 1077,
     "healthcare": 947,
-    "heating_fuel": 4085,
-    "household_goods": 30,
-    "housing": 9,
-    "maintenance": 46,
-    "meals": 136,
-    "meat": 953,
-    "medicine": 23,
-    "milk": 961,
-    "transport": 479,
-    "vegetables": 569,
-    "water": 3043
+    "heating_fuel": 3936,
+    "household_goods": 35,
+    "housing": 10,
+    "maintenance": 38,
+    "meals": 165,
+    "meat": 954,
+    "medicine": 22,
+    "milk": 1001,
+    "transport": 605,
+    "vegetables": 912,
+    "water": 2970
   },
-  "d18_wage_debt_book": 19217880,
-  "d18_indebted_coops": 68,
+  "d18_wage_debt_book": 19695131,
+  "d18_indebted_coops": 73,
   "d18_assumed_events": []
 }
