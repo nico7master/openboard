@@ -35,7 +35,7 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
-OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets", "whistleblower", "audits", "need_allocation", "crisis")
+OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets", "whistleblower", "audits", "need_allocation", "crisis", "basket_buys")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -345,6 +345,14 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             v = cr["max_ticks"]
             if isinstance(v, bool) or not isinstance(v, int) or v < 1 or v > 100_000:
                 return Reason.INVALID_RULESET
+
+    # WP4.2 performance floor (spec 2026-09-16): essential-buy basket.
+    if "basket_buys" in params:
+        bb = params["basket_buys"]
+        if not isinstance(bb, dict) or not set(bb.keys()) <= {"enabled"}:
+            return Reason.INVALID_RULESET
+        if not isinstance(bb.get("enabled", False), bool):
+            return Reason.INVALID_RULESET
 
     if "needs_cycle" in params:
         nc = params["needs_cycle"]

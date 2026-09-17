@@ -94,8 +94,18 @@ class Transaction:
         return cached
 
     def sort_key(self) -> tuple[str, str, str, int]:
-        """Deterministic ordering inside a tick (plan T4)."""
-        return (self.sender, self.action, self.content_hash(), self.ruleset_version)
+        """Deterministic ordering inside a tick (plan T4).
+
+        Memoized: frozen tx => key is immutable. Pure dedup; identical
+        tuple. The 2026-09-16 profile showed 191k sort_key calls/tick
+        (one per comparison during sorted()) each rebuilding the tuple —
+        caching cuts key construction to one per tx.
+        """
+        cached = self.__dict__.get("_sort_key_cache")
+        if cached is None:
+            cached = (self.sender, self.action, self.content_hash(), self.ruleset_version)
+            object.__setattr__(self, "_sort_key_cache", cached)
+        return cached
 
 
 @dataclass(frozen=True)

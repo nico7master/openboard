@@ -21,7 +21,7 @@ from .ledger import Ledger, Transaction
 from .rules import RuleSetDoc, validate_params
 from .state import WorldState
 
-SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE", "BUY_LAND", "SELL_LAND", "IMPORT_GOOD", "EXPORT_GOOD", "REPORT"})
+SUPPORTED_ACTIONS = frozenset({"TRANSFER", "RULE_CHANGE", "FOUND_COOP", "JOIN_COOP", "LEAVE_COOP", "WORK", "PRODUCE", "LIST_GOOD", "BID", "BID_FOR_COOP", "BUY_ESSENTIAL", "BUY_ESSENTIAL_BASKET", "PROPOSE", "VOTE", "ROLLBACK", "INTERVENE", "CRISIS_VOTE", "LOAN", "REPAY", "DELEGATE", "BUY_LAND", "SELL_LAND", "IMPORT_GOOD", "EXPORT_GOOD", "REPORT"})
 
 
 def _is_int(v: Any) -> bool:
@@ -1300,7 +1300,10 @@ def _validate_buy_essential(state: WorldState, tx: Transaction, params: dict[str
     if tx.sender not in state.balances:
         return Reason.UNKNOWN_SENDER
 
-    if not isinstance(payload, dict) or set(payload.keys()) != {"good", "qty"}:
+    # Hot path (165k calls/tick at 975 pop): avoid the per-call set
+    # allocation of `set(payload.keys()) != {"good","qty"}` — length
+    # plus membership on the same keys is an identical check.
+    if not isinstance(payload, dict) or len(payload) != 2 or "good" not in payload or "qty" not in payload:
         return Reason.INVALID_PAYLOAD
 
     good = payload.get("good")
@@ -1311,7 +1314,12 @@ def _validate_buy_essential(state: WorldState, tx: Transaction, params: dict[str
     if not _is_int(qty) or qty <= 0:
         return Reason.INVALID_QTY
 
-    triage = state.effective_triage(good)
+    # Inline effective_triage: identical to state.effective_triage(good)
+    # (D8 rule override > catalog default) but without re-resolving the
+    # active ruleset per call — `params` IS the active ruleset for this
+    # tick (resolved once in apply_tick).
+    _overrides = params.get("triage_overrides") or {}
+    triage = _overrides.get(good) or state.goods[good]["triage"]
     if triage not in ("essential", "emergency"):
         return Reason.NOT_ESSENTIAL
 
@@ -1343,6 +1351,80 @@ def _apply_buy_essential(state: WorldState, tx: Transaction) -> dict[str, Any]:
         "action": "BUY_ESSENTIAL",
         "good": payload["good"],
         "qty": payload["qty"],
+    }
+
+
+# WP4.2 performance floor (spec 2026-09-16): one tx per citizen per tick
+# carrying ALL essential buys. 87% of ledger records at 975 pop were
+# single-good BUY_ESSENTIALs (~19 per citizen); the basket collapses them
+# ~19x. Clearing equivalence is provable: the essential pass re-sorts each
+# good's buyer bucket deterministically (_served: priority by streak/name,
+# fair rotation or lottery over the SAME sender-ordered initial list), and
+# each citizen contributes at most one bid per good either way — so the
+# buckets, their order, and every settlement are identical.
+# Validation mirrors the individual checks per good (in sorted(goods)
+# order) with ONE deliberate difference: rejection is atomic (any bad good
+# rejects the whole basket). The funds check stays per-good NON-cumulative
+# — exactly like the individual path, where settlement (not validation)
+# drops takes the citizen cannot pay at clearing time. A cumulative
+# pre-check here would wrongly zero out poor citizens who the individual
+# path would have partially served.
+def _validate_buy_essential_basket(state: WorldState, tx: Transaction, params: dict[str, Any]) -> Reason | None:
+    payload = tx.payload
+
+    # FLIP gate (realism-pack convention): absent/disabled => the action
+    # does not exist under this ruleset (same treatment as unsupported
+    # actions). Old rulesets therefore reject baskets byte-identically.
+    _cfg = params.get("basket_buys") or {}
+    if not _cfg.get("enabled"):
+        return Reason.INVALID_PAYLOAD
+
+    if tx.sender not in state.balances:
+        return Reason.UNKNOWN_SENDER
+
+    if not isinstance(payload, dict) or len(payload) != 1 or "goods" not in payload:
+        return Reason.INVALID_PAYLOAD
+
+    goods = payload.get("goods")
+    if not isinstance(goods, dict) or not goods:
+        return Reason.INVALID_PAYLOAD
+
+    quota_map = params.get("essential_need_quota", {})
+    overrides = params.get("triage_overrides") or {}
+    balance = state.balances[tx.sender]
+    for good in sorted(goods.keys()):
+        qty = goods[good]
+        if good not in state.goods:
+            return Reason.GOOD_UNKNOWN
+        if not _is_int(qty) or qty <= 0:
+            return Reason.INVALID_QTY
+        triage = overrides.get(good) or state.goods[good]["triage"]
+        if triage not in ("essential", "emergency"):
+            return Reason.NOT_ESSENTIAL
+        if qty > quota_map.get(good, 0):
+            return Reason.QUOTA_EXCEEDED
+        price = state.good_cost_baseline.get(good, 1)
+        if balance < price * qty:
+            return Reason.INSUFFICIENT_FUNDS
+    return None
+
+
+def _apply_buy_essential_basket(state: WorldState, tx: Transaction) -> dict[str, Any]:
+    goods = tx.payload["goods"]
+    for good in sorted(goods.keys()):
+        state.bids.append({
+            "bidder": tx.sender,
+            "coop_id": None,
+            "good": good,
+            "max_price": state.good_cost_baseline.get(good, 1),  # baseline price, no bidding
+            "qty": goods[good],
+            "essential": True,
+        })
+    return {
+        "tick": tx.tick,
+        "sender": tx.sender,
+        "action": "BUY_ESSENTIAL_BASKET",
+        "goods": {good: goods[good] for good in sorted(goods.keys())},
     }
 
 
@@ -2188,15 +2270,18 @@ def _consume_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list
         unmet: dict[str, bool] = {}
         # Stage 5 - demographics: children consume a scaled integer share
         # of each quota (child_need_pct). Inert without demographics.
+        # WP4.2 perf: identity computed ONCE per citizen (was: is_child
+        # re-evaluated per good — ~30 redundant calls/citizen/tick).
         _scale_bp = 10_000
-        if is_child(state, citizen, params):
+        _child = is_child(state, citizen, params)
+        if _child:
             _scale_bp = child_need_pct(params) * 100
         kcal_got = 0  # kcal-substitution group total (true-need balance)
         for good in _needs_order:
             quota = needs[good]
             if quota <= 0:
                 continue
-            if is_child(state, citizen, params):
+            if _child:
                 # integer-native scaling: floor(scaled), min 1 when any
                 # need exists (children always need something to live).
                 # Base is 10_000 (bp), NOT _scale_bp (dividing by the
@@ -3643,6 +3728,7 @@ def apply_tick(
         "BID": _validate_bid,
         "BID_FOR_COOP": _validate_bid_for_coop,
         "BUY_ESSENTIAL": _validate_buy_essential,
+        "BUY_ESSENTIAL_BASKET": _validate_buy_essential_basket,
         "PROPOSE": _validate_propose,
         "VOTE": _validate_vote,
         "ROLLBACK": _validate_rollback,
@@ -3676,6 +3762,7 @@ def apply_tick(
         "BID": lambda t: _apply_bid(state, t),
         "BID_FOR_COOP": lambda t: _apply_bid_for_coop(state, t),
         "BUY_ESSENTIAL": lambda t: _apply_buy_essential(state, t),
+        "BUY_ESSENTIAL_BASKET": lambda t: _apply_buy_essential_basket(state, t),
         "VOTE": lambda t: _apply_vote(state, t, params),
         "REPAY": lambda t: _apply_repay(state, t),
         "DELEGATE": lambda t: _apply_delegate(state, t),

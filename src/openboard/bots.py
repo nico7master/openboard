@@ -928,7 +928,17 @@ def personal_needs(who, state, params, tick):
     out = []
     needs = params.get("needs", {})
     cycles = params.get("needs_cycle") or {}
+    # WP4.2 performance floor (spec 2026-09-16): when basket_buys is
+    # enabled, all of this citizen's essential buys travel in ONE
+    # BUY_ESSENTIAL_BASKET tx instead of ~19 singles (87% of ledger
+    # volume at 975 pop). Selection logic below is UNCHANGED — same
+    # ceilings, same affordability gate; only the transport batches.
+    _basket_cfg = params.get("basket_buys") or {}
+    _basket = {} if _basket_cfg.get("enabled") else None
     inv = state.citizen_inventory.get(who, {})
+    # WP4.2 perf: citizen's unmet streaks read ONCE (was: per good —
+    # ~30 dict-allocations/citizen/tick). Read-only within the loop.
+    _my_streaks = state.unmet_needs.get(who) or {}
     balance = state.balances.get(who, 0)
     # Loop-invariant: params cannot change while this citizen decides.
     _params_resolved = state.active_ruleset_params()
@@ -950,7 +960,7 @@ def personal_needs(who, state, params, tick):
         # an unmet streak build a deeper pantry — demand learns from
         # scarcity. Streak >= 3 raises the buy-ahead ceiling to 3x quota.
         held = inv.get(good, 0)
-        _streak = int(state.unmet_needs.get(who, {}).get(good) or 0)
+        _streak = int(_my_streaks.get(good) or 0)
         # 2026-09-02: shortage-memory pantry applies to MARKET goods only.
         # Panic-buying ESSENTIALS (3x quota when streak >= 3) is a positive
         # feedback loop: one citizen's deep pantry consumes stock that
@@ -980,7 +990,10 @@ def personal_needs(who, state, params, tick):
             eq = params.get("essential_need_quota", {}).get(good, 0)
             qty = min(want, eq) if eq > 0 else 0
             if qty > 0 and balance >= floor * qty:
-                out.append(_tx(tick, who, "BUY_ESSENTIAL", {"good": good, "qty": qty}, v))
+                if _basket is not None:
+                    _basket[good] = qty
+                else:
+                    out.append(_tx(tick, who, "BUY_ESSENTIAL", {"good": good, "qty": qty}, v))
         else:
             price = floor + 1
             # Savings floor (realism pack): money velocity varies with
@@ -996,4 +1009,6 @@ def personal_needs(who, state, params, tick):
                 out.append(_tx(tick, who, "BID", {
                     "good": good, "max_price": price, "qty": want,
                 }, v))
+    if _basket:
+        out.append(_tx(tick, who, "BUY_ESSENTIAL_BASKET", {"goods": _basket}, v))
     return out
