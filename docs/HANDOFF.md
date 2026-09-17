@@ -686,3 +686,13 @@ paths); optionally revisit default region count (R=10 at 933 pop).
 - Errors.py: +REPORT_DISABLED/FLAG_NOT_FOUND/ALREADY_REPORTED/SELF_REPORT. OPTIONAL_PARAMS += whistleblower/audits/need_allocation, strict schema blocks in rules.py.
 - Verification status: 12 new tests + fixed stale default-assuming scarcity test (now tests OFF contract explicitly + asserts default ON) — all pass. Full suite 494/495 with that one stale test (fixed after). Hardcore gate seed 7 PASSED with scarcity ON: worst_essential=0 worst_breadth=9 (bound 30). Seeds 42/123 pending at write time; commit+push after gate ladder completes.
 - Dispatch wiring for new actions: SUPPORTED_ACTIONS + validators + appliers (see engine.py REPORT entries) — copy that pattern for future actions.
+
+## Remote sims available (2026-09-17): user's LAN PC — probe first
+
+Heavy parallel study batches (gates, seed sweeps, atlas grids) can run on the founder's
+LAN PC over sandboxed SSH: `sims@192.168.178.46`, unprivileged user, no sudo (fence
+verified). The PC is OFTEN but NOT ALWAYS on — **always probe reachability first and fall
+back to local memrun if unreachable.** Full workflow, sync/run/poll/retrieve commands,
+parallelism limits, and the teardown kill-switch: `docs/REMOTE_SIMS.md` (authoritative).
+Verified 2026-09-17: 3-seed 2,000-tick gate in parallel = 8.3 min vs 32 min local,
+results byte-identical to container runs.
