@@ -138,9 +138,7 @@ milestone, not a hole in this design.
 - **Replay:** LLM decisions are recorded as ledger inputs (like a chess move list). Replay
   re-feeds recorded decisions → byte-identical. Survival gates stay bot-only; LLM sessions
   are labeled behavioral scenarios in STUDY_PLAN.
-- **Cost:** ≤ ~40 calls / 100 ticks full-strength; 2,000-tick session ≈ 200–800 calls. On the
-  GPU PC via Ollama = **free**; model choice via the existing model-candidate-testing battery
-  (cheapest adequate model wins). API models as fallback.
+- **Cost:** ≤ ~40 calls / 100 ticks full-strength; 2,000-tick session ≈ 200–800 calls. **Model decision (founder, 2026-09-18): 11 GB VRAM rules out local big models — seats run on CHEAP ONLINE models.** Battery shortlist: Mercury 2.5 (fast diffusion, very cheap), Gemini Flash-class, DeepSeek chat, Groq-hosted Qwen/Llama (keys already in env), Together-hosted Qwen. Judge on a playtest rubric: legal-move rate vs the engine validator, goal persistence across a session, cost + latency per session. Cheapest adequate model wins; ~0.5–1.5M tokens/session ≈ **$0.10–0.50 per session** at cheap-tier prices, potentially $0 on free tiers. One SMALL local model (7–8B, Ollama) stays useful only as the **zero-cost plumbing dummy** for shaking out harness bugs (digest size, malformed actions, recording) before spending online tokens.
 - **Where:** harness runs beside the engine (same process, off-tick), GPU PC hosts models;
   heavy sim batches unchanged (memrun / REMOTE_SIMS.md rules still apply).
 
