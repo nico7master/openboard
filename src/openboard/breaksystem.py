@@ -31,7 +31,7 @@ def round_verdict(state: WorldState, playbook: str, start_tick: int) -> dict[str
     """Final/interim verdict for a timed round: damage you caused and how
     the round ends. Damage = flags_caused*100 + worst_unmet_streak*10
     (flags are the system catching you; unmet is real harm to citizens)."""
-    score = attack_score(state)
+    score = attack_score(state, attacker_citizen(state))
     ticks_played = score["tick"] - start_tick
     flags_caused = score["flags"]
     stopped = flags_caused >= STOP_FLAGS or score["worst_unmet_streak"] >= STOP_UNMET
@@ -111,8 +111,10 @@ def attacker_citizen(state: WorldState) -> str:
     return sorted(state.balances.keys())[0]
 
 
-def attack_score(state: WorldState) -> dict[str, Any]:
-    """Live scoreboard: attacker damage vs system response."""
+def attack_score(state: WorldState, attacker: str | None = None) -> dict[str, Any]:
+    """Live scoreboard: attacker damage vs system response. With `attacker`
+    given, only flags targeting the attacker count as YOUR damage — background
+    bots' flags (e.g. baseline FREE_RIDER drift) never count against you."""
     from .metrics import gini
 
     worst_unmet = 0
@@ -120,10 +122,15 @@ def attack_score(state: WorldState) -> dict[str, Any]:
         for _good, t in streaks.items():
             worst_unmet = max(worst_unmet, int(t or 0))
     violation = invariants_ok(state, baseline=None)
+    flags = state.flags
+    if attacker is not None:
+        flags = [f for f in flags if f.get("target") == attacker]
     return {
         "tick": state.tick,
-        "flags": len(state.flags),
-        "flag_kinds": sorted({f.get("kind", "") for f in state.flags}),
+        "flags": len(flags),
+        "flag_kinds": sorted({f.get("kind", "") for f in flags}),
+        "all_flags": len(state.flags),
+        "gini_bp": gini(list(state.balances.values())),  # int, Gini x 10,000
         "gini_bp": gini(list(state.balances.values())),  # int, Gini x 10,000
         "worst_unmet_streak": worst_unmet,
         "invariant_ok": violation is None,

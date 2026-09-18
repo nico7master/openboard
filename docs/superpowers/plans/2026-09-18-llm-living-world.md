@@ -171,3 +171,45 @@ milestone, not a hole in this design.
 1. Approve this design as the living-world direction (P0–P4 staging).
 2. Deals layer in- or post-RC1? (Recommendation: post-RC1 — it's new economics; RC1 ships with seats on existing mechanics.)
 3. First model to battery-test on the PC via Ollama (candidate: qwen3 14–30B class)?
+
+---
+
+## P0 COMPLETE (2026-09-18) — Adversary Seat Is Live
+
+**Founder lock-in:** Mercury via A0 Venice API. Built and verified the same day.
+
+### What ships
+
+| Component | Path | Notes |
+|---|---|---|
+| Seat harness | `src/openboard/llm_seat.py` | digest builder, Venice client, robust JSON parse, transaction mapper (exact validator schemas), session recorder |
+| Session driver | `scripts/llm_attack_session.py` | `--record` (Mercury decides) / `--replay` (recorded decisions re-fed, zero model calls) |
+| Offline tests | `tests/test_llm_seat.py` | 8 tests, fake client, no network |
+| Live evidence | `sweeps/llm_seat/session_20260918_144704.json` | Mercury played a real round; A/B replay matched byte-for-byte |
+
+### Model wiring facts (cost us two probes to learn)
+
+- Endpoint accepts **`mercury-2`** (not `mercury`, not `mercury-2.5`).
+- Mercury is a diffusion model with hidden chain-of-thought: at `max_tokens=600` the reasoning budget consumed ALL tokens and content came back **empty**. Fix: `venice_parameters.disable_thinking: true` + `max_tokens=1200`.
+- Cost so far: the entire live session cost **$0.00** (measured `cost.usd: 0.0`).
+
+### Real bug found and fixed (pre-existing, game-level)
+
+`attack_score`/`round_verdict` counted **all** state flags as attacker damage. Background bots' baseline FREE_RIDER flags hit 49 by tick 1 → every B2 round "stopped_by_system" instantly. The API tests passed only because they ran 1–2 ticks. Fix: flags are attributed by `target` — only flags against the attacker count as YOUR damage; `all_flags` kept for the scoreboard. The game's own contract now holds: *flags are the system catching you.*
+
+### A/B determinism proof (the core rule, verified with a live LLM)
+
+| Run | Model calls | Verdict |
+|---|---|---|
+| Record | 2 | ticks 9, flags 1 (FREE_RIDER), gini 817, damage 110, invariant OK |
+| Replay | **0** | **identical** — same ticks, flags, gini, damage, invariant |
+
+LLM decisions are recorded as inputs; replays are byte-identical. Survival gates stay bot-only.
+
+### Verification
+
+Full regression: **520/520 passed** (7:52 memrun). Offline seat tests: 8/8. Live session: invariant intact, attacker-attributed flags only.
+
+### Next (P1)
+
+Full 200-tick record session (~10–20 LLM calls, still $0-class cost) → leaderboard entry for `llm_adversary` vs playbook bots; then P2 (politician + citizen panel seats) per the plan above.
