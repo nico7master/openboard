@@ -17,6 +17,16 @@ ledger so replays stay byte-identical.**
 
 ## 1. Cadence — "do we need decisions every tick?" → NO
 
+### The power-asymmetry doctrine (founder principle, 2026-09-18)
+
+**We do NOT simulate every citizen with an LLM — ever.** Most people in the real world are
+System-1 actors: they consume, work, live. That's the bots. LLM tokens are a *scarce resource
+spent on agency, not on simulation breadth*: only the few actors who hold **power to change
+things** get a seat — and each seat exists to pursue **its own goal** (win the attack, get a
+law passed, build a business empire, expose fraud). The seat's job is not to "react" but to
+make smart, multi-step decisions that make its goal come true — which is precisely what
+mechanical bots can never do and what makes the world feel alive.
+
 Real humans don't decide everything every second. Psychology's two-system model maps cleanly:
 
 | System | Real-world behavior | In our world | Cost |
