@@ -213,3 +213,26 @@ Full regression: **520/520 passed** (7:52 memrun). Offline seat tests: 8/8. Live
 ### Next (P1)
 
 Full 200-tick record session (~10–20 LLM calls, still $0-class cost) → leaderboard entry for `llm_adversary` vs playbook bots; then P2 (politician + citizen panel seats) per the plan above.
+
+### P1: FULL SESSION COMPLETE (2026-09-18, mercury-2-5)
+
+**Founder asks answered:** correct id is `mercury-2-5` (dash form); token/cost accounting now built into every session; full 200-tick session played.
+
+**Session economics (session_20260918_155952.json):**
+
+| Metric | Value |
+|---|---|
+| LLM calls | 199 (one per tick) |
+| Input tokens | 320,419 (~1,610/tick) |
+| Output tokens | 25,544 (~128/tick) |
+| Cost as reported by endpoint | **$0.00** |
+| Wall time | 238.4s (~4 min for a full round) |
+| Malformed replies survived | 3 (hardened: pass-turn, counted) |
+
+At typical cheap-tier paid pricing (~$0.10/M in, ~$0.30/M out) a full session would be ≈ **$0.04** — the living world is economically trivial to run.
+
+**Game result:** Mercury-2.5 survived the full round as a real adversary: damage 520 (5 flags: FREE_RIDER + HOARD, Gini 2637bp), invariant intact. First LLM leaderboard entry vs playbook bots.
+
+**Engineering fixes landed:** decision cadence bug (`tick % 1 == 1` never fired — one decision was replayed 200 ticks; now `(tick-1) % every == 0`), malformed-reply resilience (pass-turn + count, like a human losing a turn), per-call usage capture, session-level accounting block.
+
+**Determinism at scale:** full-session replay = byte-identical verdict (199 ticks, 5 flags, damage 520, gini 2637) with **0 model calls** in 0.4s-class wall time.

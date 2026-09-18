@@ -66,6 +66,7 @@ def main() -> int:
     t0 = time.time()
     calls = 0
     dropped = 0
+    malformed = 0
 
     while True:
         s = game.state
@@ -85,10 +86,16 @@ def main() -> int:
             else:
                 decision = last_decision
                 digest = ""
-        elif tick % args.decide_every == 1 or not last_decision.get("actions"):
+        elif (tick - 1) % args.decide_every == 0 or not last_decision.get("actions"):
             digest = attacker_digest(s, attacker, score)
             raw = client(digest)
-            decision = parse_decision(raw)
+            try:
+                decision = parse_decision(raw)
+            except Exception:
+                # malformed model reply: the seat loses this turn (plays nothing),
+                # the session survives — like a human submitting an invalid form
+                decision = {"reasoning": f"MALFORMED_REPLY: {raw[:200]}", "actions": []}
+                malformed += 1
             calls += 1
         else:
             decision = last_decision
@@ -105,10 +112,19 @@ def main() -> int:
 
     verdict = round_verdict(game.state, "llm_adversary", 1)
     final_score = attack_score(game.state, attacker)
+    usage = getattr(client, "usage", []) if args.record else []
     out = {
         "mode": "replay" if args.replay else "record",
         "model": MODEL,
         "attacker": attacker,
+        "accounting": {
+            "llm_calls": len(usage),
+            "malformed_replies": malformed,
+            "prompt_tokens": sum(u["prompt_tokens"] for u in usage),
+            "completion_tokens": sum(u["completion_tokens"] for u in usage),
+            "total_tokens": sum(u["total_tokens"] for u in usage),
+            "cost_usd": round(sum(u["cost_usd"] for u in usage), 6),
+        },
         "llm_calls": calls,
         "dropped_moves": dropped,
         "wall_s": round(time.time() - t0, 1),

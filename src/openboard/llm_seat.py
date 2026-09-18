@@ -21,7 +21,7 @@ from .ledger import Transaction
 from .state import WorldState
 
 VENICE_URL = "https://api.agent-zero.ai/venice/v1/chat/completions"
-MODEL = "mercury-2"
+MODEL = "mercury-2-5"
 
 # ---- Seat contract -------------------------------------------------------
 
@@ -119,8 +119,18 @@ def venice_client(model: str = MODEL, timeout: int = 60) -> Callable[[str], str]
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read())
+        u = data.get("usage", {}) or {}
+        cost = (data.get("cost", {}) or {}).get("usd", 0.0)
+        # per-call accounting (price-per-run analysis)
+        call.usage.append({
+            "prompt_tokens": int(u.get("prompt_tokens", 0)),
+            "completion_tokens": int(u.get("completion_tokens", 0)),
+            "total_tokens": int(u.get("total_tokens", 0)),
+            "cost_usd": float(cost or 0.0),
+        })
         return data["choices"][0]["message"]["content"]
 
+    call.usage = []  # type: ignore[attr-defined]
     return call
 
 
