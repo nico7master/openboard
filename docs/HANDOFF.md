@@ -744,3 +744,18 @@ back to local memrun if unreachable.** Full workflow, sync/run/poll/retrieve com
 parallelism limits, and the teardown kill-switch: `docs/REMOTE_SIMS.md` (authoritative).
 Verified 2026-09-17: 3-seed 2,000-tick gate in parallel = 8.3 min vs 32 min local,
 results byte-identical to container runs.
+
+## 2026-09-19/20 — RC1 UX: founder defaults live, Civic Board, watch-me-think (commit c9f73fa, pushed)
+
+**Founder directives shipped end-to-end (9 new tests, full suite 539/539):**
+
+1. **Governance defaults live**: every `Run(governance=True)` world now launches with the founder design — monthly vote token (10k bp / 30-tick cycle), persuasion dice, reachable quorum (10%). Before, live games silently launched without token/persuasion and with an unreachable 50% quorum; only the P2 driver patched them post-hoc. Legacy (`governance=False`) worlds untouched — replay-safe.
+2. **Human vote bug fixed (real bug)**: token-mode validation requires exact keys `{proposal_id, choice, bp}` — the seat VOTE affordance (`/api/seat` actions + UI `seatVote`) sent no `bp`, so **every human vote in token worlds was silently INVALID_PAYLOAD**. Both fixed; civic-board split voting is the follow-up.
+3. **Civic Board tab** (`🗳️`): proposals with quorum counts, civic event feed (PROPOSAL_SETTLED, OVERSIGHT_FLAG, WHISTLEBLOWER_PAID, AUDIT_REPORT, crisis), politician trust book, token/crisis status. `/api/civic`.
+4. **Watch-me-think LLM attach**: `/api/llm/start|stop|status` attach Mercury-2.5 to the politician seat as a daemon. Contract: snapshot digest under `RUN.lock`, call the model OUTSIDE the lock (never stalls the API), queue via the human path; tick-dedup (never re-decide a tick), VOTE-only carryover, one-proposal-per-month cap, malformed-reply tolerance, full token accounting; refuses legacy worlds (its bp votes would be silenced); world reset clears the seat.
+
+**Test fallout handled**: 2 persuasion-tier tests pinned to legacy binary votes in their fixture (they test tier math, not tokens). Two of my new tests initially encoded wrong assumptions (inert default bp in disabled worlds → real contract is GOVERNANCE_DISABLED; no-op proposal rejected → file a real transfer_limit bump).
+
+**Ops note**: container restart mid-session wiped flask/pytest from /opt/venv (reinstalled) and restored the git remote URL in alias form — push needed the explicit authenticated-URL path again. See REMOTE_SIMS.md for the sandbox; same pattern.
+
+**Next**: human split-vote UI on the Civic Board (slider over the 10k bp), then trader/journalist seats off the same template, then the RC1 week-3 science re-run under the new defaults.
