@@ -51,7 +51,13 @@ class _Runner:
 
 def _gov_world():
     g = server.Run(seed=99, governance=True)
-    g.state.rulesets[-1]["params"]["governance"]["persuasion"] = True
+    gov = g.state.rulesets[-1]["params"]["governance"]
+    gov["persuasion"] = True
+    # These tests target the persuasion TIER MATH with plain binary votes.
+    # Run now ships the founder's monthly token by default (2026-09-19 UX
+    # wiring), which changes the VOTE payload contract — pin legacy mode
+    # so the fixture stays isolated from token mechanics.
+    gov["vote_token_bp"] = 0
     return g
 
 

@@ -116,6 +116,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <button :class="view === 'policy' ? 'tab active' : 'tab'" @click="setView('policy')">🧪 The Lab</button>
     <button :class="view === 'chronicle' ? 'tab active' : 'tab'" @click="setView('chronicle')">📜 Chronicle</button>
     <button :class="view === 'break' ? 'tab active' : 'tab'" @click="setView('break')">⚔️ Break It</button>
+    <button :class="view === 'civic' ? 'tab active' : 'tab'" @click="setView('civic')">🗳️ Civic Board</button>
   </div>
   <div x-show="questStep < 4" class="panel" style="display:flex; gap:10px; align-items:center; padding:7px 12px; margin:0 12px 6px; font-size:12.5px">
     <span>🗺️ <strong>First-session quest</strong> (step <span x-text="questStep + 1"></span>/4):</span>
@@ -361,6 +362,93 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   </div>
 </div>
 
+<div x-show="view === 'civic'" style="max-width: 860px; margin: 0 auto; padding: 0 12px">
+  <div class="panel">
+    <h2 style="margin-top:0">🗳️ Civic Board</h2>
+    <p class="muted" style="font-size:13px">The public face of the republic: proposals, votes, oversight flags, audits — and an AI politician you can watch think.</p>
+    <div style="display:flex; gap:18px; flex-wrap:wrap; font-size:13px; margin-bottom:10px">
+      <span>tick <strong x-text="civic.tick"></strong></span>
+      <span>quorum <strong x-text="civic.quorum_needed"></strong> ballots</span>
+      <span x-show="civic.token_mode">🪙 monthly vote token ON (<span x-text="civic.vote_cycle_ticks"></span>-tick cycle)</span>
+      <span x-show="civic.crisis" style="color:var(--red)">🚨 CRISIS — auto-balance active</span>
+    </div>
+    <template x-if="!civic.token_mode">
+      <div class="muted" style="font-size:13px; border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:10px">
+        This world runs <strong>legacy binary votes</strong>. Reset with governance ON (⚙️ in the header) to get the founder's monthly vote token, persuasion dice and the 60% structural tier.
+      </div>
+    </template>
+    <div style="border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:12px">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <strong>🤖 AI Politician</strong>
+        <span class="muted" style="font-size:12px" x-text="llm.who ? llm.who : 'not attached'"></span>
+        <button class="primary" style="margin-left:auto" @click="llmStart()" :disabled="llm.busy || llm.running">Attach Mercury</button>
+        <button class="tab" @click="llmStop()" :disabled="llm.busy || !llm.running">Detach</button>
+      </div>
+      <template x-if="llm.running">
+        <div style="font-size:13px; margin-top:8px">
+          <div style="border-left:3px solid var(--accent); padding:6px 10px; background:var(--bg); border-radius:0 6px 6px 0">
+            <em x-text="llm.last_thought || 'thinking…'"></em>
+          </div>
+          <div style="margin-top:6px; display:flex; gap:12px; flex-wrap:wrap">
+            <template x-for="(a, i) in llm.last_actions" :key="llm.last_decision_tick + '-' + i">
+              <span class="muted" style="font-size:12px" x-text="'→ ' + a.action + ' ' + a.detail"></span>
+            </template>
+            <span class="muted" style="font-size:12px" x-show="llm.last_decision_tick > 0"
+                  x-text="'decided @ t' + llm.last_decision_tick"></span>
+          </div>
+          <div class="muted" style="font-size:12px; margin-top:4px">
+            <span x-text="llm.accounting.llm_calls"></span> model calls ·
+            <span x-text="llm.accounting.total_tokens"></span> tokens ·
+            $<span x-text="(llm.accounting.cost_usd ?? 0).toFixed(4)"></span>
+            <span x-show="llm.error" style="color:var(--red)" x-text="llm.error"></span>
+          </div>
+        </div>
+      </template>
+      <div class="muted" style="font-size:12px; margin-top:6px" x-show="!llm.running">
+        Attach the seat and run the world (▶ autoplay) — it proposes laws, votes its monthly token, and earns/loses trust with every outcome. Decisions are recorded, so replays stay exact.
+      </div>
+    </div>
+    <h3 style="margin-bottom:6px">Proposals</h3>
+    <table>
+      <thead><tr><th>id</th><th>status</th><th>proposer</th><th>votes</th><th>quorum</th><th>closes</th><th>change</th></tr></thead>
+      <tbody>
+        <template x-for="p in civic.proposals" :key="p.proposal_id">
+          <tr>
+            <td style="font-size:12px" x-text="p.proposal_id.slice(0, 10)"></td>
+            <td><strong :style="p.status === 'passed' ? 'color:var(--green)' : (p.status === 'rejected' ? 'color:var(--red)' : '')" x-text="p.status"></strong></td>
+            <td style="font-size:12px" x-text="p.proposer"></td>
+            <td x-text="p.ballots"></td>
+            <td x-text="p.quorum_needed ?? '—'"></td>
+            <td x-text="'t' + p.closes_tick"></td>
+            <td class="muted" style="font-size:11px; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" x-text="p.params"></td>
+          </tr>
+        </template>
+        <tr x-show="!civic.proposals.length"><td colspan="7" class="muted" style="text-align:center; padding:10px">No proposals yet.</td></tr>
+      </tbody>
+    </table>
+    <h3 style="margin-bottom:6px">Civic events</h3>
+    <div style="font-size:12.5px; max-height:260px; overflow-y:auto">
+      <template x-for="(e, i) in civic.events" :key="i + '-' + e.tick">
+        <div style="padding:4px 0; border-bottom:1px solid var(--line)">
+          <strong x-text="e.action"></strong>
+          <span class="muted" x-text="' · t' + e.tick + ' · ' + civicEventDetail(e)"></span>
+        </div>
+      </template>
+      <div class="muted" style="padding:6px 0" x-show="!civic.events.length">Nothing yet — the republic is quiet.</div>
+    </div>
+    <h3 style="margin-bottom:6px">Politician trust</h3>
+    <table x-show="Object.keys(civic.trust).length">
+      <thead><tr><th>citizen</th><th>trust</th></tr></thead>
+      <tbody>
+        <template x-for="(v, k) in civic.trust" :key="k">
+          <tr><td x-text="k"></td><td><strong x-text="v"></strong>/100</td></tr>
+        </template>
+      </tbody>
+    </table>
+    <p class="muted" style="font-size:12px" x-show="!Object.keys(civic.trust).length">Trust book is empty — it fills as the AI politician wins and loses votes.</p>
+  </div>
+</div>
+
 <!-- first-visit tour -->
 <div x-show="tourOpen" x-transition style="position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:60; display:flex; align-items:center; justify-content:center" @click.self="closeTour()">
   <div class="panel" style="max-width:420px; margin:0">
@@ -408,6 +496,11 @@ function dashboard() {
     // Break the System v2
     atk: { playbook: 'hoarder', player: '', ticks: 0, score: null, verdict: null,
            over: false, board: [], busy: false },
+    // Civic Board + live LLM politician
+    civic: { tick: 0, citizens: 0, token_mode: false, vote_cycle_ticks: 30,
+             quorum_needed: 0, proposals: [], events: [], trust: {}, crisis: false },
+    llm: { running: false, who: '', last_thought: '', last_actions: [],
+           last_decision_tick: -1, error: '', busy: false, accounting: {} },
     // Onboarding quest: 0 watch → 1 enact → 2 observe → 3 adopt → 4 done
     questStep: parseInt(localStorage.getItem('ob_quest') ?? '0', 10) || 0,
     pollTimer: null,
@@ -795,6 +888,9 @@ function dashboard() {
         if (this.view === 'seat') {
           await this.loadSeat();
         }
+        if (this.view === 'civic') {
+          await this.loadCivic();
+        }
       } catch (e) { /* server restarting */ }
     },
 
@@ -888,7 +984,47 @@ function dashboard() {
     },
 
     seatVote(pid, choice) {
-      return this.seatAct({ type: 'VOTE', payload: { proposal_id: pid } }, choice);
+      // Vote-token worlds require {proposal_id, choice, bp} (exact keys).
+      // Full token = 10000 bp; split voting comes via the Civic Board.
+      return this.seatAct({ type: 'VOTE', payload: { proposal_id: pid, bp: 10000 } }, choice);
+    },
+
+    async loadCivic() {
+      try {
+        const d = await this.api('/api/civic');
+        if (d.ok) this.civic = d;
+      } catch (e) { /* server restarting */ }
+      try {
+        const l = await this.api('/api/llm/status');
+        if (l.ok) this.llm = { ...this.llm, ...l };
+      } catch (e) { /* keep old status */ }
+    },
+    async llmStart() {
+      this.llm.busy = true;
+      try {
+        const d = await this.api('/api/llm/start', { method: 'POST', body: { seat: 'politician', decide_every: 3 } });
+        if (!d.ok) this.showToast('Attach failed: ' + (d.error || 'unknown'));
+        else { this.llm.running = true; this.llm.who = d.who; this.showToast('🤖 Mercury attached as ' + d.who + ' — press ▶ autoplay and watch it legislate'); }
+      } catch (e) { this.showToast('Attach failed: ' + e.message); }
+      this.llm.busy = false;
+      this.loadCivic();
+    },
+    async llmStop() {
+      this.llm.busy = true;
+      try { await this.api('/api/llm/stop', { method: 'POST' }); this.llm.running = false; this.showToast('Politician detached — its world role returns to a bot on next reset'); }
+      catch (e) { this.showToast('Stop failed: ' + e.message); }
+      this.llm.busy = false;
+    },
+    civicEventDetail(e) {
+      const bits = [];
+      if (e.proposal_id) bits.push(e.proposal_id.slice(0, 10));
+      if (e.target) bits.push(e.target);
+      if (e.outcome) bits.push(e.outcome);
+      if (e.kind) bits.push(e.kind);
+      if (e.reporter) bits.push('by ' + e.reporter);
+      if (e.reward) bits.push('+' + e.reward + ' cr');
+      if (e.passed !== undefined) bits.push(e.passed ? 'passed' : 'failed');
+      return bits.join(' · ');
     },
 
     async tick() {

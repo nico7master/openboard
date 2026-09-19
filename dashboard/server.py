@@ -932,8 +932,15 @@ class Run:
             "water": 200, "electricity": 500,
         }
         if self.governance:
+            # Founder-design governance (2026-09-19 UX wiring): monthly vote
+            # token, persuasion dice and a REACHABLE quorum live in every
+            # governance world — previously the P2 driver patched these
+            # post-hoc and live games launched without them (quorum 50% was
+            # unreachable: only ~20 political roles ever vote).
             params["governance"] = {"enabled": True, "vote_window_ticks": 3,
-                                    "quorum_bp": 5_000, "trial_period_ticks": 10}
+                                    "quorum_bp": 1_000, "trial_period_ticks": 10,
+                                    "vote_token_bp": 10_000, "vote_cycle_ticks": 30,
+                                    "persuasion": True}
             params["oversight"] = dict(params["oversight"])
             params["oversight"]["council_members"] = ["worker_a", "worker_b"]
             # Founder directive 2026-09-16: crises AUTO-BALANCE. Bots are
@@ -1668,6 +1675,194 @@ def api_autoplay():
     return jsonify({"ok": True, "autoplay": RUN.autoplay})
 
 
+# ---------------- Civic Board + live LLM politician (2026-09-19 UX) --------
+# Watch-me-think contract: the daemon NEVER holds RUN.lock during a Mercury
+# call (2-3s would stall every API request) — it snapshots the digest under
+# the lock, calls the model OUTSIDE it, then queues actions through the same
+# human path (queue_action). All P2 live lessons are ported: the seat
+# replaces its bot twin, only VOTEs carry over between decisions, one new
+# proposal per monthly cycle, malformed replies cost the turn, and every
+# call's token usage is accounted.
+_LLM: dict[str, Any] = {
+    "running": False, "who": "", "last_thought": "", "last_actions": [],
+    "last_decision_tick": -1, "error": "", "started_at": 0.0,
+    "accounting": {"llm_calls": 0, "malformed_replies": 0, "dropped_moves": 0,
+                   "prompt_tokens": 0, "completion_tokens": 0,
+                   "total_tokens": 0, "cost_usd": 0.0},
+}
+_LLM_THREAD: threading.Thread | None = None
+
+
+def _llm_public() -> dict[str, Any]:
+    return {k: _LLM[k] for k in ("running", "who", "last_thought", "last_actions",
+                                 "last_decision_tick", "error", "accounting")}
+
+
+def _llm_daemon(game: "Run", who: str, decide_every: int) -> None:
+    from openboard.llm_politician import (parse_politician_decision,
+                                          politician_client,
+                                          politician_digest,
+                                          politician_transactions)
+    try:
+        client = politician_client()
+    except Exception as e:  # env key missing etc.
+        _LLM["running"] = False
+        _LLM["error"] = f"client init failed: {e}"
+        return
+    filed_cycles: list[int] = []
+    last_decision: dict[str, Any] = {"actions": []}
+    last_tick_seen = -1
+    while _LLM["running"] and RUN is game:
+        time.sleep(0.15)
+        with game.lock:
+            paused = not game.autoplay["running"]
+            tick = game.state.tick + 1
+        if paused:
+            continue  # world paused — the seat waits with it
+        if tick == last_tick_seen:
+            continue  # world hasn't advanced — never re-decide the same tick
+        last_tick_seen = tick
+        if (tick - 1) % decide_every == 0 or not last_decision.get("actions"):
+            with game.lock:
+                digest = politician_digest(game.state, who, tick)
+            try:
+                decision = parse_politician_decision(client(digest))
+            except Exception as e:
+                decision = {"reasoning": f"SEAT_ERROR: {e}", "actions": []}
+                _LLM["accounting"]["malformed_replies"] += 1
+            digest_note = ""
+        else:
+            # re-queue guard: only VOTEs carry over — a re-queued PROPOSE
+            # files duplicates every tick (P2 lesson: trust spiral to 0)
+            decision = {"reasoning": last_decision.get("reasoning", ""),
+                        "actions": [a for a in last_decision.get("actions", [])
+                                    if str(a.get("action", "")).upper() == "VOTE"]}
+            digest_note = " [carryover]"
+        # mechanical filing cap: ONE proposal per monthly cycle (P2 lesson:
+        # prompt discipline alone filed 26 proposals in 100 ticks)
+        cycle = (tick - 1) // 30
+        if any(str(a.get("action", "")).upper() == "PROPOSE"
+               for a in decision.get("actions", [])):
+            if cycle in filed_cycles:
+                decision = {"reasoning": decision.get("reasoning", "") +
+                            " [one proposal per month — held back]",
+                            "actions": [a for a in decision.get("actions", [])
+                                        if str(a.get("action", "")).upper() != "PROPOSE"]}
+            else:
+                filed_cycles.append(cycle)
+        with game.lock:
+            version = game.state.ruleset_version
+        txs = politician_transactions(decision, tick, who, version, token_mode=True)
+        _LLM["accounting"]["dropped_moves"] += len(decision.get("actions", [])) - len(txs)
+        for tx in txs:
+            game.queue_action(who, tx.action, tx.payload)
+        _LLM["last_thought"] = str(decision.get("reasoning", ""))[:400] + digest_note
+        _LLM["last_actions"] = [
+            {"action": str(a.get("action", "")).upper(),
+             "detail": json.dumps(a, sort_keys=True)[:160]}
+            for a in decision.get("actions", [])]
+        _LLM["last_decision_tick"] = tick
+        last_decision = decision
+        usage = getattr(client, "usage", [])
+        _LLM["accounting"].update({
+            "llm_calls": len(usage),
+            "prompt_tokens": sum(u["prompt_tokens"] for u in usage),
+            "completion_tokens": sum(u["completion_tokens"] for u in usage),
+            "total_tokens": sum(u["total_tokens"] for u in usage),
+            "cost_usd": round(sum(u["cost_usd"] for u in usage), 6),
+        })
+
+
+@app.post("/api/llm/start")
+def api_llm_start():
+    global _LLM_THREAD
+    data = request.get_json(force=True, silent=True) or {}
+    seat = str(data.get("seat", "politician"))
+    if seat != "politician":
+        return jsonify({"ok": False, "error": "unknown seat"}), 400
+    with RUN.lock:
+        gov = RUN.state.active_ruleset_params().get("governance", {})
+        gov_ok = bool(gov.get("enabled")) and int(gov.get("vote_token_bp", 0)) > 0
+    if not gov_ok:
+        # The seat's vote contract REQUIRES token mode; in a legacy world its
+        # bp payload is rejected as an extra key — the seat would be silent.
+        return jsonify({"ok": False,
+                        "error": "seat needs a governance world with the vote token "
+                                 "(reset with governance ON)"}), 400
+    if _LLM["running"]:
+        return jsonify({"ok": True, "already": True, **_llm_public()})
+    decide_every = max(1, int(data.get("decide_every", 3)))
+    with RUN.lock:
+        who = sorted(RUN.state.balances.keys())[0]  # deterministic seat citizen
+        RUN.bots.pop(who, None)  # seat replaces its bot twin (no double votes)
+    _LLM.update({"running": True, "who": who, "last_thought": "waking up…",
+                 "last_actions": [], "last_decision_tick": -1, "error": "",
+                 "started_at": time.time(),
+                 "accounting": {"llm_calls": 0, "malformed_replies": 0,
+                                "dropped_moves": 0, "prompt_tokens": 0,
+                                "completion_tokens": 0, "total_tokens": 0,
+                                "cost_usd": 0.0}})
+    _LLM_THREAD = threading.Thread(target=_llm_daemon, args=(RUN, who, decide_every),
+                                   daemon=True)
+    _LLM_THREAD.start()
+    return jsonify({"ok": True, "who": who})
+
+
+@app.post("/api/llm/stop")
+def api_llm_stop():
+    _LLM["running"] = False
+    return jsonify({"ok": True})
+
+
+@app.get("/api/llm/status")
+def api_llm_status():
+    return jsonify({"ok": True, **_llm_public()})
+
+
+@app.get("/api/civic")
+def api_civic():
+    """Civic Board: open proposals, recent civic events, politician trust."""
+    CIVIC_ACTIONS = {"PROPOSAL_SETTLED", "OVERSIGHT_FLAG", "WHISTLEBLOWER_PAID",
+                     "AUDIT_REPORT", "CRISIS_DECLARED", "CRISIS_ENDED"}
+    with RUN.lock:
+        s = RUN.state
+        params = s.active_ruleset_params()
+        gov = params.get("governance", {})
+        citizens = len(s.balances)
+        quorum_needed = -(-citizens * int(gov.get("quorum_bp", 5_000)) // 10_000)
+        # Mirror the engine's vote contract: token mode exists only when
+        # governance is ENABLED and the monthly token is on. Legacy worlds
+        # carry the rules.py default bp but reject every vote while
+        # enabled=False — showing "token ON" there would lie.
+        token_mode = bool(gov.get("enabled", False)) and int(gov.get("vote_token_bp", 0)) > 0
+        props = []
+        for pid, pr in sorted(s.proposals.items(),
+                              key=lambda kv: kv[1].get("opened_tick", 0),
+                              reverse=True)[:30]:
+            props.append({
+                "proposal_id": pid,
+                "status": pr["status"],
+                "proposer": pr.get("proposer"),
+                "opened_tick": pr.get("opened_tick"),
+                "closes_tick": pr["closes_tick"],
+                "ballots": len(pr.get("ballots", {})),
+                "quorum_needed": quorum_needed if pr["status"] == "open" else None,
+                "params": json.dumps(pr.get("params") or {}, sort_keys=True)[:220],
+            })
+        events = [e for e in RUN.feed if e.get("action") in CIVIC_ACTIONS][-60:]
+        trust = dict(sorted(s.politician_trust.items()))
+        crisis = bool(getattr(s, "crisis_active", False))
+        tick_now = s.tick
+    return jsonify({
+        "ok": True, "tick": tick_now, "citizens": citizens,
+        "token_mode": token_mode,
+        "vote_cycle_ticks": gov.get("vote_cycle_ticks", 30),
+        "quorum_needed": quorum_needed,
+        "proposals": props, "events": events, "trust": trust,
+        "crisis": crisis,
+    })
+
+
 @app.post("/api/reset")
 def api_reset():
     global RUN
@@ -1679,6 +1874,7 @@ def api_reset():
         return jsonify({"ok": False, "error": "unknown scenario"}), 400
     with RUN.lock:
         RUN.autoplay["running"] = False
+    _LLM["running"] = False  # daemon self-exits (its world is gone)
     RUN = Run(seed=seed, governance=governance, scenario=scenario)
     top_share = 0
     if scenario == "unequal":
@@ -1787,7 +1983,13 @@ def api_seat():
                 actions.append({
                     "type": "VOTE",
                     "label": f"Vote on {pr['proposal_id']}",
-                    "payload": {"proposal_id": pr["proposal_id"], "choice": "for"},
+                    # Vote token worlds require {proposal_id, choice, bp}
+                    # (exact keys). Full token = 10000 bp; splits come later
+                    # via the civic board slider. The seat's votes already
+                    # carry bp; the human affordance must match the
+                    # validator or every human vote dies INVALID_PAYLOAD.
+                    "payload": {"proposal_id": pr["proposal_id"],
+                                "choice": "for", "bp": 10_000},
                     "proposal_id": pr["proposal_id"],
                     "why": f"closes tick {pr['closes_tick']}",
                     "summary": json.dumps(pr.get("params") or {}, sort_keys=True)[:100],
