@@ -449,6 +449,79 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   </div>
 </div>
 
+<div x-show="view === 'seat'" style="max-width: 860px; margin: 0 auto; padding: 0 12px">
+  <div class="panel">
+    <h2 style="margin-top:0">🏠 Citizen Seat
+      <select x-model="seatWho" @change="loadSeat()" class="tab" style="margin-left:10px; min-width:140px">
+        <template x-for="c in (seat.citizens ?? [])" :key="c">
+          <option :value="c" x-text="c"></option>
+        </template>
+      </select>
+    </h2>
+    <div style="display:flex; gap:18px; flex-wrap:wrap; font-size:13px; margin-bottom:10px">
+      <span>tick <strong x-text="seat.tick"></strong></span>
+      <span>balance <strong x-text="seat.balance"></strong> cr</span>
+      <span>hours left <strong x-text="seat.hours?.left"></strong>/<span x-text="seat.hours?.max"></span></span>
+      <span x-show="seat.crisis" style="color:var(--red)">🚨 crisis</span>
+    </div>
+    <!-- Monthly vote token: the founder's split-vote gauge -->
+    <template x-if="seat.vote_token?.mode">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px">
+        <strong>🪙 Monthly vote token</strong> —
+        <strong x-text="seat.vote_token.bp_left"></strong> bp left this month
+        (refreshes every <span x-text="seat.vote_token.cycle_ticks"></span> ticks).
+        Spend per vote:
+        <input type="number" min="1" :max="seat.vote_token.bp_left" x-model.number="voteBp"
+               style="width:90px; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:4px 6px; color:var(--fg)">
+        bp
+        <button class="tab" @click="voteBp = seat.vote_token.bp_left">all</button>
+        <button class="tab" @click="voteBp = Math.ceil(seat.vote_token.bp_left / 2)">half</button>
+        <div class="muted" style="font-size:12px; margin-top:4px">Split your token across proposals — each vote spends exactly the bp set here.</div>
+      </div>
+    </template>
+    <h3 style="margin-bottom:6px">Open proposals</h3>
+    <template x-for="p in (seat.open_proposals ?? [])" :key="p.proposal_id">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px; font-size:13px">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <strong style="font-size:12px" x-text="p.proposal_id.slice(0, 12)"></strong>
+          <span class="muted" x-text="'by ' + (p.proposer ?? '?') + ' · closes t' + p.closes_tick + ' · ' + p.ballots + ' ballots'"></span>
+          <template x-if="p.needs_my_vote">
+            <span style="margin-left:auto">
+              <button class="primary" @click="seatVote(p.proposal_id, 'for')"
+                      :disabled="seat.vote_token?.mode && !(voteBp > 0)">👍 Vote for</button>
+              <button class="tab" @click="seatVote(p.proposal_id, 'against')"
+                      :disabled="seat.vote_token?.mode && !(voteBp > 0)">👎 Against</button>
+            </span>
+          </template>
+          <span x-show="!p.needs_my_vote" class="muted" style="margin-left:auto">already voted ✓</span>
+        </div>
+        <div class="muted" style="font-size:11.5px; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" x-text="JSON.stringify(p.params)"></div>
+      </div>
+    </template>
+    <div class="muted" style="font-size:13px; padding:6px 0" x-show="!(seat.open_proposals ?? []).length">No open proposals right now.</div>
+    <h3 style="margin-bottom:6px">What you can do</h3>
+    <div style="display:flex; flex-direction:column; gap:6px">
+      <template x-for="(a, i) in (seat.actions ?? []).filter(a => a.type !== 'VOTE')" :key="i + (a.label ?? a.type)">
+        <div style="display:flex; gap:10px; align-items:center; font-size:13px">
+          <button class="tab" @click="seatAct(a)" x-text="a.label ?? a.type"></button>
+          <span class="muted" style="font-size:12px" x-text="a.why ?? ''"></span>
+        </div>
+      </template>
+    </div>
+    <h3 style="margin-bottom:6px">My balance over time</h3>
+    <canvas id="seatChart" height="70"></canvas>
+    <h3 style="margin-bottom:6px">My recent ledger events</h3>
+    <div style="font-size:12px; max-height:200px; overflow-y:auto">
+      <template x-for="(e, i) in (seat.my_events ?? []).slice().reverse()" :key="i">
+        <div style="padding:3px 0; border-bottom:1px solid var(--line)">
+          <strong x-text="e.action"></strong> <span class="muted" x-text="' · t' + e.tick"></span>
+        </div>
+      </template>
+      <div class="muted" x-show="!(seat.my_events ?? []).length">Nothing yet — work a shift to enter the ledger.</div>
+    </div>
+  </div>
+</div>
+
 <!-- first-visit tour -->
 <div x-show="tourOpen" x-transition style="position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:60; display:flex; align-items:center; justify-content:center" @click.self="closeTour()">
   <div class="panel" style="max-width:420px; margin:0">
@@ -493,6 +566,7 @@ function dashboard() {
     newBot: { name: '', archetype: 'honest_worker', coop: 'farmers' },
     action: { sender: '', type: 'WORK', payload: {}, json: '{}' },
     seat: {}, seatWho: '', seatHist: { t: [], v: [] },
+    voteBp: null,  // monthly-token bp to spend per vote (split voting)
     // Break the System v2
     atk: { playbook: 'hoarder', player: '', ticks: 0, score: null, verdict: null,
            over: false, board: [], busy: false },
@@ -941,6 +1015,11 @@ function dashboard() {
         const prevTick = this.seatHist.t[this.seatHist.t.length - 1];
         this.seat = d;
         this.seatWho = d.who ?? '';
+        // keep the split-vote input within what's actually left this month
+        if (typeof d.vote_token?.bp_left === 'number'
+            && (this.voteBp == null || this.voteBp > d.vote_token.bp_left)) {
+          this.voteBp = d.vote_token.bp_left;
+        }
         if (d.who && d.tick !== prevTick) {
           this.seatHist.t.push(d.tick);
           this.seatHist.v.push(d.balance);
@@ -983,10 +1062,15 @@ function dashboard() {
       } catch (e) { this.chartError = String(e); }
     },
 
-    seatVote(pid, choice) {
+    seatVote(pid, choice, bp) {
       // Vote-token worlds require {proposal_id, choice, bp} (exact keys).
-      // Full token = 10000 bp; split voting comes via the Civic Board.
-      return this.seatAct({ type: 'VOTE', payload: { proposal_id: pid, bp: 10000 } }, choice);
+      // Split voting: spend exactly the chosen bp (defaults to the full
+      // remaining monthly token). Legacy worlds must NOT send bp — the
+      // validator rejects extra keys there.
+      const mode = this.seat.vote_token?.mode;
+      const payload = { proposal_id: pid };
+      if (mode) payload.bp = (bp ?? this.voteBp ?? this.seat.vote_token?.bp_left ?? 0);
+      return this.seatAct({ type: 'VOTE', payload }, choice);
     },
 
     async loadCivic() {

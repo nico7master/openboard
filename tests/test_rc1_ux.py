@@ -174,3 +174,74 @@ def test_llm_reset_clears_running_flag():
         d = c.post("/api/reset", json={"governance": True, "seed": 1}).get_json()
     assert d["ok"] is True
     assert server._LLM["running"] is False
+
+
+def test_split_vote_budget_accounting():
+    """The founder's splitable token, end to end: two votes in one month,
+    budget decrements per vote, the seat affordance tracks the remainder,
+    and overspending dies VOTE_BUDGET_EXCEEDED without touching the book."""
+    from openboard.ledger import Transaction
+    g = _gov_world()
+    who = "baker_a"
+    g.bots.pop(who, None)  # human seat replaces its bot twin
+    base = copy.deepcopy(g.state.active_ruleset_params())
+    base["transfer_limit"] = (base.get("transfer_limit") or 0) + 1
+    base2 = copy.deepcopy(base)
+    base2["transfer_limit"] += 1  # a second REAL change (no-op guard)
+
+    def propose(params):
+        g.pending.append(Transaction(
+            tick=g.state.tick + 1, sender=who, action="PROPOSE",
+            payload={"params": params, "activation_tick": g.state.tick + 10},
+            ruleset_version=g.state.ruleset_version))
+
+    def vote(pid, choice, bp):
+        g.pending.append(Transaction(
+            tick=g.state.tick + 1, sender=who, action="VOTE",
+            payload={"proposal_id": pid, "choice": choice, "bp": bp},
+            ruleset_version=g.state.ruleset_version))
+
+    propose(base)
+    propose(base2)
+    g.tick()
+    pids = [pid for pid, pr in sorted(g.state.proposals.items())
+            if pr.get("proposer") == who]
+    assert len(pids) == 2
+
+    # fresh month: affordance offers the full token on both proposals
+    server.RUN = g
+    with server.app.test_client() as c:
+        d = c.get("/api/seat?citizen=baker_a").get_json()
+    assert d["vote_token"]["mode"] is True
+    assert d["vote_token"]["bp_left"] == 10_000
+    votes = [a for a in d["actions"] if a["type"] == "VOTE"]
+    assert len(votes) == 2 and all(a["payload"]["bp"] == 10_000 for a in votes)
+
+    # split #1: spend 4,000 of 10,000
+    vote(pids[0], "for", 4_000)
+    g.tick()
+    assert g.state.vote_budget[who]["bp"] == 6_000
+
+    # the affordance now offers exactly the remainder
+    with server.app.test_client() as c:
+        d = c.get("/api/seat?citizen=baker_a").get_json()
+    assert d["vote_token"]["bp_left"] == 6_000
+    rem = [a for a in d["actions"] if a["type"] == "VOTE"]
+    assert len(rem) == 1 and rem[0]["proposal_id"] == pids[1]
+    assert rem[0]["payload"]["bp"] == 6_000
+
+    # overspending dies cleanly — the budget book is untouched
+    vote(pids[1], "against", 6_001)
+    g.tick()
+    rejections = [r for r in g.ledger.records
+                  if r.tx.get("sender") == who and r.tx.get("action") == "VOTE"
+                  and not r.accepted]
+    assert rejections and rejections[-1].reason == "VOTE_BUDGET_EXCEEDED"
+    assert g.state.vote_budget[who]["bp"] == 6_000
+
+    # split #2: the rest of the token lands
+    vote(pids[1], "against", 6_000)
+    g.tick()
+    assert g.state.vote_budget[who]["bp"] == 0
+    ballots = g.state.proposals[pids[1]]["ballots"][who]
+    assert ballots == {"choice": "against", "bp": 6_000}

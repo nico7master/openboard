@@ -1752,7 +1752,14 @@ def _llm_daemon(game: "Run", who: str, decide_every: int) -> None:
                 filed_cycles.append(cycle)
         with game.lock:
             version = game.state.ruleset_version
-        txs = politician_transactions(decision, tick, who, version, token_mode=True)
+            # token mode is a LIVE rule: a passed proposal can turn the
+            # monthly token off mid-session. Mirror the engine's contract
+            # each decision (enabled AND bp>0) or the seat goes silent.
+            _gov = game.state.active_ruleset_params().get("governance", {})
+            token_mode = (bool(_gov.get("enabled"))
+                          and int(_gov.get("vote_token_bp", 0)) > 0)
+        txs = politician_transactions(decision, tick, who, version,
+                                      token_mode=token_mode)
         _LLM["accounting"]["dropped_moves"] += len(decision.get("actions", [])) - len(txs)
         for tx in txs:
             game.queue_action(who, tx.action, tx.payload)
@@ -1978,19 +1985,30 @@ def api_seat():
                 "affordable": balance >= price,
                 "listed": bool(floors),
             })
+        # Vote affordances mirror the ACTIVE governance mode exactly:
+        # token worlds need {proposal_id, choice, bp} with bp <= remaining
+        # budget (split voting); legacy governance worlds reject ANY extra
+        # key; non-governance worlds reject votes outright — no affordance.
+        gov = params.get("governance", {})
+        gov_enabled = bool(gov.get("enabled"))
+        token_mode = gov_enabled and int(gov.get("vote_token_bp", 0)) > 0
+        budget = s.vote_budget.get(who) or {}
+        cycle = s.tick // int(gov.get("vote_cycle_ticks", 30))
+        bp_left = (budget.get("bp", 0) if budget.get("cycle") == cycle
+                   else int(gov.get("vote_token_bp", 0))) if token_mode else 0
         for pr in open_proposals:
-            if pr["needs_my_vote"]:
+            if pr["needs_my_vote"] and gov_enabled:
+                payload = {"proposal_id": pr["proposal_id"], "choice": "for"}
+                if token_mode:
+                    payload["bp"] = max(bp_left, 0)
                 actions.append({
                     "type": "VOTE",
-                    "label": f"Vote on {pr['proposal_id']}",
-                    # Vote token worlds require {proposal_id, choice, bp}
-                    # (exact keys). Full token = 10000 bp; splits come later
-                    # via the civic board slider. The seat's votes already
-                    # carry bp; the human affordance must match the
-                    # validator or every human vote dies INVALID_PAYLOAD.
-                    "payload": {"proposal_id": pr["proposal_id"],
-                                "choice": "for", "bp": 10_000},
+                    "label": (f"Vote on {pr['proposal_id']}"
+                              + (f" (up to {payload['bp']} bp)" if token_mode else "")),
+                    "payload": payload,
                     "proposal_id": pr["proposal_id"],
+                    "spend": payload.get("bp"),              # split-slider bound
+                    "voteable": (payload.get("bp") or 1) > 0,  # token spent?
                     "why": f"closes tick {pr['closes_tick']}",
                     "summary": json.dumps(pr.get("params") or {}, sort_keys=True)[:100],
                 })
@@ -2053,6 +2071,12 @@ def api_seat():
             "loan": loan_info,
             "my_events": my_events,
             "crisis": bool(getattr(s, "crisis_active", False)),
+            # monthly vote token (founder design): what's left to spend
+            "vote_token": {
+                "mode": token_mode,
+                "bp_left": bp_left if token_mode else 0,
+                "cycle_ticks": int(gov.get("vote_cycle_ticks", 30)),
+            },
         })
 
 
