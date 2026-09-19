@@ -1,5 +1,53 @@
 # Handoff: OpenBoard Economy Shipping Month Progress
 
+## Session 2026-09-19 (early): P2 LLM POLITICIAN SEAT — live, proven, pushed (530/530)
+
+**Directive:** "yes ready for p2" after the P0 adversary seat; founder's
+voting questions answered (tally counted never rolled; persuasion dice for
+undecided voters; scale-of-change => higher BAR via 60% structural tier;
+influence channels: design/argument/trust; vote buying forbidden).
+
+**Shipped (commit `1e69479`):**
+- `src/openboard/llm_politician.py`: politician seat — separation of powers
+ (PROPOSE/VOTE only), token-mode payload mapping, complete-ruleset digest.
+- `scripts/llm_politician_session.py`: record/replay driver with accounting,
+ re-queue guard (VOTE-only carryover), mechanical one-proposal-per-month cap,
+ reachable quorum (1000bp) for the ~20-voter cast.
+- `tests/test_llm_politician.py`: 10 tests — 60% structural tier (55% fails,
+ 67% passes), trust loop (-10 fail / +5 pass, capped), no-op guard,
+ token-mode schema contract, full fake-client loop.
+
+**ENGINE FIXES (real bugs, live sessions caught them):**
+1. `_gov_params` whitelist DROPPED the `persuasion` flag -> the 60% tier and
+ the trust loop were silently dead in every world that opted in. Fixed
+ (default False = replay-safe).
+2. Trust-farming exploit (session 052110): a proposal identical to the
+ active ruleset PASSED and farmed +5 trust. New `Reason.NO_OP_PROPOSAL`
+ (append-only) rejects no-op proposals.
+3. Silent-voice contract (non-token worlds reject ANY extra VOTE key): seat
+ mapping is now token-mode aware.
+
+**Live session economics (session 053646, all fixes active):** 95 Mercury
+ calls, 396,887 tokens, $0.00, 207.5s wall. Seat filed 4 proposals (mechanical
+ monthly cap held), ALL PASSED with real changes (need quota tweak, wage
+ multiplier 10000->10500, audit cadence 100->50), trust earned to 100 —
+ no farming, no spiral. All 40 bot proposals failed quorum: the founder's
+ attention-scarcity token design working as intended (40 simultaneous
+ filings cannot be staffed by one-token-per-month voters).
+**Replay A/B proof: byte-identical verdict with ZERO model calls**
+(6.6s vs 207.5s) — LLM decisions are ledger inputs; determinism intact.
+
+**Verification:** focused 10/10; governance batch 99/99; full suite 530/530
+ (7:48, memrun). Pushed to origin (4a6a8a9..1e69479). Artifacts:
+ `sweeps/llm_seat/politician_20260919_*.json` (4 sessions incl. the decisive
+ 053646). Note: `_gov_params` fix has wide blast radius — all governance
+ features re-verified.
+
+**Next (P3+ when founder says go):** deals layer spec (post-RC1 per
+ recommendation), remaining seats (trader, journalist, entrepreneur, panel),
+ then RC1 UX pass. The politician seat is the template: any future seat is
+ digest + action mapping + cadence + guards on the proven harness.
+
 ## Session 2026-09-16 (morning): FOUNDER DIRECTIVES + SOURCE COMPLETION — pushed, 501/501
 
 **User directives:** "implement all of it the way it is planned" (source
