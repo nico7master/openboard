@@ -759,3 +759,13 @@ results byte-identical to container runs.
 **Ops note**: container restart mid-session wiped flask/pytest from /opt/venv (reinstalled) and restored the git remote URL in alias form — push needed the explicit authenticated-URL path again. See REMOTE_SIMS.md for the sandbox; same pattern.
 
 **Next**: human split-vote UI on the Civic Board (slider over the 10k bp), then trader/journalist seats off the same template, then the RC1 week-3 science re-run under the new defaults.
+
+## 2026-09-20 — Split voting + the Citizen Seat panel finally exists (commit 02175de, pushed)
+
+**Split voting shipped (founder's monthly token, end to end):**
+- `/api/seat` VOTE affordance mirrors the ACTIVE governance mode: token worlds offer bp = remaining budget (split voting), legacy governance worlds omit bp (validator rejects extra keys), disabled worlds get no affordance at all. `/api/seat` now exposes `vote_token {mode, bp_left, cycle_ticks}`.
+- **Citizen Seat panel actually exists now** — the view was a blank page (markup never built; the 'Play as a citizen' tab rendered nothing, which is why the human-vote bug stayed invisible). Built: citizen picker, token gauge with per-vote bp spend (all/half presets), proposal cards with vote buttons, actions list (VOTE deduped), the seatChart canvas the JS expected, ledger event log. Buttons disable at 0 bp.
+- LLM daemon reads token mode LIVE per decision (a passed proposal can turn the token off mid-session; hardcoded True would silence the seat).
+- New end-to-end split test: 2 votes in one month, budget 10000→6000→0, affordance tracks the remainder, overspend dies VOTE_BUDGET_EXCEEDED with the book untouched. Full suite: **540/540**.
+
+**Next**: trader/journalist seats off the politician template; RC1 week-3 science re-run under the new defaults (scarcity pricing ON now); then week-4 freeze/soak/ship.
