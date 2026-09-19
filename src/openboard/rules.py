@@ -239,7 +239,7 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
 
     gov = params["governance"]
     _gov_required = {"enabled", "vote_window_ticks", "quorum_bp", "trial_period_ticks"}
-    _gov_optional = {"vote_token_bp", "vote_cycle_ticks"}  # vote token, 2026-09-15 spec
+    _gov_optional = {"vote_token_bp", "vote_cycle_ticks", "persuasion"}  # + P2 persuasion rolls (2026-09-18 spec)
     if (
         not isinstance(gov, dict)
         or not _gov_required.issubset(gov.keys())
@@ -262,6 +262,9 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
     if "vote_cycle_ticks" in gov:
         v = gov["vote_cycle_ticks"]
         if isinstance(v, bool) or not isinstance(v, int) or v < 1:
+            return Reason.INVALID_RULESET
+    if "persuasion" in gov:
+        if not isinstance(gov["persuasion"], bool):
             return Reason.INVALID_RULESET
 
     ov = params["oversight"]

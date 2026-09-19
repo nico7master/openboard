@@ -58,6 +58,10 @@ class Reason(str, Enum):
     ALREADY_REPORTED = "ALREADY_REPORTED"
     SELF_REPORT = "SELF_REPORT"
     CONSTITUTIONAL_GUARD = "CONSTITUTIONAL_GUARD"
+    # P2 (2026-09-18 spec): a proposal identical to the active ruleset would
+    # pass, change nothing, and farm +5 author trust — live-proven exploit
+    # (politician session 052110). Proposals must propose an actual change.
+    NO_OP_PROPOSAL = "NO_OP_PROPOSAL"
     LABOR_POOL_FULL = "LABOR_POOL_FULL"
     NOT_COUNCIL_MEMBER = "NOT_COUNCIL_MEMBER"
     INVALID_INTERVENTION = "INVALID_INTERVENTION"

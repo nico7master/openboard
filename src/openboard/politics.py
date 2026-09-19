@@ -262,7 +262,19 @@ def make_politician(inner: DecisionFn, archetype: str, window: int = ELECTION_WI
                 from .engine import _is_constitutional
                 if _is_constitutional(proposal["params"], active):
                     continue
-                choice = "for"
+                # P2 loaded persuasion dice (spec 2026-09-18), opt-in via
+                # governance.persuasion: undecided voters roll a SEEDED die —
+                # p(yes) rises with the proposer's trust. Hash of
+                # (tick, pid, who) => byte-identical replay. Flag off
+                # (default) => legacy default-for, byte-identical.
+                if gov.get("persuasion"):
+                    import hashlib
+                    _roll = int.from_bytes(hashlib.sha256(
+                        f"{tick}:{pid}:{who}".encode()).digest()[:2], "big") % 101
+                    _trust = state.politician_trust.get(proposal.get("proposer", ""), 100)
+                    choice = "for" if _roll < _trust else "against"
+                else:
+                    choice = "for"
             if token_bp > 0:
                 out.append(_tx(tick, who, "VOTE",
                                {"proposal_id": pid, "choice": choice, "bp": token_bp}, v))

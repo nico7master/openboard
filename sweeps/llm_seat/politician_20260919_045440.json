@@ -1,0 +1,1099 @@
+{
+ "accounting": {
+  "completion_tokens": 6119,
+  "cost_usd": 0.0,
+  "dropped_moves": 0,
+  "llm_calls": 43,
+  "malformed_replies": 2,
+  "prompt_tokens": 65568,
+  "total_tokens": 71687
+ },
+ "final_tick": 103,
+ "invariant_ok": true,
+ "max_ticks": 100,
+ "mode": "record",
+ "model": "mercury-2-5",
+ "persuasion": true,
+ "proposals": {
+  "p1": {
+   "proposer": "baker_b",
+   "status": "failed"
+  },
+  "p10": {
+   "proposer": "power_a",
+   "status": "failed"
+  },
+  "p11": {
+   "proposer": "sand_a",
+   "status": "failed"
+  },
+  "p12": {
+   "proposer": "steel_a",
+   "status": "failed"
+  },
+  "p13": {
+   "proposer": "tool_a",
+   "status": "failed"
+  },
+  "p14": {
+   "proposer": "water_a",
+   "status": "failed"
+  },
+  "p15": {
+   "proposer": "water_i",
+   "status": "failed"
+  },
+  "p16": {
+   "proposer": "water_k",
+   "status": "failed"
+  },
+  "p17": {
+   "proposer": "water_l",
+   "status": "failed"
+  },
+  "p18": {
+   "proposer": "wind_a",
+   "status": "failed"
+  },
+  "p19": {
+   "proposer": "worker_a",
+   "status": "failed"
+  },
+  "p2": {
+   "proposer": "baker_c",
+   "status": "failed"
+  },
+  "p20": {
+   "proposer": "worker_b",
+   "status": "failed"
+  },
+  "p21": {
+   "proposer": "baker_b",
+   "status": "failed"
+  },
+  "p22": {
+   "proposer": "baker_c",
+   "status": "failed"
+  },
+  "p23": {
+   "proposer": "elec_a",
+   "status": "failed"
+  },
+  "p24": {
+   "proposer": "farmer_b",
+   "status": "failed"
+  },
+  "p25": {
+   "proposer": "glass_a",
+   "status": "failed"
+  },
+  "p26": {
+   "proposer": "logger_a",
+   "status": "failed"
+  },
+  "p27": {
+   "proposer": "miller_a",
+   "status": "failed"
+  },
+  "p28": {
+   "proposer": "miller_b",
+   "status": "failed"
+  },
+  "p29": {
+   "proposer": "miner_b",
+   "status": "failed"
+  },
+  "p3": {
+   "proposer": "elec_a",
+   "status": "failed"
+  },
+  "p30": {
+   "proposer": "power_a",
+   "status": "failed"
+  },
+  "p31": {
+   "proposer": "sand_a",
+   "status": "failed"
+  },
+  "p32": {
+   "proposer": "steel_a",
+   "status": "failed"
+  },
+  "p33": {
+   "proposer": "tool_a",
+   "status": "failed"
+  },
+  "p34": {
+   "proposer": "water_a",
+   "status": "failed"
+  },
+  "p35": {
+   "proposer": "water_i",
+   "status": "failed"
+  },
+  "p36": {
+   "proposer": "water_k",
+   "status": "failed"
+  },
+  "p37": {
+   "proposer": "water_l",
+   "status": "failed"
+  },
+  "p38": {
+   "proposer": "wind_a",
+   "status": "failed"
+  },
+  "p39": {
+   "proposer": "worker_a",
+   "status": "failed"
+  },
+  "p4": {
+   "proposer": "farmer_b",
+   "status": "failed"
+  },
+  "p40": {
+   "proposer": "worker_b",
+   "status": "failed"
+  },
+  "p5": {
+   "proposer": "glass_a",
+   "status": "failed"
+  },
+  "p6": {
+   "proposer": "logger_a",
+   "status": "failed"
+  },
+  "p7": {
+   "proposer": "miller_a",
+   "status": "failed"
+  },
+  "p8": {
+   "proposer": "miller_b",
+   "status": "failed"
+  },
+  "p9": {
+   "proposer": "miner_b",
+   "status": "failed"
+  }
+ },
+ "seat": "baker_a",
+ "trust": {
+  "baker_b": 80,
+  "baker_c": 80,
+  "elec_a": 80,
+  "farmer_b": 80,
+  "glass_a": 80,
+  "logger_a": 80,
+  "miller_a": 80,
+  "miller_b": 80,
+  "miner_b": 80,
+  "power_a": 80,
+  "sand_a": 80,
+  "steel_a": 80,
+  "tool_a": 80,
+  "water_a": 80,
+  "water_i": 80,
+  "water_k": 80,
+  "water_l": 80,
+  "wind_a": 80,
+  "worker_a": 80,
+  "worker_b": 80
+ },
+ "turns": [
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 300,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As a new politician with full trust and no open proposals, I will not vote on anything since there is nothing to vote on. Instead, I'll propose a small, popular policy to build my legislative track record: reducing the wealth tax rate by 100 basis points. This is a minor adjustment that should appeal to voters without requiring a 60% supermajority."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 2,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": 5000,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "Since there are no open proposals and my trust is at maximum, I should propose a small, popular change to establish a record of success before tackling structural reforms. A modest increase to the research budget will likely gain broad support without triggering the supermajority requirement."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 4,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 0,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 450,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As baker_a with full trust (100/100), I should build momentum by proposing a small, popular change. A modest increase in the wealth tax rate is a tangible adjustment that addresses equity without major structural changes, making it easier to pass than complex reforms."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 7,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 450000
+       }
+      }
+     }
+    ],
+    "reasoning": "As a new politician with full trust, I should propose a small, popular change to build momentum before tackling larger structural reforms. Adjusting the wealth tax threshold is a manageable first step that can appeal to voters concerned about economic inequality."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 10,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "budget": 50000,
+        "focus": "general"
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As the newly elected politician with full trust and no active proposals, I should establish credibility by proposing a small, popular change that benefits the broader community without disrupting the existing economic structure. A research funding initiative would be a positive first step that shows forward-thinking governance while keeping the proposal simple and focused."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 13,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "No open proposals exist to vote on, and the current rules are stable. Building trust with small, popular changes is a sound strategy, but without specific proposals to modify, I cannot safely propose a complete ruleset without risking unintended consequences. I will wait for proposals to emerge or for more context on desired changes."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 16,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "funding_bp": 5000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "I am starting with full trust and no open proposals. Since there are no proposals to vote on, and I need to build a track record before making structural changes, I should propose a small, non-controversial policy to demonstrate my role and engage the community."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 17,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "No open proposals exist to vote on, and proposing a major structural change like tax reform would face a 60% supermajority hurdle that could fail given my 0/0 record. A safer strategy is to wait for small, well-argued proposals from others or propose a minor, popular change like a research grant once I have a few successful votes under my belt."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 19,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "MALFORMED_REPLY: {\n  \"reasoning\": \"With no open proposals and full trust, I'll propose a small, popular policy that benefits the majority without risking structural approval hurdles. A modest, universal basic income f"
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 20,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 450000
+       }
+      }
+     }
+    ],
+    "reasoning": "As a new politician with full trust but no track record, I should propose a small, popular change to build momentum. Lowering the wealth tax threshold slightly from 500k to 450k would generate more public support without being a major structural change that requires supermajority approval."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 21,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 400000
+       }
+      }
+     }
+    ],
+    "reasoning": "I am just starting with full trust and no active proposals. A small, popular change to build trust would be to lower the wealth tax threshold slightly so more middle-wealth citizens benefit, which is a minor adjustment under the current ruleset."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 22,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "budget_bp": 5000,
+        "focus": "community_education"
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As a new politician with full trust and no open proposals, I should introduce a small, popular change to build momentum. Adjusting the research budget to fund community education initiatives would be a low-risk, high-impact structural proposal that aligns with cooperative economy values and requires only a simple majority since it doesn't modify core tax/vote rules."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 25,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "MALFORMED_REPLY: {\"reasoning\": \"I should build trust with small, popular proposals before making structural changes. A modest wealth tax increase targeting high earners could fund community initiatives, which would be"
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 28,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 450000
+       }
+      }
+     }
+    ],
+    "reasoning": "As a new politician with full trust, I should build credibility by proposing small, popular changes before tackling structural reforms. Since no proposals are open, I'll create a modest initiative to support local businesses by reducing the wealth tax threshold slightly, which would be popular among small business owners while still maintaining revenue."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 0).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 29,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "budget": 50000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As the newly elected politician with full trust, I should propose a small, popular change to build momentum before attempting major structural reforms. A modest increase to the research budget would benefit all citizens and is unlikely to face strong opposition."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 31,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 2,
+      "params": {
+       "governance": true,
+       "research": 10000,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "I am starting with full trust and no prior proposals. Since there are no open proposals to vote on, I should propose a small, popular change to build momentum. Increasing the research budget could be beneficial for long-term economic growth."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 34,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "Since there are no open proposals, I cannot vote on anything this turn. My trust is high at 100, which is a good position to launch a proposal. However, without a specific issue to address (like a crisis or a clear inefficiency), proposing a change to the wealth tax or research might be too structural and risky for a first move. I will wait for a more concrete opportunity or a crisis to arise before using my proposal slot, focusing on observing the economy first."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 37,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "annual_budget_bp": 5000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "Since there are no open proposals, I will focus on proposing a small, popular policy to build support and demonstrate proactive leadership. A reasonable starting point is to introduce a modest research fund, which is generally well-received and can lay groundwork for future economic improvements."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 38,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 2,
+      "params": {
+       "governance": true,
+       "research": {
+        "budget_bp": 2000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "Since there are no open proposals and my trust is at a healthy 100, I will use this turn to build consensus by proposing a small, non-controversial increase to the research budget. This is a low-risk move that demonstrates commitment to long-term economic growth without altering the core tax structure, which would require a difficult supermajority."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 40,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "Since there are no open proposals and the current ruleset is stable, I should use this turn to build trust by proposing a small, non-structural change. A minor adjustment to the vote_token_bp could be beneficial, but since it's a structural rule requiring a supermajority, I will hold off until I have more trust. For now, I will take no action to avoid unnecessary risk and wait for better opportunities."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 43,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "rate_bp": 50,
+        "threshold": 1000000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As a trusted politician with 100/100 trust and no prior proposals, I should propose a small, popular change to build momentum. Increasing the research budget would benefit all players by unlocking better technologies. I'll set a reasonable threshold of 1M bp with a 50bp tax rate, which is a modest addition to current rules."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 44,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 2,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 300,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "Since there are no open proposals to vote on, I should focus on building political capital by proposing a small, popular change. A reduction in the wealth tax rate is a common populist appeal that could gain broad support, and at 300 basis points instead of 400, it is a modest structural change that might still pass with a simple majority or a narrow supermajority depending on the political climate. This aligns with the strategy of proposing small changes first to build trust."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 46,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "budget_bp": 5000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "With no open proposals and full trust, I'll propose a small, popular change to build momentum: increase research funding slightly to boost long-term economic growth. This is a minor adjustment that likely gains broad support without triggering supermajority requirements."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 49,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "budget_bp": 2000,
+        "focus": "local_food_security"
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "I have zero prior proposals and full trust, which is a valuable asset to preserve. The open proposals include several wealth tax structural changes requiring 60% supermajority; supporting them immediately risks failure and trust loss. I should not vote yet but first propose a small, popular non-structural change to build momentum and demonstrate my priorities before committing to high-stakes votes."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: [{\"id\": \"p1\", \"proposer\": \"baker_b\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p10\", \"proposer\": \"power_a\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p11\", \"proposer\": \"sand_a\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p12\", \"proposer\": \"steel_a\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p13\", \"proposer\": \"tool_a\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}, {\"id\": \"p14\", \"proposer\": \"water_a\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p15\", \"proposer\": \"water_i\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p16\", \"proposer\": \"water_k\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p17\", \"proposer\": \"water_l\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}, {\"id\": \"p18\", \"proposer\": \"wind_a\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}, {\"id\": \"p19\", \"proposer\": \"worker_a\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}, {\"id\": \"p2\", \"proposer\": \"baker_c\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}, {\"id\": \"p20\", \"proposer\": \"worker_b\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}, {\"id\": \"p3\", \"proposer\": \"elec_a\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p4\", \"proposer\": \"farmer_b\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}, {\"id\": \"p5\", \"proposer\": \"glass_a\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}, {\"id\": \"p6\", \"proposer\": \"logger_a\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p7\", \"proposer\": \"miller_a\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p8\", \"proposer\": \"miller_b\", \"closes\": 53, \"structural\": [], \"i_voted\": false}, {\"id\": \"p9\", \"proposer\": \"miner_b\", \"closes\": 53, \"structural\": [\"wealth_tax\"], \"i_voted\": false}]\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 52,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "funding_bp": 2000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As baker_a, my first priority is to build trust before proposing major structural changes. Since there are no open proposals and my current record is empty, I should propose a small, non-controversial policy to establish credibility. A modest increase to research funding would benefit the cooperative economy without triggering supermajority requirements."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 55,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 2,
+      "params": {
+       "governance": true,
+       "research": {
+        "rate_bp": 200,
+        "threshold": 100000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As a new politician with perfect trust but no track record, I should start small to build confidence. The current wealth tax threshold of 500,000 with 400bp rate seems reasonable, but I can propose a minor adjustment to the research fund allocation since it's currently null. This is a non-structural change that could gain quick support."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 1).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 58,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 3,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 400000
+       }
+      }
+     }
+    ],
+    "reasoning": "Since there are no open proposals and my current record is neutral, I will use this turn to propose a small, popular change to build trust. I'll propose lowering the wealth tax threshold slightly to make it more progressive, which is a small structural change that should gain support."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 61,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "allocation_bp": 2000,
+        "focus": "public_goods"
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "With no active proposals and full trust, I will propose a small, popular change to build momentum: increasing the research allocation to seed public goods, which typically garners broad support and sets up future collaborative initiatives."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 64,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "No open proposals exist, and the current ruleset is stable with no urgent issues. As a new politician with full trust, I should wait for relevant proposals before spending bp or proposing changes. Small, popular adjustments build momentum, but none are needed yet."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 67,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 3,
+      "params": {
+       "governance": true,
+       "research": 20000,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "With open proposals and no current bills, I'll build political capital by proposing a small, popular change that improves transparency for citizens. A modest increase to the research fund is low-risk, aligns with long-term economic health, and should gain support without triggering supermajority requirements."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 68,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 3,
+      "params": {
+       "governance": true,
+       "research": {
+        "annual_budget_bp": 50000,
+        "focus_areas": [
+         "sustainable tech",
+         "public goods"
+        ]
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "With no open proposals and full trust at 100, I can act boldly. I'll introduce a small, popular change that directly benefits the community and builds momentum before tackling structural reforms. A modest research grant fund incentivizes innovation and public goods, aligning with our cooperative values. This is non-structural (research field is None), so it needs only a simple majority. I'll propose it effective next tick with a clear, limited budget to show fiscal responsibility."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 70,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 3,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 450000
+       }
+      }
+     }
+    ],
+    "reasoning": "With no open proposals and a perfect trust score, I should propose a small, popular change to build my legislative record. Lowering the wealth tax threshold slightly would increase revenue for public research while affecting only the very wealthy, making it an easy win."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 73,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 3,
+      "params": {
+       "governance": true,
+       "research": {
+        "allocation": "infrastructure",
+        "budget": 50000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As a new politician with high trust and no active proposals, I should propose a small, popular change to build credibility before attempting major reforms. A modest research fund could stimulate economic growth without triggering supermajority requirements since it doesn't directly alter core tax or governance structures."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 76,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": {
+        "budget_bp": 5000
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As baker_a with 100 trust, I should build momentum with a small, popular policy change before tackling larger structural reforms. A modest research funding proposal would benefit all citizens without requiring supermajority approval since it doesn't modify core tax or governance rules. This aligns with the strategy of proposing incremental changes to demonstrate competence and build broader support."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 79,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 3,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 450,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "As baker_a with 100 trust and no prior proposal record, I should propose a small, popular change to build momentum. The wealth tax rate at 400 basis points (4%) on assets over 500,000 is moderate but could be slightly increased to fund community benefits. Raising it to 450 basis points (4.5%) is a small change that likely has majority support without needing a 60% supermajority since it's a rate adjustment, not a structural rule change. This will show action while building trust."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 82,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "I am starting fresh with 100 trust and no open proposals. Since there are no active proposals to vote on and I have no existing proposals to amend, I should wait for proposals to appear or use my turn to propose a small, popular change. However, the instructions say to return an empty actions list if nothing is worth doing. Since there are no proposals to engage with and I haven't yet proposed anything myself, I'll take no action this turn."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 85,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "Since there are no open proposals and the current ruleset is stable, there is no immediate action needed this turn. I will maintain my trust and wait for proposals to emerge before voting or proposing small, popular changes."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 86,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [],
+    "reasoning": "There are no open proposals to vote on, and the current ruleset appears stable with no immediate issues. As a new politician with full trust, I should focus on building relationships and observing the economy before proposing changes. It's better to wait for a clear need rather than forcing unnecessary changes."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 87,
+   "tx_count": 0
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 3,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 250000
+       }
+      }
+     }
+    ],
+    "reasoning": "With no open proposals and my trust at 100, I should start building momentum by proposing a small, popular change. Since wealth tax is already active with a high threshold, I'll propose lowering the threshold to make it more progressive and gain public support before tackling larger reforms."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 2).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 88,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 4,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 600000
+       }
+      }
+     }
+    ],
+    "reasoning": "I have no open proposals to vote on and my trust is maximized at 100. Since I have 0 passed proposals, I should propose a small, popular change to build momentum. I'll propose a small wealth tax threshold increase to reduce taxes on middle-income citizens, which is likely to be popular and pass easily without needing a supermajority."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 3).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 91,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 1,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 400000
+       }
+      }
+     }
+    ],
+    "reasoning": "Starting with full trust and an empty proposal queue, the optimal strategy is to build momentum by proposing a small, popular change. Lowering the wealth tax threshold from 500k to 400k increases the policy's reach without raising rates, which is unlikely to face strong opposition and should pass easily to boost my record and trust."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 3).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 94,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 4,
+      "params": {
+       "governance": true,
+       "research": null,
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 300,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "With no open proposals and a perfect trust score, I should propose a small, popular change to establish a track record. Reducing the wealth tax rate slightly is a low-risk, high-visibility move that benefits the majority without destabilizing revenue."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 3).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 97,
+   "tx_count": 1
+  },
+  {
+   "decision": {
+    "actions": [
+     {
+      "action": "PROPOSE",
+      "activation_tick": 0,
+      "params": {
+       "governance": true,
+       "research": {
+        "budget_bp": 5000,
+        "focus": "renewable_energy"
+       },
+       "vote_token_bp": 10000,
+       "wealth_tax": {
+        "rate_bp": 400,
+        "threshold": 500000
+       }
+      }
+     }
+    ],
+    "reasoning": "There are no open proposals to vote on, and I have not yet introduced any. Since the current rules are functional and I have full trust, I should propose a small, low-risk initiative to build my legislative record before attempting larger changes."
+   },
+   "digest": "You are 'baker_a', the POLITICIAN seat of a simulated cooperative economy.\nTrust: 100/100 (falls -10 on a failed proposal, rises +5 on a passed one).\nMonthly vote budget: 10000 bp (this month's cycle: 3).\nYour record: 0 passed, 0 failed proposals.\n\nOPEN PROPOSALS: none\n\nCURRENT RULES (summary): governance=True, vote_token_bp=10000, wealth_tax={'threshold': 500000, 'rate_bp': 400}, research=None.\n\nREMEMBER: structural changes (tax/research/crisis/need/vote rules) need a\n60% supermajority \u2014 small, well-argued changes pass more easily. Your trust\ndecides how easily undecided voters follow you. Spend your monthly token\nwisely: you can split it across proposals with bp amounts.",
+   "tick": 100,
+   "tx_count": 1
+  }
+ ],
+ "vote_token": true,
+ "wall_s": 49.4
+}

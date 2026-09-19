@@ -61,6 +61,9 @@ class WorldState:
     crisis: dict[str, Any] = field(default_factory=dict)
     common_pool: dict[str, int] = field(default_factory=dict)  # society's reclaimed goods (from dissolved hoards)
     last_clearing: dict[str, int] = field(default_factory=dict)  # good -> last auction clearing price (public price signal)
+    # P2: politician trust (0..100, start 100). Absent-when-default for hash
+    # compat: legacy worlds replay byte-identically (nothing proposes => no key).
+    politician_trust: dict[str, int] = field(default_factory=dict)
     # D18 replacement-rate signal: good -> units sold in the most recent
     # clearing (rebuilt every tick by the market phase). Stock-based
     # produce gates cannot see flow demand: a coop selling 4 coal/tick
@@ -212,6 +215,8 @@ class WorldState:
             snap["active_shocks"] = [dict(x) for x in self.active_shocks]
         if self.citizens_meta:
             snap["citizens_meta"] = {c: dict(m) for c, m in sorted(self.citizens_meta.items())}
+        if self.politician_trust:
+            snap["politician_trust"] = dict(sorted(self.politician_trust.items()))
         if self.research:
             snap["research"] = dict(self.research)
         if self.loans:
@@ -273,6 +278,7 @@ class WorldState:
             foreign_balance=self.foreign_balance,
             delegations=dict(self.delegations),
             vote_budget={c: dict(b) for c, b in self.vote_budget.items()},
+            politician_trust=dict(self.politician_trust),
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:

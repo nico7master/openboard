@@ -30,6 +30,10 @@ class _Runner:
 
     def propose(self, sender):
         base = copy.deepcopy(self.s.active_ruleset_params())
+        # NO_OP_PROPOSAL guard (P2): proposals must differ from the active
+        # ruleset — use a minimal non-structural delta; vote mechanics
+        # under test are unchanged by it.
+        base["transfer_limit"] = (base.get("transfer_limit") or 0) + 1
         self.run([self.tx(sender, "PROPOSE", {"params": base, "activation_tick": self.now + 10})])
         return sorted(self.s.proposals.keys())[-1]
 

@@ -2751,6 +2751,9 @@ def _gov_params(params: dict[str, Any]) -> dict[str, Any]:
         # Vote token (2026-09-15 spec): 0 = legacy binary votes (replay-safe).
         "vote_token_bp": gov.get("vote_token_bp", 0),
         "vote_cycle_ticks": gov.get("vote_cycle_ticks", 30),
+        # P2 (2026-09-18 spec): loaded persuasion dice + 60% structural tier
+        # + trust accountability loop. Opt-in; default False = legacy branch.
+        "persuasion": gov.get("persuasion", False),
     }
 
 
@@ -2777,6 +2780,13 @@ def _validate_propose(state: WorldState, tx: Transaction, params: dict[str, Any]
     reason = validate_params(payload.get("params"), known_goods=set(state.goods.keys()))
     if reason is not None:
         return reason
+
+    # P2 trust-integrity (2026-09-18): a proposal identical to the active
+    # ruleset would pass, change nothing, and farm +5 author trust via the
+    # accountability loop (live-proven exploit: politician session 052110,
+    # p1). Proposals must propose an actual change.
+    if payload["params"] == params:
+        return Reason.NO_OP_PROPOSAL
 
     # Constitutional guard: proposals may not disable governance or its ratchet
     if payload["params"].get("governance", {}).get("enabled") is False:
@@ -2938,6 +2948,21 @@ def _apply_rollback(state: WorldState, tx: Transaction, params: dict[str, Any]) 
         "target_version": target,
         "closes_tick": tx.tick + gov["vote_window_ticks"],
     }
+
+
+_STRUCTURAL_TOP_KEYS = ("wealth_tax", "research", "crisis", "need_allocation", "whistleblower")
+
+
+def _is_structural(proposal_params: dict[str, Any], active_params: dict[str, Any]) -> bool:
+    """P2 major-change tier: proposals touching structural rule groups need a
+    60% supermajority of cast weight. Constant classification — deliberately
+    NOT a votable param (a proposal must not lower its own bar)."""
+    for k in _STRUCTURAL_TOP_KEYS:
+        if proposal_params.get(k) != active_params.get(k):
+            return True
+    if proposal_params.get("governance", {}).get("vote_token_bp") != active_params.get("governance", {}).get("vote_token_bp"):
+        return True
+    return False
 
 
 def _is_constitutional(proposal_params: dict[str, Any], active_params: dict[str, Any]) -> bool:
@@ -3304,9 +3329,19 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
                     passed = votes_for * 3 >= citizens * 2
             elif hardened:
                 passed = votes_for * 3 >= cast_weight * 2  # >= 2/3 of cast weight
+            elif gov.get("persuasion") and _is_structural(proposal["params"], params):
+                # P2 major-change tier: structural proposals need 60% of cast
+                # weight — the bigger the change, the higher the bar.
+                passed = votes_for * 10 >= cast_weight * 6
             else:
                 passed = votes_for > votes_against  # strict majority; tie fails
 
+        if gov.get("persuasion") and proposal.get("proposer"):
+            # P2 accountability loop: author trust moves with outcomes.
+            _t = state.politician_trust.get(proposal["proposer"], 100)
+            state.politician_trust[proposal["proposer"]] = (
+                min(100, _t + 5) if passed else max(0, _t - 10)
+            )
         if passed:
             proposal["status"] = "passed"
             if proposal.get("intervention") is not None:
