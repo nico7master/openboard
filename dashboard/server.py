@@ -24,7 +24,7 @@ from flask import Flask, jsonify, request, send_from_directory
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from openboard.bots import ARCHETYPES  # noqa: E402
-from openboard.breaksystem import PLAYBOOKS, ROUND_TICKS, STOP_FLAGS, STOP_UNMET, attack_score, attack_tick, capture_baseline, invariants_ok, round_verdict  # noqa: E402
+from openboard.breaksystem import PLAYBOOKS, ROUND_TICKS, STOP_FLAGS, STOP_UNMET, attack_score, attack_tick, capture_baseline, invariants_ok, round_verdict, worst_unmet_streak  # noqa: E402
 from openboard.accounts import Accounts  # noqa: E402
 from openboard.story import build_story  # noqa: E402
 from openboard.flows import build_flows  # noqa: E402
@@ -700,11 +700,14 @@ class Run:
             "bots": {name: {"coop": b["coop"], "kind": "specialist" if b["fn"] in SPECIALISTS.values() else "archetype",
                            "arch": b.get("arch")}
                      for name, b in self.bots.items()},
+            # audit C7: queued human actions are ledger inputs — they must
+            # survive autosave/restore like everything else
+            "pending": [t.to_dict() for t in self.pending],
         }
 
     @classmethod
     def from_save(cls, data: dict[str, Any]) -> "Run":
-        if data.get("format") != SAVE_FORMAT:
+        if data.get("format") not in (SAVE_FORMAT, "openboard-run-v2"):
             raise ValueError("unknown save format")
         run = cls(seed=data.get("seed", 42), governance=data.get("governance", False))
         with run.lock:
@@ -721,6 +724,13 @@ class Run:
             run.state = genesis_state({n: 500 for n, _, _ in BASELINE_BOTS},
                                       ruleset_params=run._params())
             run.ledger = Ledger()
+            # audit C7: restore queued human actions (their tick may predate
+            # the replayed batches — re-aim at the next tick after restore)
+            for d in data.get("pending", []):
+                run.pending.append(Transaction(tick=run.state.tick + 1,
+                                               sender=d["sender"], action=d["action"],
+                                               payload=d["payload"],
+                                               ruleset_version=d["ruleset_version"]))
 
             injections_by_tick: dict[int, list[dict[str, Any]]] = {}
             for inj in data.get("injections", []):
@@ -1128,7 +1138,9 @@ def api_flows():
 
 @app.get("/api/state")
 def api_state():
-    return jsonify(RUN.view())
+    view = RUN.view()
+    view["autosave_warning"] = AUTOSAVE_WARN[-1] if AUTOSAVE_WARN else None
+    return jsonify(view)
 
 
 @app.get("/api/analytics")
@@ -1718,6 +1730,8 @@ _LLM: dict[str, Any] = {
                    "total_tokens": 0, "cost_usd": 0.0},
 }
 _LLM_THREAD: threading.Thread | None = None
+# audit C11: what the seat displaced, so stopping it can restore the twin
+_LLM_TWIN: dict[str, Any] = {}
 
 
 def _llm_public() -> dict[str, Any]:
@@ -1828,6 +1842,10 @@ def api_llm_start():
     decide_every = max(1, int(data.get("decide_every", 3)))
     with RUN.lock:
         who = sorted(RUN.state.balances.keys())[0]  # deterministic seat citizen
+        twin = RUN.bots.get(who)
+        _LLM_TWIN.clear()
+        _LLM_TWIN.update({"game": RUN, "who": who,
+                          "entry": dict(twin) if twin else None})
         RUN.bots.pop(who, None)  # seat replaces its bot twin (no double votes)
     _LLM.update({"running": True, "who": who, "last_thought": "waking up…",
                  "last_actions": [], "last_decision_tick": -1, "error": "",
@@ -1842,10 +1860,26 @@ def api_llm_start():
     return jsonify({"ok": True, "who": who})
 
 
+def _llm_restore_twin() -> bool:
+    """Audit C11: stopping the seat must not leave a headless citizen —
+    put the citizen's original bot twin back exactly as it was."""
+    game, who, entry = (_LLM_TWIN.get("game"), _LLM_TWIN.get("who"),
+                        _LLM_TWIN.get("entry"))
+    if game is None or who is None:
+        return False
+    with game.lock:
+        if who not in game.state.balances:
+            return False  # world changed under us; nothing to restore
+        if entry is not None and who not in game.bots:
+            game.bots[who] = dict(entry)
+    return entry is not None
+
+
 @app.post("/api/llm/stop")
 def api_llm_stop():
     _LLM["running"] = False
-    return jsonify({"ok": True})
+    restored = _llm_restore_twin()
+    return jsonify({"ok": True, "twin_restored": bool(restored)})
 
 
 @app.get("/api/llm/status")
@@ -2115,6 +2149,14 @@ def api_action():
     payload = data.get("payload")
     if not isinstance(sender, str) or not isinstance(action, str) or not isinstance(payload, dict):
         return jsonify({"ok": False, "error": "sender, action, payload(dict) required"}), 400
+    # audit C10/E4: an account-bound citizen may only be acted for with its
+    # own session token — no unauthenticated impersonation of a registered
+    # seat. Account-less (anonymous local) citizens stay open for RC1
+    # single-machine play; the full gate is the post-RC1 multiplayer step.
+    if app.accounts.citizen_is_bound(sender):
+        if _citizen_from_token() != sender:
+            return jsonify({"ok": False,
+                            "error": "this citizen has an account; send its X-Auth-Token"}), 401
     tx = RUN.queue_action(sender, action, payload)
     return jsonify({"ok": True, "queued": tx.to_dict()})
 
@@ -2122,8 +2164,13 @@ def api_action():
 # ---- B2: Break the System (playable attack mode) -------------------
 
 
-def _attack_game() -> "Run | None":
-    return getattr(app, "attack_game", None)
+# audit C2: attack rounds are per-player — a second visitor starting a
+# round can no longer silently overwrite someone else's live game.
+app.attack_games: dict[str, dict[str, Any]] = {}
+
+
+def _attack_round_for(player: str) -> "dict[str, Any] | None":
+    return app.attack_games.get(player)
 
 
 # ---- B1: accounts (multiplayer foundation) -------------------------
@@ -2183,14 +2230,22 @@ def api_attack_start():
         return jsonify({"ok": False, "error": f"unknown playbook; choose from {sorted(PLAYBOOKS)}"}), 400
     player = str(data.get("player") or "anon")[:24]
     game = Run(seed=99, governance=True)
-    app.attack_game = game
-    app.attack_round = {"playbook": playbook, "player": player,
-                        "start_tick": game.state.tick}
+    with game.lock:
+        # audit C4/C6: pin the round's starting harm and money baselines so
+        # damage = the delta YOU cause and the invariant check is real.
+        rnd = {"playbook": playbook, "player": player,
+               "start_tick": game.state.tick,
+               "baseline_streak": worst_unmet_streak(game.state),
+               "baseline_money": capture_baseline(game.state),
+               "over": False, "last_verdict": None}
+    app.attack_games[player] = {"game": game, "round": rnd}
+    while len(app.attack_games) > 16:  # cap idle games; dict keeps insert order
+        app.attack_games.pop(next(iter(app.attack_games)))
     return jsonify({"ok": True, "playbook": playbook,
                     "player": player,
                     "round_ticks": ROUND_TICKS,
                     "attacker": sorted(game.state.balances.keys())[0],
-                    "score": attack_score(game.state)})
+                    "score": attack_score(game.state, baseline=rnd["baseline_money"])})
 
 
 @app.post("/api/attack/act")
@@ -2200,30 +2255,38 @@ def api_attack_act():
     returns the final verdict + leaderboard entry when the round ends."""
     import random
 
-    game = _attack_game()
-    if game is None:
-        return jsonify({"ok": False, "error": "no attack game; POST /api/attack/start first"}), 400
     data = request.get_json(force=True, silent=True) or {}
-    playbook = data.get("playbook", "hoarder")
-    if playbook not in PLAYBOOKS:
-        return jsonify({"ok": False, "error": "unknown playbook"}), 400
-    rnd = getattr(app, "attack_round", None) or {"playbook": playbook,
-                                                 "player": "anon",
-                                                 "start_tick": game.state.tick}
+    player = str(data.get("player") or "anon")[:24]
+    slot = _attack_round_for(player)
+    if slot is None:
+        return jsonify({"ok": False,
+                        "error": f"no attack game for player '{player}'; POST /api/attack/start first"}), 400
+    game, rnd = slot["game"], slot["round"]
+    if rnd.get("over"):  # audit C1: no post-round leaderboard farming
+        return jsonify({"ok": False, "error": "round over; start a new round",
+                        "over": True, "verdict": rnd.get("last_verdict")}), 400
     with game.lock:
         s = game.state
         t = s.tick + 1
-        atxs = attack_tick(s, sorted(s.balances.keys())[0], t, playbook, random.Random(t))
+        # audit C3: the round's PINED playbook acts; the request body can
+        # no longer switch strategies mid-round to farm best components.
+        atxs = attack_tick(s, sorted(s.balances.keys())[0], t,
+                           rnd["playbook"], random.Random(t))
         for atx in atxs:
             game.queue_action(atx.sender, atx.action, atx.payload)
         game.tick()  # attacker acts AND the world (bots, democracy, oversight) responds in one advance
-        verdict = round_verdict(s, rnd["playbook"], rnd["start_tick"])
+        verdict = round_verdict(s, rnd["playbook"], rnd["start_tick"],
+                                baseline_streak=rnd["baseline_streak"],
+                                baseline_money=rnd["baseline_money"])
         over = verdict["outcome"] != "round_in_progress"
         entry = None
         if over:
-            entry = _leaderboard_record(rnd["player"], verdict)
-    return jsonify({"ok": True, "tick": attack_score(s)["tick"],
-                    "score": attack_score(s), "verdict": verdict,
+            rnd["over"] = True
+            rnd["last_verdict"] = verdict
+            entry = _leaderboard_record(player, verdict)  # recorded exactly once
+        sc = attack_score(s, baseline=rnd["baseline_money"])
+    return jsonify({"ok": True, "tick": sc["tick"],
+                    "score": sc, "playbook": rnd["playbook"], "verdict": verdict,
                     "system_response": "flagged" if verdict["flags_caused"] > 0 else "none",
                     "over": bool(over), "leaderboard_entry": entry})
 
@@ -2240,12 +2303,16 @@ def _leaderboard_load() -> list[dict[str, Any]]:
         return []
 
 
+_LEADERBOARD_LOCK = threading.Lock()
+
+
 def _leaderboard_record(player: str, verdict: dict[str, Any]) -> dict[str, Any]:
-    """Record a finished round in the persistent leaderboard (top 20)."""
+    """Record a finished round in the persistent leaderboard (top 20).
+    Audit C9: read-modify-write under a lock, atomic temp-file replace —
+    concurrent finishes can no longer wipe each other's entries."""
     import time as _time
 
     LEADERBOARD_PATH.parent.mkdir(parents=True, exist_ok=True)
-    board = _leaderboard_load()
     entry = {
         "player": player,
         "playbook": verdict["playbook"],
@@ -2256,9 +2323,13 @@ def _leaderboard_record(player: str, verdict: dict[str, Any]) -> dict[str, Any]:
         "outcome": verdict["outcome"],
         "at": int(_time.time()),
     }
-    board.append(entry)
-    board.sort(key=lambda e: -e["damage"])
-    LEADERBOARD_PATH.write_text(json.dumps(board[:20], indent=1))
+    with _LEADERBOARD_LOCK:
+        board = _leaderboard_load()
+        board.append(entry)
+        board.sort(key=lambda e: -e["damage"])
+        tmp = LEADERBOARD_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(board[:20], indent=1))
+        tmp.replace(LEADERBOARD_PATH)
     return entry
 
 
@@ -2269,11 +2340,14 @@ def api_attack_leaderboard():
 
 @app.get("/api/attack/score")
 def api_attack_score():
-    game = _attack_game()
-    if game is None:
+    player = str(request.args.get("player") or "anon")[:24]
+    slot = _attack_round_for(player)
+    if slot is None:
         return jsonify({"ok": False, "error": "no attack game"}), 400
+    game, rnd = slot["game"], slot["round"]
     with game.lock:
-        return jsonify({"ok": True, "score": attack_score(game.state)})
+        return jsonify({"ok": True,
+                        "score": attack_score(game.state, baseline=rnd["baseline_money"])})
 
 
 @app.post("/api/bots")
@@ -2322,6 +2396,24 @@ def api_load():
 
 
 AUTOSAVE_PATH = Path(__file__).resolve().parent / "autosave.json"
+# audit C8: recent autosave failures, surfaced via /api/state
+AUTOSAVE_WARN: list[str] = []
+
+
+def _autosave_once() -> bool:
+    """One autosave pass. Audit C8: failures are logged AND surfaced via
+    /api/state (never silent, never fatal)."""
+    try:
+        with RUN.lock:
+            snap = RUN.to_save()
+        tmp = AUTOSAVE_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(snap))
+        tmp.replace(AUTOSAVE_PATH)
+        return True
+    except Exception as exc:
+        print(f"autosave failed: {exc}", flush=True)
+        AUTOSAVE_WARN.append(str(exc)[:200])
+        return False
 
 
 def _autosave_loop() -> None:
@@ -2329,14 +2421,7 @@ def _autosave_loop() -> None:
     a reign again (the day-818 world died exactly that way)."""
     while True:
         time.sleep(30)
-        try:
-            with RUN.lock:
-                snap = RUN.to_save()
-            tmp = AUTOSAVE_PATH.with_suffix(".tmp")
-            tmp.write_text(json.dumps(snap))
-            tmp.replace(AUTOSAVE_PATH)
-        except Exception:
-            pass  # autosave must never take the server down
+        _autosave_once()
 
 
 def _try_autoload() -> None:

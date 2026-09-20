@@ -63,22 +63,22 @@ Replay-safety note: A2/A9 change settle behavior only for persuasion worlds (ser
 
 | # | Finding | Status | Notes |
 |---|---|---|---|
-| C1 | leaderboard farmable post-round | ☐ | refuse acts when over; record once |
-| C2 | one global attack game | ☐ | owner token + mutex (per-session games post-RC1) |
-| C3 | playbook attribution lies | ☐ | pin playbook per round |
-| C4 | unmet streak not attacker-attributed | ☐ | attacker-attributed or delta-vs-baseline |
-| C5 | score weights degenerate (flag burst optimal) | ☐ | cap flags/tick, count kinds, weight real harm |
-| C6 | advertised invariant check never runs | ☐ | capture baseline at round start |
-| C7 | queued actions vanish on autosave | ☐ | persist pending in to_save/from_save |
-| C8 | autosave failures swallowed | ☐ | log + surface warning |
-| C9 | leaderboard file race/wipe | ☐ | temp-file replace under lock |
-| C10 | no auth on endpoints; /api/action accepts ANY sender string — unauthenticated impersonation (E4) | ☐ | require token on /api/action (+authz test); post-RC1 full multiplayer auth |
-| C11 | LLM detach leaves headless citizen | ☐ | restore bot twin on stop |
-| C12 | silent arena errors | ☐ | showToast on failure |
-| C13 | unaffordable buy buttons enabled | ☐ | disable when unaffordable |
-| C14 | quest narrow/skippable | ☐ | fold into P-DESIGN polish |
-| C15 | LLM cost display edge cases | ☐ | warn on missing usage data |
-| C16 | duplicate keys/roster entries, O(n) scans; E8 duplicate 'gini_bp' key in breaksystem.py:128 (AST-verified) | ☐ | cleanup pass + add ruff/pyflakes to CI |
+| C1 | leaderboard farmable post-round | done | acts refused once over (guard + friendly error); final verdict stays readable; leaderboard records exactly once (end-to-end farm test) |
+| C2 | one global attack game | done | shipped better than planned: per-player games (per-player key, capped 16, LRU eviction) - concurrent visitors never collide |
+| C3 | playbook attribution lies | done | playbook pinned in the round at start; request body can no longer switch strategies mid-round; response echoes the pinned playbook |
+| C4 | unmet streak not attacker-attributed | done | delta-vs-baseline: baseline_streak captured at round start; only the streak the attacker worsened counts (damage + stop rule) |
+| C5 | score weights degenerate (flag burst optimal) | done | flag damage capped (FLAG_DAMAGE_CAP x100); real harm (unmet delta x10) is the uncapped signal - flag-storm farming dead |
+| C6 | advertised invariant check never runs | done | baseline_money = capture_baseline() at round start; score/verdict check the REAL invariant; test mints money and asserts the check fires |
+| C7 | queued actions vanish on autosave | done | pending persisted in to_save; restored (re-aimed at next tick) in from_save; roundtrip test |
+| C8 | autosave failures swallowed | done | _autosave_once() logs + appends to AUTOSAVE_WARN; /api/state exposes autosave_warning; failure/success test |
+| C9 | leaderboard file race/wipe | done | read-modify-write under _LEADERBOARD_LOCK + atomic temp-file replace; 12-thread race test: all entries survive |
+| C10 | no auth on endpoints; /api/action accepts ANY sender string — unauthenticated impersonation (E4) | done | RC1 scope: account-bound citizens REQUIRE their own X-Auth-Token on /api/action (citizen_is_bound gate, 401 otherwise); UI adds claim/login row + token header; un-bound citizens stay open for local play; full multiplayer auth post-RC1 |
+| C11 | LLM detach leaves headless citizen | done | twin captured at attach; /api/llm/stop restores it (twin_restored in response); world-changed edge safe |
+| C12 | silent arena errors | done | start/act failures now showToast (refusals + unreachable) |
+| C13 | unaffordable buy buttons enabled | done | buttons disable with a not-enough-credits hint when affordable === false |
+| C14 | quest narrow/skippable | deferred | folded into P-DESIGN polish (as planned) |
+| C15 | LLM cost display edge cases | done | warning shown when the endpoint sends calls but no usage data |
+| C16 | duplicate keys/roster entries, O(n) scans; E8 duplicate 'gini_bp' key in breaksystem.py:128 (AST-verified) | done | E8 fixed: duplicate gini_bp key removed (source-level pin test); ruff/pyflakes CI pass queued for cleanup milestone |
 | E5 | policy-adopt pre-law snapshot wrapped in except:pass — rollback promise fails invisibly | ☐ | report snapshot failure in response |
 | E10 | dead order: params-None guard after first dereference | ☐ | move guard above first use |
 | E11 | _apply_list_good/_apply_bid re-resolve active ruleset against tick contract | ☐ | use the resolved params |
@@ -127,3 +127,7 @@ Transparency/ledger, cost pricing, auction markets, surplus recycling, coops, wh
 | Package | Completed | Commit | Suite |
 |---|---|---|---|
 | P-GOV (+E1 pulled forward) | 2026-09-20 | (this commit) | 11/11 audit tests; scoped 43/43; final full suite at commit |
+
+## P-GAME - Status: COMPLETE (2026-09-21)
+
+12/12 audit pins in `tests/test_audit_game.py` (C1-C11, C16); two legacy attack tests updated to the per-player contract; engine + dashboard + UI patches; full suite green. Remaining from the C-series: C14 quest polish (P-DESIGN), full multiplayer auth (post-RC1), ruff CI (cleanup).

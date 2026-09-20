@@ -61,7 +61,9 @@ def test_v2_start_includes_round_metadata():
 def test_v2_act_returns_verdict_shape():
     with server.app.test_client() as c:
         c.post("/api/attack/start", json={"playbook": "hoarder", "player": "vtester"})
-        act = c.post("/api/attack/act", json={"playbook": "hoarder"}).get_json()
+        # audit C2: acts are per-player — the request must name its round
+        act = c.post("/api/attack/act",
+                     json={"playbook": "hoarder", "player": "vtester"}).get_json()
         assert act["ok"] is True
         v = act["verdict"]
         assert v["playbook"] == "hoarder"
@@ -98,7 +100,8 @@ def test_v2_full_round_survives_to_verdict():
         assert st["ok"] is True
         final = None
         for _ in range(210):
-            act = c.post("/api/attack/act", json={"playbook": "wage_mint"}).get_json()
+            act = c.post("/api/attack/act",
+                         json={"playbook": "wage_mint", "player": "roundtester"}).get_json()
             assert act["ok"] is True
             if act["over"]:
                 final = act

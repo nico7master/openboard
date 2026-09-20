@@ -400,6 +400,8 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
             <span x-text="llm.accounting.llm_calls"></span> model calls ·
             <span x-text="llm.accounting.total_tokens"></span> tokens ·
             $<span x-text="(llm.accounting.cost_usd ?? 0).toFixed(4)"></span>
+            <span x-show="llm.accounting.llm_calls > 0 && !llm.accounting.total_tokens"
+                  class="muted">(endpoint sent no usage data)</span>
             <span x-show="llm.error" style="color:var(--red)" x-text="llm.error"></span>
           </div>
         </div>
@@ -464,6 +466,24 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
       <span>hours left <strong x-text="seat.hours?.left"></strong>/<span x-text="seat.hours?.max"></span></span>
       <span x-show="seat.crisis" style="color:var(--red)">🚨 crisis</span>
     </div>
+    <!-- audit C10: claim this seat so nobody else can act for you -->
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12.5px; margin-bottom:10px">
+      <template x-if="!auth.token">
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center">
+          <input class="tab" x-model="auth.name" placeholder="account" style="max-width:110px">
+          <input class="tab" x-model="auth.pass" type="password" placeholder="password" style="max-width:100px">
+          <button class="tab" @click="authRegister()" :disabled="auth.busy">🔒 Claim this seat</button>
+          <button class="tab" @click="authLogin()" :disabled="auth.busy">Log in</button>
+        </div>
+      </template>
+      <template x-if="auth.token">
+        <div style="display:flex; gap:8px; align-items:center">
+          <span class="muted">signed in as <strong x-text="auth.citizen"></strong> 🔒</span>
+          <button class="tab" @click="authLogout()">Log out</button>
+        </div>
+      </template>
+      <span class="muted" x-show="auth.msg" x-text="auth.msg"></span>
+    </div>
     <!-- Monthly vote token: the founder's split-vote gauge -->
     <template x-if="seat.vote_token?.mode">
       <div style="border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px">
@@ -503,8 +523,10 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <div style="display:flex; flex-direction:column; gap:6px">
       <template x-for="(a, i) in (seat.actions ?? []).filter(a => a.type !== 'VOTE')" :key="i + (a.label ?? a.type)">
         <div style="display:flex; gap:10px; align-items:center; font-size:13px">
-          <button class="tab" @click="seatAct(a)" x-text="a.label ?? a.type"></button>
-          <span class="muted" style="font-size:12px" x-text="a.why ?? ''"></span>
+          <button class="tab" @click="seatAct(a)" x-text="a.label ?? a.type"
+                  :disabled="a.affordable === false"
+                  :title="a.affordable === false ? 'not enough credits' : ''"></button>
+          <span class="muted" style="font-size:12px" x-text="(a.why ?? '') + (a.affordable === false ? ' — not enough credits' : '')"></span>
         </div>
       </template>
     </div>
@@ -570,6 +592,10 @@ function dashboard() {
     // Break the System v2
     atk: { playbook: 'hoarder', player: '', ticks: 0, score: null, verdict: null,
            over: false, board: [], busy: false },
+    // audit C10: accounts bind a login to one citizen; a bound seat may
+    // only be acted for with its own token (the engine rejects the rest)
+    auth: { name: '', pass: '', token: localStorage.getItem('ob_token') || '',
+            citizen: localStorage.getItem('ob_citizen') || '', busy: false, msg: '' },
     // Civic Board + live LLM politician
     civic: { tick: 0, citizens: 0, token_mode: false, vote_cycle_ticks: 30,
              quorum_needed: 0, proposals: [], events: [], trust: {}, crisis: false },
@@ -940,10 +966,13 @@ function dashboard() {
     },
 
     async api(path, opts = {}) {
+      const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+      if (this.auth?.token) headers['X-Auth-Token'] = this.auth.token;
       const res = await fetch(path, {
-        headers: { 'Content-Type': 'application/json' },
         ...opts,
-        body: opts.body ? JSON.stringify(opts.body) : undefined,
+        headers,
+        body: opts.body === undefined ? undefined
+            : (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)),
       });
       return res.json();
     },
@@ -1144,6 +1173,44 @@ function dashboard() {
       return this.api('/api/action', { method: 'POST', body: { sender, action, payload } });
     },
 
+    async authRegister() {
+      this.auth.busy = true; this.auth.msg = '';
+      try {
+        const d = await this.api('/api/account/register', {
+          method: 'POST',
+          body: { name: this.auth.name, password: this.auth.pass, citizen: this.seat.who },
+        });
+        if (d.ok) {
+          this.auth.token = d.token; this.auth.citizen = d.citizen;
+          localStorage.setItem('ob_token', d.token); localStorage.setItem('ob_citizen', d.citizen);
+          this.auth.msg = 'seat protected';
+          this.showToast('🔒 Seat claimed — actions now require your token');
+        } else this.auth.msg = d.error || 'register failed';
+      } catch (e) { this.auth.msg = 'failed: ' + e; }
+      this.auth.busy = false;
+    },
+
+    async authLogin() {
+      this.auth.busy = true; this.auth.msg = '';
+      try {
+        const d = await this.api('/api/account/login', {
+          method: 'POST', body: { name: this.auth.name, password: this.auth.pass },
+        });
+        if (d.ok) {
+          this.auth.token = d.token; this.auth.citizen = d.citizen;
+          localStorage.setItem('ob_token', d.token); localStorage.setItem('ob_citizen', d.citizen);
+          this.auth.msg = 'signed in';
+          if (this.seat.who !== d.citizen) { this.seatWho = d.citizen; await this.loadSeat(); }
+        } else this.auth.msg = d.error || 'login failed';
+      } catch (e) { this.auth.msg = 'failed: ' + e; }
+      this.auth.busy = false;
+    },
+
+    authLogout() {
+      this.auth.token = ''; this.auth.citizen = ''; this.auth.msg = 'logged out';
+      localStorage.removeItem('ob_token'); localStorage.removeItem('ob_citizen');
+    },
+
     async submitAction() {
       this.busy = true;
       try {
@@ -1336,19 +1403,28 @@ function dashboard() {
     async attackStart() {
       this.atk.busy = true;
       try {
+        // audit C2: every visitor gets their own round — auto-assign a
+        // stable id when the name box is empty so two tabs never collide
+        if (!this.atk.player) {
+          this.atk.player = localStorage.getItem('ob_player')
+            || ('p' + Math.random().toString(36).slice(2, 8));
+          localStorage.setItem('ob_player', this.atk.player);
+        }
         const d = await this.api('/api/attack/start', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playbook: this.atk.playbook, player: this.atk.player || 'anon' }),
+          body: { playbook: this.atk.playbook, player: this.atk.player },
         });
         if (d.ok) {
           this.atk.ticks = 0;
+          this.atk.playbook = d.playbook;   // audit C3: show the pinned playbook
           this.atk.score = d.score;
           this.atk.verdict = null;
           this.atk.over = false;
           this.showToast('Round started — you have ' + d.round_ticks + ' ticks. Break it.');
+        } else {
+          this.showToast('Arena refused: ' + (d.error || 'unknown'));  // audit C12
         }
-      } catch (e) { /* server restarting */ }
+      } catch (e) { this.showToast('Arena unreachable: ' + e); }   // audit C12
       this.atk.busy = false;
     },
     async attackAct(n = 1) {
@@ -1358,16 +1434,15 @@ function dashboard() {
         for (let i = 0; i < n; i++) {
           const d = await this.api('/api/attack/act', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ playbook: this.atk.playbook }),
+            body: { player: this.atk.player || 'anon' },
           });
-          if (!d.ok) break;
+          if (!d.ok) { this.showToast('Arena: ' + (d.error || 'refused')); break; }  // audit C1/C12
           this.atk.score = d.score;
           this.atk.verdict = d.verdict;
           this.atk.over = !!d.over;
           if (d.over) { this.attackLoadBoard(); break; }
         }
-      } catch (e) { /* server restarting */ }
+      } catch (e) { this.showToast('Arena unreachable: ' + e); }   // audit C12
       this.atk.busy = false;
     },
     async attackLoadBoard() {

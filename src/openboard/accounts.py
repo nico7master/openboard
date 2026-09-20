@@ -66,6 +66,12 @@ class Accounts:
             account = self._tokens.get(token)
             return self._citizen_of.get(account) if account else None
 
+    def citizen_is_bound(self, citizen: str) -> bool:
+        """Audit C10/E4: True when this citizen has an account. Account-bound
+        seats may only be acted for with their own session token."""
+        with self._lock:
+            return citizen in self._citizen_of.values()
+
     def logout(self, token: str) -> None:
         with self._lock:
             self._tokens.pop(token, None)

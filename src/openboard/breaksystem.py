@@ -25,18 +25,27 @@ PLAYBOOKS: dict[str, str] = {
 ROUND_TICKS = 200
 STOP_FLAGS = 8
 STOP_UNMET = 30
+# Audit C5: uncapped flags x100 made "trigger a flag burst" the optimal
+# strategy. Flag damage is capped; real harm (unmet DELTA over the round
+# baseline, C4) is what scales — you must actually hurt citizens.
+FLAG_DAMAGE_CAP = 20
 
 
-def round_verdict(state: WorldState, playbook: str, start_tick: int) -> dict[str, Any]:
+def round_verdict(state: WorldState, playbook: str, start_tick: int,
+                  baseline_streak: int = 0,
+                  baseline_money: int | None = None) -> dict[str, Any]:
     """Final/interim verdict for a timed round: damage you caused and how
-    the round ends. Damage = flags_caused*100 + worst_unmet_streak*10
-    (flags are the system catching you; unmet is real harm to citizens)."""
-    score = attack_score(state, attacker_citizen(state))
+    the round ends. Damage = capped flags*100 + unmet-streak DELTA*10.
+    C4: background bot starvation before you arrived is the baseline —
+    only the streak you personally worsened counts against you."""
+    score = attack_score(state, attacker_citizen(state), baseline=baseline_money)
     ticks_played = score["tick"] - start_tick
     flags_caused = score["flags"]
-    stopped = flags_caused >= STOP_FLAGS or score["worst_unmet_streak"] >= STOP_UNMET
+    streak_total = score["worst_unmet_streak"]
+    streak_caused = max(0, streak_total - int(baseline_streak or 0))
+    stopped = flags_caused >= STOP_FLAGS or streak_caused >= STOP_UNMET
     survived = ticks_played >= ROUND_TICKS and not stopped
-    damage = flags_caused * 100 + score["worst_unmet_streak"] * 10
+    damage = min(flags_caused, FLAG_DAMAGE_CAP) * 100 + streak_caused * 10
     if stopped:
         outcome = "stopped_by_system"
     elif survived:
@@ -49,7 +58,8 @@ def round_verdict(state: WorldState, playbook: str, start_tick: int) -> dict[str
         "round_ticks": ROUND_TICKS,
         "flags_caused": flags_caused,
         "flag_kinds": score["flag_kinds"],
-        "worst_unmet_streak": score["worst_unmet_streak"],
+        "worst_unmet_streak": streak_total,
+        "streak_caused": streak_caused,
         "gini_bp": score["gini_bp"],
         "damage": damage,
         "outcome": outcome,
@@ -114,17 +124,27 @@ def attacker_citizen(state: WorldState) -> str:
     return sorted(state.balances.keys())[0]
 
 
-def attack_score(state: WorldState, attacker: str | None = None) -> dict[str, Any]:
-    """Live scoreboard: attacker damage vs system response. With `attacker`
-    given, only flags targeting the attacker count as YOUR damage — background
-    bots' flags (e.g. baseline FREE_RIDER drift) never count against you."""
-    from .metrics import gini
-
-    worst_unmet = 0
+def worst_unmet_streak(state: WorldState) -> int:
+    """Worst essentials streak across all citizens (audit C4: the harm
+    signal, measured at round start so only the ATTACKER'S delta counts)."""
+    worst = 0
     for streaks in state.unmet_needs.values():
         for _good, t in streaks.items():
-            worst_unmet = max(worst_unmet, int(t or 0))
-    violation = invariants_ok(state, baseline=None)
+            worst = max(worst, int(t or 0))
+    return worst
+
+
+def attack_score(state: WorldState, attacker: str | None = None,
+                 baseline: int | None = None) -> dict[str, Any]:
+    """Live scoreboard: attacker damage vs system response. With `attacker`
+    given, only flags targeting the attacker count as YOUR damage — background
+    bots' flags (e.g. baseline FREE_RIDER drift) never count against you.
+    Audit C6: pass `baseline` (captured at round start) so the advertised
+    money-invariant check is REAL, not the always-self-consistent fallback."""
+    from .metrics import gini
+
+    worst_unmet = worst_unmet_streak(state)
+    violation = invariants_ok(state, baseline=baseline)
     flags = state.flags
     if attacker is not None:
         flags = [f for f in flags if f.get("target") == attacker]
@@ -133,7 +153,6 @@ def attack_score(state: WorldState, attacker: str | None = None) -> dict[str, An
         "flags": len(flags),
         "flag_kinds": sorted({f.get("kind", "") for f in flags}),
         "all_flags": len(state.flags),
-        "gini_bp": gini(list(state.balances.values())),  # int, Gini x 10,000
         "gini_bp": gini(list(state.balances.values())),  # int, Gini x 10,000
         "worst_unmet_streak": worst_unmet,
         "invariant_ok": violation is None,
