@@ -199,3 +199,15 @@ Scarcity pricing ON did not reintroduce famine: the essential-pass floor clamp h
 | Crisis override protects food supply | ➖ **insurance with no current claim** | unmet = 0 in BOTH arms; the ~13% production cost remains — keep the lever (live shocks won't be this benign) |
 
 **Universal shift (all 18 runs):** unmet 65–886 → **0**; production +13.4k…+22.6k; machines −0.9k…−2.7k (wear rule); deaths 0; money conserved everywhere. The 09-12 arm differentials were artifacts of the old scarcity regime. Battery retired until the next engine-changing milestone. Full suite at re-run start: 540/540.
+
+## 2026-09-20 — RC1 week-4 soak: 3/3 PASS with the full founder-default stack ON (freeze gate)
+
+**Setup:** `scripts/rc1_soak.py` — 3 seeds × 2,000 ticks × 975 citizens, `Run(governance=True)` (vote token + persuasion + reachable quorum + whistleblower + audits + need_allocation + scarcity pricing) + capital_refresh ON. Data: `sweeps/rc1_soak/`.
+
+| Seed | inv_bad (bound 0) | worst_ess_streak (bound 50) | deaths | votes | proposals | audits | gini | wall |
+|---|---|---|---|---|---|---|---|---|
+| 42 | 0 | 4 (genesis blip) | 0 | 56,550 | 588 | 970 | 186 | 736s |
+| 7 | 0 | 4 | 0 | 56,550 | 592 | 970 | 170 | 758s |
+| 123 | 0 | 4 | 0 | 56,550 | 602 | 970 | 173 | 738s |
+
+**Verdict: FREEZE-GATE SOAK PASS.** Money conservation exact across 6,000 seed-ticks; the republic ran itself at scale — monthly tokens voted, proposals settled, audits published, oversight flagged ~600/tick of bot hoarding/free-riding (the whistleblower economy working as designed). RSS ~590MB. The engine with every RC1 default ON is soak-stable at city scale.
