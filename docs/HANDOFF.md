@@ -788,3 +788,7 @@ results byte-identical to container runs.
 Diagnostics worth keeping: smoke votes=0 was a too-short window (real governance cognition fires from ~t30; 120-tick diag showed 870 votes/546 settlements); the ~600/tick OVERSIGHT_FLAG volume is the oversight economy working (HOARD-dominated bot chatter funding whistleblower rewards), not a violation; bot proposals settle as 'failed' status (counter now buckets passed/rejected/failed).
 
 **Final pre-freeze suite: 540/540** (8:29). Everything needed before the tag is done except the player guide + the tag itself — both await founder go. Freeze is in effect until then: no engine changes without founder approval.
+
+## 2026-09-20 — Testing Retrospective written (docs/TESTING_RETROSPECTIVE.md)
+
+Founder-directed synthesis of the whole testing program: the bug ledger (13 ship-stoppers and what caught them), the science verdict ledger with data paths, the honest LLM-seat assessment, the weak/mistaken tests, process mistakes that birthed the memrun discipline, what the evidence says about the design (core claim survived everything; failures were bugs/mis-scalings, never design flaws), and the 7 binding test standards going forward. READ THIS before designing any new study — it contains the verdict-expiry rule and the full-session doctrine.
