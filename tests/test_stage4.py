@@ -165,10 +165,21 @@ def test_fair_clearing_validation():
 
 
 def test_default_quota_covers_stage4_need_goods():
+    """Audit 2026-09-20 B7 (updated contract): every default-quota good must
+    be PRODUCIBLE by the base catalog. Coverage alone was the old pin — but
+    heating_fuel/medicine sat in the quotas with NO base recipe, recording
+    permanent fake unmet in base-catalog worlds. Quota coverage that the
+    economy cannot satisfy is fake starvation, not coverage."""
+    from openboard.catalog import RECIPES
     q = DEFAULT_RULESET_PARAMS["essential_need_quota"]
+    outs = set()
+    for r in RECIPES.values():
+        outs.update(r.outputs)
     for g in ("transport", "clothing", "education", "childcare", "books",
-              "furniture", "household_goods", "maintenance", "medicine"):
+              "furniture", "household_goods", "maintenance"):
         assert g in q, f"need-good {g} missing from essential_need_quota — silently unbought"
+    unproducible = [g for g in q if g not in outs]
+    assert unproducible == [],         f"quota goods the base catalog cannot produce: {unproducible} (fake unmet)"
 
 
 def test_extended_catalog_gate_keeps_old_saves_replaying():

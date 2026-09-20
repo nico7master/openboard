@@ -570,7 +570,8 @@ class Run:
     def _record_timeline(self) -> None:
         s = self.state
         treasuries = sum(c.get("treasury", 0) for c in s.coops.values())
-        money = sum(s.balances.values()) + s.surplus_pool + treasuries + s.capital_fund + getattr(s, "innovation_pool", 0)
+        money = (sum(s.balances.values()) + s.surplus_pool + treasuries + s.capital_fund
+                 + getattr(s, "innovation_pool", 0) + getattr(s, "foreign_balance", 0))
         self.timeline["tick"].append(s.tick)
         wealth = (list(s.balances.values()) + [s.surplus_pool]
                   + [c.get("treasury", 0) for c in s.coops.values()])
@@ -971,6 +972,30 @@ class Run:
             params["wealth_tax"]["threshold"] *= upc
             params["capital_backstop"]["input_advance"]["max_per_coop"] *= upc
             params["coop_distribution"]["buffer"] *= upc
+        # ---- Audit 2026-09-20 hardening (B7/B3/B11/A7) ----
+        # B7: default quotas dropped heating_fuel/medicine (base catalog
+        # cannot produce them -> fake permanent unmet). THIS world runs the
+        # extended catalog, which produces both: restore their quotas.
+        _q = params.setdefault("essential_need_quota", {})
+        _q.setdefault("heating_fuel", 6)
+        _q.setdefault("medicine", 1)
+        # B3: hash the demand/wear signals (tamper evidence for the live game).
+        params["hash_v2"] = {"enabled": True}
+        # B11: ramp scarcity markups back gently after a crisis ends.
+        # (Complete the legacy core keys first - partial rule dicts are
+        # rejected by validation and would KeyError the engine.)
+        _sp = params.get("scarcity_pricing")
+        if not isinstance(_sp, dict):
+            _sp = {"enabled": True, "max_markup_bp": 2_500,
+                   "step_bp": 500, "decay_bp": 250}
+            params["scarcity_pricing"] = _sp
+        _sp["post_crisis_clamp_ticks"] = 10
+        # A7: being flagged costs the violator 1000u (rotation farms die).
+        _wb = params.get("whistleblower")
+        if not isinstance(_wb, dict):
+            _wb = {"enabled": True, "reward_credits": 500, "max_per_tick": 10}
+            params["whistleblower"] = _wb
+        _wb["penalty_credits"] = 1_000
         return params
 
     # ------------------------------------------------------------ views
@@ -1216,7 +1241,9 @@ def api_analytics():
             "tick": s.tick,
             "money_pie": money_pie,
             "money_total": (citizens_money + treasury_money
-                            + s.surplus_pool + s.capital_fund + getattr(s, "innovation_pool", 0)),
+                            + s.surplus_pool + s.capital_fund
+                            + getattr(s, "innovation_pool", 0)
+                            + getattr(s, "foreign_balance", 0)),
             "money_minted": s.money_minted,
             "money_retired": s.money_retired,
             "produced_pie": _by_cat("produced"),

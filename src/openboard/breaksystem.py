@@ -64,7 +64,10 @@ def capture_baseline(state: WorldState) -> int:
 
 
 def money_total(state: WorldState) -> int:
+    # Audit 2026-09-20 B9: the foreign bucket is part of the fixed supply
+    # (its negative IS our trade surplus). Zero in non-trade worlds = exact.
     return (sum(state.balances.values()) + state.surplus_pool + state.capital_fund
+            + state.foreign_balance
             + sum(c.get("treasury", 0) for c in state.coops.values()))
 
 

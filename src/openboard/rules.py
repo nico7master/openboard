@@ -40,7 +40,9 @@ OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution
     # A PROPOSE of the complete active ruleset (the standard move of
     # the politician seat) must validate. Parity test guards this list.
     "research", "shocks", "demographics", "wage_debt_repay",
-    "birth_stake_from_pool", "wage_mint_mode")
+    "birth_stake_from_pool", "wage_mint_mode",
+    # Audit 2026-09-20 B3: opt-in v2 state hash (demand/wear tamper evidence).
+    "hash_v2")
 
 DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     "fair_clearing": True,  # D14 L5: need-rotation on by default (v0.02)
@@ -90,7 +92,11 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
         "meals": 1,
         "housing": 1,
         "electricity": 12,
-        "heating_fuel": 6,
+        # Audit 2026-09-20 B7: heating_fuel + medicine STRIPPED from the
+        # default quotas — the BASE catalog has no recipe producing them,
+        # so base worlds recorded permanent fake unmet. The dashboard game
+        # world re-adds both (its extended catalog produces them). Existing
+        # worlds keep their recorded rulesets: hash-safe.
         "water": 3,
         "healthcare": 2,
         # Stage 4: every need-good must be purchasable via BUY_ESSENTIAL —
@@ -98,7 +104,7 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
         # transport/books/clothing listed but zero citizen purchases)
         "transport": 2, "clothing": 1, "education": 1,
         "childcare": 1, "books": 1, "furniture": 1,
-        "household_goods": 1, "maintenance": 1, "medicine": 1,
+        "household_goods": 1, "maintenance": 1,
     },
     # true-need balance: durables and sessions are bought on cycles, not
     # every tick (a house lasts ~a year of ticks, a garment ~a month).
@@ -299,7 +305,15 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
 
     if "scarcity_pricing" in params:
         spv = params["scarcity_pricing"]
-        if not isinstance(spv, dict) or set(spv.keys()) != {"enabled", "max_markup_bp", "step_bp", "decay_bp"}:
+        # Audit 2026-09-20 B11: post_crisis_clamp_ticks is optional
+        # (absent = legacy snap-back = replay-safe) but validated when present.
+        # The legacy core keys stay REQUIRED: a partial dict must be rejected
+        # exactly as before (subset-only would KeyError spv["enabled"] below).
+        _sp_core = {"enabled", "max_markup_bp", "step_bp", "decay_bp"}
+        _sp_allowed = _sp_core | {"post_crisis_clamp_ticks"}
+        if (not isinstance(spv, dict)
+                or not _sp_core.issubset(spv.keys())
+                or not set(spv.keys()) <= _sp_allowed):
             return Reason.INVALID_RULESET
         if not isinstance(spv["enabled"], bool):
             return Reason.INVALID_RULESET
@@ -308,10 +322,22 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             if isinstance(_v, bool) or not isinstance(_v, int) or _v < 1 or _v > 10_000:
                 return Reason.INVALID_RULESET
 
+        if "post_crisis_clamp_ticks" in spv:
+            _pc = spv["post_crisis_clamp_ticks"]
+            if isinstance(_pc, bool) or not isinstance(_pc, int) or _pc < 0:
+                return Reason.INVALID_RULESET
     # Source-model completion (spec 2026-09-15 §B1): whistleblower bounties.
     if "whistleblower" in params:
         wb = params["whistleblower"]
-        if not isinstance(wb, dict) or set(wb.keys()) != {"enabled", "reward_credits", "max_per_tick"}:
+        # Audit 2026-09-20 A7: penalty_credits is optional
+        # (absent = legacy bounty-only = replay-safe) but validated when present.
+        # The legacy core keys stay REQUIRED: a partial dict must be rejected
+        # exactly as before (subset-only would KeyError wb["enabled"] below).
+        _wb_core = {"enabled", "reward_credits", "max_per_tick"}
+        _wb_allowed = _wb_core | {"penalty_credits"}
+        if (not isinstance(wb, dict)
+                or not _wb_core.issubset(wb.keys())
+                or not set(wb.keys()) <= _wb_allowed):
             return Reason.INVALID_RULESET
         if not isinstance(wb["enabled"], bool):
             return Reason.INVALID_RULESET
@@ -320,6 +346,10 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             if isinstance(_v, bool) or not isinstance(_v, int) or _v < 1 or _v > 100_000:
                 return Reason.INVALID_RULESET
 
+        if "penalty_credits" in wb:
+            _pen = wb["penalty_credits"]
+            if isinstance(_pen, bool) or not isinstance(_pen, int) or _pen < 0:
+                return Reason.INVALID_RULESET
     # Source-model completion (spec 2026-09-15 §B2): periodic public audits.
     if "audits" in params:
         au = params["audits"]

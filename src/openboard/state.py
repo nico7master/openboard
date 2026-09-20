@@ -225,7 +225,28 @@ class WorldState:
             snap["delegations"] = dict(sorted(self.delegations.items()))
         if self.vote_budget:
             snap["vote_budget"] = {c: dict(b) for c, b in sorted(self.vote_budget.items())}
+        # Audit 2026-09-20 B3: tamper-evidence for demand/wear signals.
+        # Gated on the opt-in hash_v2 rule: absent key = legacy snapshot =
+        # every history recorded before this change replays bit-identically.
+        if self._hash_v2_active():
+            if self.recent_sales:
+                snap["recent_sales"] = dict(sorted(self.recent_sales.items()))
+            if self.unserved_bids:
+                snap["unserved_bids"] = dict(sorted(self.unserved_bids.items()))
+            if self.demand_ema:
+                snap["demand_ema"] = {g: int(v) for g, v in sorted(self.demand_ema.items())}
+            if self.capital_wear:
+                snap["capital_wear"] = {
+                    c: dict(sorted(g.items())) for c, g in sorted(self.capital_wear.items())
+                }
         return snap
+
+    def _hash_v2_active(self) -> bool:
+        """B3: is the opt-in v2 state hash enabled in the active ruleset?"""
+        try:
+            return bool((self.active_ruleset_params().get("hash_v2") or {}).get("enabled"))
+        except Exception:
+            return False
 
     def state_hash(self) -> str:
         return sha256_hex(canonical_json(self.snapshot_dict()))
@@ -279,6 +300,13 @@ class WorldState:
             delegations=dict(self.delegations),
             vote_budget={c: dict(b) for c, b in self.vote_budget.items()},
             politician_trust=dict(self.politician_trust),
+            # Audit 2026-09-20 B3: clone() must be a FAITHFUL copy — the
+            # omitted fields silently reset on every cloned world.
+            loans={c: dict(l) for c, l in self.loans.items()},
+            recent_sales=dict(self.recent_sales),
+            unserved_bids=dict(self.unserved_bids),
+            demand_ema=dict(self.demand_ema),
+            capital_wear={c: dict(g) for c, g in self.capital_wear.items()},
         )
 
     def active_ruleset_params(self) -> dict[str, Any]:
@@ -315,7 +343,7 @@ def _clone_recipe(r: dict[str, Any]) -> dict[str, Any]:
 
 
 def _clone_coop(c: dict[str, Any]) -> dict[str, Any]:
-    return {
+    out = {
         "name": c["name"],
         "members": list(c["members"]),
         "founded_tick": c["founded_tick"],
@@ -324,6 +352,16 @@ def _clone_coop(c: dict[str, Any]) -> dict[str, Any]:
         "wage_remainder_bp": c.get("wage_remainder_bp", 0),
         "treasury": c.get("treasury", 0),
     }
+    # Audit 2026-09-20 B3: presence-preserving extras (wage-debt book,
+    # planner intent, production clock) — a clone that drops the wage-debt
+    # book would forgive real debts.
+    if c.get("wage_debt"):
+        out["wage_debt"] = dict(c["wage_debt"])
+    if "recipe_intent" in c:
+        out["recipe_intent"] = c["recipe_intent"]
+    if "last_produce_tick" in c:
+        out["last_produce_tick"] = c["last_produce_tick"]
+    return out
 
 
 def genesis_state(

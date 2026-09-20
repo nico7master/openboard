@@ -36,7 +36,7 @@ Replay-safety note: A2/A9 change settle behavior only for persuasion worlds (ser
 | B2 | capital_rent overcharge under durable_capital | ✅ **CONFIRMED ×169** | one durable machine (durability 20): 31,200 rent charged over its life vs 185 live replacement; machine died at run 20 as designed — rent is pure double-depreciation |
 | B4 | capital_refresh retires at stale book values | ✅ **CONFIRMED ×7.4** | refresh retired 3,300 for a basket worth 445 at live baselines (2 machines + 5 tools) |
 | B6 | legacy recent_sales overwrite kills B2B demand signal | ✅ **CONFIRMED** | same-tick coop bid (4, via PIP pass) + citizen bid (3): sold=7 but recent_sales=3 and EMA=3 — the PIP volume is wiped from the signal producers plan on |
-| A7 | whistleblower bounty rotation EV | ✅ **CONFIRMED** | same-pair repeat correctly blocked (ALREADY_REPORTED) but role-swap rotation pays 500/cycle with ZERO cost — the flagged hoarder loses nothing (no automatic penalty), so rotation is pure profit |
+| A7 | whistleblower bounty rotation EV | ✅ **CONFIRMED → FIXED** (P-ECON 09-20): opt-in `whistleblower.penalty_credits` — the flagged citizen pays up to N units INTO THE POOL (clamped at balance, conservation exact); game world 1000u vs 500u bounty = rotation now nets −500/cycle; absent key = legacy | same-pair repeat blocked (ALREADY_REPORTED) confirmed |
 | N1 | **NEW (found by probe): credit_phase is nested under `demographics.enabled`** in the engine tick | ✅ **CONFIRMED** | in credit-enabled worlds without demographics, loans NEVER default (credit_phase never runs) — the L1 default contract silently doesn't exist there. Fix: un-nest credit_phase |
 
 ## P-ECON — engine drain + coherence (after probes)
@@ -46,15 +46,15 @@ Replay-safety note: A2/A9 change settle behavior only for persuasion worlds (ser
 | E1 | OPTIONAL_PARAMS missing stage-5 keys (research/shocks/demographics/wage_debt_repay/birth_stake_from_pool/wage_mint_mode) → PROPOSE of a full ruleset died INVALID_RULESET — governance dead in exactly those worlds | 🔧 fixed +test | pulled forward into P-GOV 2026-09-20; parity guard test prevents recurrence |
 | B1 | loan default blocking | ☐ | probe CONFIRMED (20k drained, trail destroyed): defaulted loans block new LOANs + keep book row; ALSO un-nest credit_phase from demographics (N1) |
 | B2 | rent amortization | ☐ | probe CONFIRMED ×169 (31,200 rent vs 185 replacement): amortize rent per durability (1500/20=75/run) or charge live replacement/durability |
-| B3 | state-copy divergence: clone() omits loans, capital_wear, recent_sales, unserved_bids, demand_ema; _clone_coop omits wage_debt, recipe_intent, last_produce_tick; snapshot drops wear/sales/bids (E2, expanded scope) | ☐ | build copy paths from the dataclass field list + full round-trip equality test |
+| B3 | state-copy divergence: clone() omits loans, capital_wear, recent_sales, unserved_bids, demand_ema; _clone_coop omits wage_debt, recipe_intent, last_produce_tick; snapshot drops wear/sales/bids (E2, expanded scope) | ✅ **FIXED** (P-ECON 09-20): clone()/_clone_coop now faithful (deep-copy, round-trip test); snapshot covers the five fields behind the opt-in `hash_v2` rule — absent key = legacy hash = every recorded history replays bit-identically; the live game world enables hash_v2 |
 | B4 | refresh pricing | ☐ | probe CONFIRMED ×7.4 (3,300 retired vs 445 live): price refresh from good_cost_baseline |
 | B5 | governance sub-schema never type-checked — vote_token_bp="5000" passes validation then TypeErrors the tick (E3) | ☐ | validate governance sub-key types in rules.py; one shared schema owner |
 | B6 | recent_sales accumulation | ☐ | probe CONFIRMED (sold 7, signal kept 3): accumulate in legacy path like defer_unsold does |
-| B7 | base catalog: heating_fuel/medicine quotas without recipes | ☐ | minimal recipes or strip from default quotas |
+| B7 | base catalog: heating_fuel/medicine quotas without recipes | ✅ **FIXED** (P-ECON 09-20): stripped from DEFAULT quotas (verified 0 unproducible goods remain); the dashboard game world re-adds both (extended catalog produces them); recorded worlds keep their own rulesets — hash-safe; stage4 quota test now pins producibility | — |
 | B8 | input advance = perpetual grant | 🚫 DECIDE | founder design: generous founding support; revisit with accountability post-RC1 |
-| B9 | dashboard invariant omits foreign_balance | ☐ | add to sums |
-| B10 | hardcoded constants: wage 800 in insolvency backstop; _CAP_TARGETS 60/1500 vs live ~10,095; _ess_seed 4 goods (E6) | ☐ | derive from params/state |
-| B11 | post-crisis markup snap-back | ☐ | decay-clamp first ticks post-crisis |
+| B9 | dashboard invariant omits foreign_balance | ✅ **FIXED** (P-ECON 09-20): money_total + both dashboard money sums count the foreign bucket exactly (0 in non-trade worlds = byte-identical totals) | — |
+| B10 | hardcoded constants: wage 800 in insolvency backstop; _CAP_TARGETS 60/1500 vs live ~10,095; _ess_seed 4 goods (E6) | ✅ **FIXED** (P-ECON 09-20): backstop daily wage derived from rules (8h x mult_bp x upc == 800 at defaults; legacy worlds keep literal 800 — test pins both regimes); refresh affordability ordering prices from live baselines; _ess_seed kept (founder tuning, load-bearing in gates) | — |
+| B11 | post-crisis markup snap-back | ✅ **FIXED** (P-ECON 09-20): opt-in `scarcity_pricing.post_crisis_clamp_ticks` caps post-crisis markup growth at the decay rate for N ticks (game world: 10); absent key = legacy = replay-safe; active-crisis zeroing unchanged | — |
 | E7 | swallowed exceptions hide invariant violations (_research_effect_bp except:return 0; bots.py:398; sim.py:471) | ☐ | narrow excepts, flag unexpected errors ledger-visibly |
 | E9 | quota trap: goods missing from essential_need_quota default to unboughtable | ☐ | genesis cross-check needs ⊆ quota |
 | S3 | need_allocation lacks the source's third mode: "democratic decision" | ☐ | add votable mode or document omission |

@@ -130,7 +130,9 @@ def _validate_loan(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     if not _is_int(amount) or amount <= 0:
         return Reason.RULE_VIOLATION
     existing = state.loans.get(tx.sender)
-    if existing is not None and not existing.get("defaulted"):
+    if existing is not None:
+        if existing.get("defaulted"):
+            return Reason.LOAN_DEFAULTED
         return Reason.LOAN_ACTIVE
     cap = cp.get("max_per_citizen", 0)
     if not _is_int(cap) or cap <= 0 or amount > cap:
@@ -985,7 +987,21 @@ def _apply_produce(state: WorldState, tx: Transaction, params: dict[str, Any]) -
     capital_rent = 0
     if (machine_rent_rate > 0 and machines_used > 0) or (tool_rent_rate > 0 and tools_used > 0):
         treasury = coop.get("treasury", 0)
-        capital_rent = min(machine_rent_rate * machines_used + tool_rent_rate * tools_used, treasury)
+        # Audit 2026-09-20 B2: capital rent = REAL depreciation of the capital
+        # used. Under durable capital a machine wears only 1/durability per run,
+        # so charging the full price every run double-depreciated (probe: 31,200
+        # rent over a machine worth 185 live). Charge the live replacement cost
+        # (good_cost_baseline, falling back to the configured rate) amortized
+        # over durability. Non-durable worlds keep exact legacy rent (replay-safe).
+        base_m = state.good_cost_baseline.get("machines", machine_rent_rate)
+        base_t = state.good_cost_baseline.get("hand_tools", tool_rent_rate)
+        machine_rent = (base_m * machines_used // durability
+                        if "machines" in dur_goods
+                        else machine_rent_rate * machines_used)
+        tool_rent = (base_t * tools_used // durability
+                     if "hand_tools" in dur_goods
+                     else tool_rent_rate * tools_used)
+        capital_rent = min(machine_rent + tool_rent, treasury)
         if capital_rent > 0:
             coop["treasury"] = treasury - capital_rent
             # Earmarked depreciation reserve: capital refresh draws from
@@ -1492,6 +1508,20 @@ def _apply_report(state: WorldState, tx: Transaction, params: dict[str, Any]) ->
     reward = int(wb.get("reward_credits", 100))
     state.surplus_pool -= reward
     state.balances[tx.sender] = state.balances.get(tx.sender, 0) + reward
+    # Audit 2026-09-20 A7: bounty rotation was pure profit — the flagged
+    # violator lost nothing, so colluders traded the villain role and
+    # drained the pool 500/cycle. Opt-in remedy: the flagged citizen pays
+    # a penalty INTO THE POOL (clamped at their balance — conservation
+    # exact, no negative balances). Absent key = legacy = replay-safe.
+    penalty = int(wb.get("penalty_credits", 0) or 0)
+    taken = 0
+    if penalty > 0:
+        _tgt = tx.payload["target"]
+        if _tgt in state.balances:
+            taken = min(penalty, state.balances[_tgt])
+            if taken > 0:
+                state.balances[_tgt] -= taken
+                state.surplus_pool += taken
     return {
         "tick": tx.tick,
         "sender": tx.sender,
@@ -1499,6 +1529,7 @@ def _apply_report(state: WorldState, tx: Transaction, params: dict[str, Any]) ->
         "kind": tx.payload["kind"],
         "target": tx.payload["target"],
         "reward": reward,
+        "penalty_taken": taken,
     }
 
 
@@ -1513,7 +1544,7 @@ def _update_demand_ema(state: WorldState, good: str, observed: int, alpha_bp: in
     state.demand_ema[good] = observed if prev is None else (prev * (10_000 - alpha_bp) + observed * alpha_bp) // 10_000
 
 
-def _update_scarcity(state: WorldState, _wanted: dict[str, int], _sold: dict[str, int], params: dict[str, Any]) -> None:
+def _update_scarcity(state: WorldState, _wanted: dict[str, int], _sold: dict[str, int], params: dict[str, Any], tick: int = -1) -> None:
     """L2 scarcity-signal update from (wanted, sold) totals. Called once
     per tick on the legacy path; exactly once per tick (globally) on the
     regional path - never once per region."""
@@ -1526,11 +1557,21 @@ def _update_scarcity(state: WorldState, _wanted: dict[str, int], _sold: dict[str
             _max = int(_sp.get("max_markup_bp", 2_500))
             _step = int(_sp.get("step_bp", 500))
             _decay = int(_sp.get("decay_bp", 250))
+            # Audit 2026-09-20 B11: right after a crisis ends, suppressed
+            # prices + accumulated unmet demand let markups snap back at full
+            # step. Opt-in clamp: post-crisis growth is capped at the decay
+            # rate for N ticks (absent key = legacy = replay-safe).
+            _clamp_ticks = int(_sp.get("post_crisis_clamp_ticks", 0) or 0)
+            _cr = state.crisis or {}
+            _ended = int(_cr.get("ended_tick", -1) or -1)
+            _post = (_clamp_ticks > 0 and _ended >= 0 and tick >= 0
+                     and 0 <= tick - _ended <= _clamp_ticks)
+            _step_now = _decay if _post else _step
             for _g in sorted(set(state.scarcity_signal.keys()) | set(_wanted.keys())):
                 _unmet = _wanted.get(_g, 0) - _sold.get(_g, 0)
                 _cur = state.scarcity_signal.get(_g, 0)
                 if _unmet > 0:
-                    state.scarcity_signal[_g] = min(_max, _cur + _step)
+                    state.scarcity_signal[_g] = min(_max, _cur + _step_now)
                 elif _cur > 0:
                     _nv = _cur - _decay
                     if _nv > 0:
@@ -1618,7 +1659,7 @@ def _clear_markets_regional(state: WorldState, tick: int, params: dict[str, Any]
         state.listings = full_listings
     for good in sorted(full_listings.keys()):
         _return_unsold(state, good)
-    _update_scarcity(state, g_wanted, g_sold, params)
+    _update_scarcity(state, g_wanted, g_sold, params, tick)
     return events
 
 
@@ -1968,7 +2009,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         if defer_unsold:
             state.recent_sales[good] = state.recent_sales.get(good, 0) + total_sold
         else:
-            state.recent_sales[good] = total_sold
+            state.recent_sales[good] = state.recent_sales.get(good, 0) + total_sold
         _update_demand_ema(state, good, total_sold)
         _sold[good] = _sold.get(good, 0) + total_sold
         events.append({
@@ -2031,7 +2072,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         if defer_unsold:
             state.recent_sales[good] = state.recent_sales.get(good, 0) + total_sold
         else:
-            state.recent_sales[good] = total_sold
+            state.recent_sales[good] = state.recent_sales.get(good, 0) + total_sold
         _update_demand_ema(state, good, total_sold)
         _sold[good] = _sold.get(good, 0) + total_sold
         state.last_clearing[good] = clearing  # public price signal
@@ -2150,7 +2191,7 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         stats["wanted"] = _wanted
         stats["sold"] = _sold
     if scarcity_update:
-        _update_scarcity(state, _wanted, _sold, params)
+        _update_scarcity(state, _wanted, _sold, params, tick)
     return events
 
 
@@ -2578,7 +2619,18 @@ def _wage_debt_repay_phase(state: WorldState, tick: int, params: dict[str, Any])
         # --- structural insolvency: pool assumes the debt
         if pool_assumes:
             total_debt = sum(wd.values())
-            daily_wage = len(coop.get("members") or []) * 800
+            # Audit 2026-09-20 B10: derive the daily wage bill from the
+            # rules (8h x 10000bp x 100u == 800 at default money-cap params)
+            # instead of a hardcoded 800. Legacy non-money-cap worlds keep
+            # the literal 800: replay-safe.
+            _mcap = params.get("money_cap") or {}
+            if _mcap.get("enabled"):
+                _upc = int(_mcap.get("units_per_credit", 100))
+                _hours = int(params.get("max_work_hours_per_tick", 8))
+                _mult = int(params.get("wage_multiplier_bp", 10_000))
+                daily_wage = len(coop.get("members") or []) * (_hours * _mult * _upc // 10_000)
+            else:
+                daily_wage = len(coop.get("members") or []) * 800
             if total_debt > daily_wage * 150 and state.surplus_pool >= total_debt:
                 state.surplus_pool -= total_debt
                 for who in sorted(wd.keys()):
@@ -2706,16 +2758,18 @@ def _capital_refresh_phase(state: WorldState, tick: int, params: dict[str, Any])
             give = min(need, per_batch) if per_batch > 0 else need
             if give > 0:
                 top_up[good] = give
-                cost += give * _CAP_REPLACEMENT_COST[good]
+                cost += give * state.good_cost_baseline.get(good, _CAP_REPLACEMENT_COST[good])
         if not top_up or cost <= 0:
             continue
         if cost > state.capital_fund:
             # partial in deterministic order: tools first, then machines
             spend = 0
             partial: dict[str, int] = {}
-            for good in sorted(top_up.keys(), key=lambda g: _CAP_REPLACEMENT_COST[g]):
+            for good in sorted(
+                    top_up.keys(),
+                    key=lambda g: state.good_cost_baseline.get(g, _CAP_REPLACEMENT_COST[g])):
                 for unit in range(top_up[good]):
-                    nxt = spend + _CAP_REPLACEMENT_COST[good]
+                    nxt = spend + state.good_cost_baseline.get(good, _CAP_REPLACEMENT_COST[good])
                     if nxt > state.capital_fund:
                         break
                     spend = nxt
@@ -3803,8 +3857,13 @@ def apply_tick(
         demog_events = _demog.demographics_phase(state, tick, params)
         state.applied.extend(demog_events)
 
-        credit_events = credit_phase(state, tick, params)
-        state.applied.extend(credit_events)
+    # Audit 2026-09-20 N1: credit_phase is NOT demographics-dependent. It was
+    # nested under demographics.enabled, so loans NEVER defaulted in
+    # credit-enabled worlds without demographics (the L1 default contract was
+    # silently absent there). Credit-disabled worlds return [] here — the
+    # call is inert without the rule, so old worlds replay identically.
+    credit_events = credit_phase(state, tick, params)
+    state.applied.extend(credit_events)
 
     # Vote token: monthly budget grant/refresh BEFORE any VOTE validates
     # (2026-09-15 spec; inert unless the token is enabled — replay-safe).
@@ -3917,6 +3976,10 @@ def apply_tick(
     if (params.get("regional_markets") or {}).get("enabled"):
         market_events = _clear_markets_regional(state, tick, params, ledger)
     else:
+        # Audit 2026-09-20 B6: the legacy full-clear owns the per-tick demand
+        # window. PIP + essential + auction passes now ACCUMULATE into it, so
+        # it must start empty each tick (deferred/regional paths untouched).
+        state.recent_sales.clear()
         market_events = _clear_markets(state, tick, params, ledger)
     state.applied.extend(market_events)
 
