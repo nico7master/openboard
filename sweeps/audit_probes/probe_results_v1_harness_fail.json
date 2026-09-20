@@ -1,0 +1,22 @@
+{
+  "B1": {
+    "cycles": 0,
+    "drained": 0,
+    "accepted": 0,
+    "rejected": 1
+  },
+  "B2": {
+    "error": "list index out of range"
+  },
+  "B4": {
+    "error": "list index out of range"
+  },
+  "B6": {
+    "accumulated": 50,
+    "after": 12
+  },
+  "A7": {
+    "first_paid": 0,
+    "repeat_paid": 0
+  }
+}

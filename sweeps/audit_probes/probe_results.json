@@ -1,0 +1,27 @@
+{
+  "B1": {
+    "borrowed": 20000,
+    "drained": 20000,
+    "defaults": 4,
+    "book_row_reset": false
+  },
+  "B2": {
+    "runs_ok": 20,
+    "rent_total": 31200,
+    "wear_units": 0,
+    "live_replacement": 185
+  },
+  "B4": {
+    "retired": 3300,
+    "live_cost": 445
+  },
+  "B6": {
+    "recent_sales_steel": 3,
+    "ema": 3
+  },
+  "A7": {
+    "first_paid": 500,
+    "repeat_blocked_reason": "ALREADY_REPORTED",
+    "rotated_paid": 500
+  }
+}

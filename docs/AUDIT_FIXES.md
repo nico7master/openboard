@@ -28,23 +28,28 @@ Replay-safety note: A2/A9 change settle behavior only for persuasion worlds (ser
 
 | # | Finding | Status | Notes |
 |---|---|---|---|
-| B1 | serial loan default drains pool (overwrite destroys the record) | 🔍 | 20-tick probe → then fix (default blocks new loans) |
-| B2 | capital_rent 20× overcharge under durable_capital | 🔍 | probe rent amounts vs wear → then amortize or skip |
-| B4 | capital_refresh retires at stale book values → fund hoards | 🔍 | probe fund trend in soak data → price from live baseline |
-| B6 | legacy recent_sales overwrite kills B2B demand signal | 🔍 | probe produce rates regional on/off → then accumulate |
-| A7 | (above) bounty EV check | 🔍 | same probe batch |
+**P-PROBE COMPLETE 2026-09-20** — `scripts/audit_probes.py` (memrun-held), results in `sweeps/audit_probes/probe_results.json`. All five claims CONFIRMED empirically:
+
+| # | Finding | Status | Probe evidence |
+|---|---|---|---|
+| B1 | serial loan default drains pool | ✅ **CONFIRMED** | 4 cycles → 20,000 drained from pool; each default's record overwritten by the next LOAN (book_row_reset=false) — the audit trail is destroyed, not just the money |
+| B2 | capital_rent overcharge under durable_capital | ✅ **CONFIRMED ×169** | one durable machine (durability 20): 31,200 rent charged over its life vs 185 live replacement; machine died at run 20 as designed — rent is pure double-depreciation |
+| B4 | capital_refresh retires at stale book values | ✅ **CONFIRMED ×7.4** | refresh retired 3,300 for a basket worth 445 at live baselines (2 machines + 5 tools) |
+| B6 | legacy recent_sales overwrite kills B2B demand signal | ✅ **CONFIRMED** | same-tick coop bid (4, via PIP pass) + citizen bid (3): sold=7 but recent_sales=3 and EMA=3 — the PIP volume is wiped from the signal producers plan on |
+| A7 | whistleblower bounty rotation EV | ✅ **CONFIRMED** | same-pair repeat correctly blocked (ALREADY_REPORTED) but role-swap rotation pays 500/cycle with ZERO cost — the flagged hoarder loses nothing (no automatic penalty), so rotation is pure profit |
+| N1 | **NEW (found by probe): credit_phase is nested under `demographics.enabled`** in the engine tick | ✅ **CONFIRMED** | in credit-enabled worlds without demographics, loans NEVER default (credit_phase never runs) — the L1 default contract silently doesn't exist there. Fix: un-nest credit_phase |
 
 ## P-ECON — engine drain + coherence (after probes)
 
 | # | Finding | Status | Notes |
 |---|---|---|---|
 | E1 | OPTIONAL_PARAMS missing stage-5 keys (research/shocks/demographics/wage_debt_repay/birth_stake_from_pool/wage_mint_mode) → PROPOSE of a full ruleset died INVALID_RULESET — governance dead in exactly those worlds | 🔧 fixed +test | pulled forward into P-GOV 2026-09-20; parity guard test prevents recurrence |
-| B1 | loan default blocking | ☐ | after B1 probe |
-| B2 | rent amortization | ☐ | after B2 probe |
+| B1 | loan default blocking | ☐ | probe CONFIRMED (20k drained, trail destroyed): defaulted loans block new LOANs + keep book row; ALSO un-nest credit_phase from demographics (N1) |
+| B2 | rent amortization | ☐ | probe CONFIRMED ×169 (31,200 rent vs 185 replacement): amortize rent per durability (1500/20=75/run) or charge live replacement/durability |
 | B3 | state-copy divergence: clone() omits loans, capital_wear, recent_sales, unserved_bids, demand_ema; _clone_coop omits wage_debt, recipe_intent, last_produce_tick; snapshot drops wear/sales/bids (E2, expanded scope) | ☐ | build copy paths from the dataclass field list + full round-trip equality test |
-| B4 | refresh pricing | ☐ | after B4 probe |
+| B4 | refresh pricing | ☐ | probe CONFIRMED ×7.4 (3,300 retired vs 445 live): price refresh from good_cost_baseline |
 | B5 | governance sub-schema never type-checked — vote_token_bp="5000" passes validation then TypeErrors the tick (E3) | ☐ | validate governance sub-key types in rules.py; one shared schema owner |
-| B6 | recent_sales accumulation | ☐ | after B6 probe |
+| B6 | recent_sales accumulation | ☐ | probe CONFIRMED (sold 7, signal kept 3): accumulate in legacy path like defer_unsold does |
 | B7 | base catalog: heating_fuel/medicine quotas without recipes | ☐ | minimal recipes or strip from default quotas |
 | B8 | input advance = perpetual grant | 🚫 DECIDE | founder design: generous founding support; revisit with accountability post-RC1 |
 | B9 | dashboard invariant omits foreign_balance | ☐ | add to sums |
