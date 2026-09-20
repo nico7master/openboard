@@ -1,5 +1,13 @@
 # Handoff: OpenBoard Economy Shipping Month Progress
 
+## Session 2026-09-21 — P-GAME complete (audit package 4/5)
+
+- **Fixed the whole C-series game layer**: C1 post-round farming refused (leaderboard records exactly once), C2 per-player attack games (16-game LRU cap), C3 playbook pinned per round, C4 unmet damage = delta over round-start baseline, C5 flag damage capped + real-harm reweight, C6 real money-invariant check with captured baseline, C7 pending actions survive save/restore, C8 autosave failures logged + surfaced via /api/state, C9 atomic leaderboard under lock, C10 account-bound citizens require their X-Auth-Token on /api/action (UI claim/login row; un-bound citizens stay open locally), C11 LLM stop restores the bot twin, C12/C13/C15 UI polish, C16/E8 duplicate gini_bp key removed.
+- **Tests**: 12 new pins in `tests/test_audit_game.py`; 2 legacy attack tests updated to the per-player contract; full suite 582/582 (8:41 memrun).
+- **Tracker**: `docs/AUDIT_FIXES.md` C-rows updated; C14 quest polish deferred to P-DESIGN by plan.
+- **Process lessons**: write the patched file only after ast.parse passes (a broken intermediate once shipped to disk); node --check the edited inline JS block (pytest cannot see UI syntax).
+- **Remaining audit work**: P-DESIGN (mission banner, plain-language proposals, governance ON default, C14 quest polish), P-GOV2 (vote-buying enforcement + S-series), founder DECIDE on B8.
+
 ## Session 2026-09-19 (early): P2 LLM POLITICIAN SEAT — live, proven, pushed (530/530)
 
 **Directive:** "yes ready for p2" after the P0 adversary seat; founder's
