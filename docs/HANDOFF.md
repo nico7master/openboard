@@ -780,3 +780,11 @@ results byte-identical to container runs.
 - **Universal shift (all 18):** unmet 65–886 → 0; production +13.4k…+22.6k; machines −0.9k…−2.7k (wear rule); deaths 0; money conserved everywhere.
 
 **Next:** RC1 week-4 — code freeze → overnight soak → full verification → player guide → RC1 tag. (Split-vote UI shipped earlier today; Citizen Seat panel exists.)
+
+## 2026-09-20 — Week-4 freeze gate GREEN: RC1 soak 3/3 + suite 540/540 (commit 16a221b, pushed)
+
+**RC1 soak (`scripts/rc1_soak.py`, data `sweeps/rc1_soak/`):** 3 seeds × 2,000 ticks × 975 citizens with the FULL founder-default stack ON (governance token+persuasion+reachable quorum, whistleblower, audits, need_allocation, scarcity pricing) + capital_refresh. inv_bad=0 across all 6,000 seed-ticks; worst essentials streak 4 (genesis blip, bound 50); deaths 0; pop stable 975; Gini ~180; 56,550 votes + ~590 proposals + 970 audits per seed; RSS ~590MB; ~12 min/seed.
+
+Diagnostics worth keeping: smoke votes=0 was a too-short window (real governance cognition fires from ~t30; 120-tick diag showed 870 votes/546 settlements); the ~600/tick OVERSIGHT_FLAG volume is the oversight economy working (HOARD-dominated bot chatter funding whistleblower rewards), not a violation; bot proposals settle as 'failed' status (counter now buckets passed/rejected/failed).
+
+**Final pre-freeze suite: 540/540** (8:29). Everything needed before the tag is done except the player guide + the tag itself — both await founder go. Freeze is in effect until then: no engine changes without founder approval.

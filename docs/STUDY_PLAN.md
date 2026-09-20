@@ -211,3 +211,5 @@ Scarcity pricing ON did not reintroduce famine: the essential-pass floor clamp h
 | 123 | 0 | 4 | 0 | 56,550 | 602 | 970 | 173 | 738s |
 
 **Verdict: FREEZE-GATE SOAK PASS.** Money conservation exact across 6,000 seed-ticks; the republic ran itself at scale — monthly tokens voted, proposals settled, audits published, oversight flagged ~600/tick of bot hoarding/free-riding (the whistleblower economy working as designed). RSS ~590MB. The engine with every RC1 default ON is soak-stable at city scale.
+
+**Final pre-freeze verification (2026-09-20 04:08):** full regression suite **540/540** (8:29, memrun-held) on the exact tree that passed the soak. **Week-4 freeze gate: GREEN.** Next: player guide + RC1 tag on founder go.
