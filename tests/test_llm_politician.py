@@ -92,7 +92,7 @@ def test_digest_reports_trust_and_token():
     g = _gov_world()
     who = sorted(g.state.balances.keys())[0]
     d = politician_digest(g.state, who, 5)
-    assert "Trust: 100/100" in d
+    assert "Trust: 50/100" in d  # audit A4: fresh politicians start at 50
     assert "vote budget" in d
     # P2 lesson (live session 045440): a rules SUMMARY makes the model
     # improvise a partial params object that dies in validation — the
@@ -172,7 +172,7 @@ def test_major_tier_60_percent():
     pid, status = _propose_and_settle(
         r, citizens[0], base, fail_yes, n - fail_yes, citizens)
     assert status == "failed", f"{fail_yes}/{n} yes must fail the 60% tier"  # engine truth: 'failed', not 'rejected'
-    assert s.politician_trust.get(citizens[0], 100) == 90  # -10 trust
+    assert s.politician_trust.get(citizens[0], 100) == 40  # 50 default -10 (audit A4)
 
     # second world: clear pass above the bar, trust rises from 90 to 95
     g2 = _gov_world()

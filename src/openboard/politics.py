@@ -243,7 +243,8 @@ def make_politician(inner: DecisionFn, archetype: str, window: int = ELECTION_WI
         if gov.get("enabled") and gov.get("vote_token_bp", 0) > 0:
             budget = state.vote_budget.get(who) or {}
             token_bp = budget.get("bp", 0) if budget.get("cycle") == tick // gov.get("vote_cycle_ticks", 30) else 0
-        for pid, proposal in _open_proposals(state, tick):
+        _open_props = list(_open_proposals(state, tick))
+        for _idx, (pid, proposal) in enumerate(_open_props):
             if who in proposal["ballots"]:
                 continue
             choice = _stance(archetype, who, _delta(proposal["params"], active), state)
@@ -269,16 +270,25 @@ def make_politician(inner: DecisionFn, archetype: str, window: int = ELECTION_WI
                 # (default) => legacy default-for, byte-identical.
                 if gov.get("persuasion"):
                     import hashlib
+                    # Audit 2026-09-20 A4: die seeded on proposal content —
+                    # no reusable cross-proposal roll tables — and unknown
+                    # politicians start at trust 50 (entrenchment fix).
+                    _seed = f"{pid}:{proposal.get('change_tx_hash', '')}:{who}"
                     _roll = int.from_bytes(hashlib.sha256(
-                        f"{tick}:{pid}:{who}".encode()).digest()[:2], "big") % 101
-                    _trust = state.politician_trust.get(proposal.get("proposer", ""), 100)
+                        _seed.encode()).digest()[:2], "big") % 101
+                    _trust = state.politician_trust.get(proposal.get("proposer", ""), 50)
                     choice = "for" if _roll < _trust else "against"
                 else:
                     choice = "for"
             if token_bp > 0:
+                # Audit 2026-09-20 A8: split the monthly token across open
+                # proposals — dumping it all on the first (possibly a decoy)
+                # let attackers drain the electorate's attention budget.
+                _per = max(1, token_bp // max(1, len(_open_props) - _idx))
+                _spend = min(token_bp, _per)
                 out.append(_tx(tick, who, "VOTE",
-                               {"proposal_id": pid, "choice": choice, "bp": token_bp}, v))
-                token_bp = 0  # monthly token spent — skip later proposals
+                               {"proposal_id": pid, "choice": choice, "bp": _spend}, v))
+                token_bp -= _spend
             elif gov.get("vote_token_bp", 0) == 0:
                 out.append(_tx(tick, who, "VOTE", {"proposal_id": pid, "choice": choice}, v))
         return out
@@ -328,7 +338,8 @@ def make_faction(inner: DecisionFn, members: frozenset[str], window: int = ELECT
         if gov.get("enabled") and gov.get("vote_token_bp", 0) > 0:
             budget = state.vote_budget.get(who) or {}
             token_bp = budget.get("bp", 0) if budget.get("cycle") == tick // gov.get("vote_cycle_ticks", 30) else 0
-        for pid, proposal in _open_proposals(state, tick):
+        _open_props = list(_open_proposals(state, tick))
+        for _idx, (pid, proposal) in enumerate(_open_props):
             if who in proposal["ballots"]:
                 continue
             proposer_is_faction = proposal["proposer"] in members

@@ -354,7 +354,8 @@ def expand_ballots(state: WorldState, ballots: dict[str, str]) -> dict[str, str]
 
 
 def expand_weighted_ballots(
-    state: WorldState, ballots: dict[str, Any], grant_bp: int
+    state: WorldState, ballots: dict[str, Any], grant_bp: int,
+    delegations: dict[str, str] | None = None,
 ) -> dict[str, dict[str, int]]:
     """Vote-token tally expansion (2026-09-15 spec). Every citizen casts at
     most their monthly token; a citizen who delegated contributes weight
@@ -363,7 +364,12 @@ def expand_weighted_ballots(
     mirrored total never exceeds one token per month. Direct ballots
     always win; delegation cycles abstain; non-voters (and followers of
     non-voting delegates) abstain. Legacy string ballots (ruleset
-    transition) cast one absolute full token (10,000 bp). Deterministic."""
+    transition) cast one absolute full token (10,000 bp). Deterministic.
+
+    Audit 2026-09-20 A3: `delegations` overrides the live graph — the tally
+    passes the proposal's open-time snapshot so late re-delegation cannot
+    re-point already-cast mirror weight. None (legacy proposals) = live."""
+    deleg = state.delegations if delegations is None else delegations
     out: dict[str, dict[str, int]] = {}
     for citizen in sorted(state.balances.keys()):
         v = ballots.get(citizen)
@@ -373,7 +379,7 @@ def expand_weighted_ballots(
         current, seen = citizen, {citizen}
         resolved: Any = None
         for _ in range(16):
-            nxt = state.delegations.get(current)
+            nxt = deleg.get(current)
             if nxt is None or nxt in seen or nxt not in state.balances:
                 break
             seen.add(nxt)
@@ -2788,6 +2794,14 @@ def _validate_propose(state: WorldState, tx: Transaction, params: dict[str, Any]
     if payload["params"] == params:
         return Reason.NO_OP_PROPOSAL
 
+    # Audit 2026-09-20 A4: one open proposal per proposer in trust worlds —
+    # parallel proposals multiply +5 passage rewards (trust farming).
+    if gov.get("persuasion"):
+        for _p in state.proposals.values():
+            if (_p.get("status") == "open" and tx.tick < _p.get("closes_tick", 0)
+                    and _p.get("proposer") == tx.sender):
+                return Reason.PROPOSAL_LIMIT
+
     # Constitutional guard: proposals may not disable governance or its ratchet
     if payload["params"].get("governance", {}).get("enabled") is False:
         return Reason.CONSTITUTIONAL_GUARD
@@ -2812,6 +2826,10 @@ def _apply_propose(state: WorldState, tx: Transaction, params: dict[str, Any]) -
         "is_rollback": False,
         "target_version": None,
         "change_tx_hash": tx.content_hash(),
+        # Audit 2026-09-20 A3: delegation graph frozen at open time — the
+        # tally mirrors through THIS graph, not live state, so a last-second
+        # delegation sweep cannot flip an outcome after ballots were cast.
+        "delegations_snapshot": dict(state.delegations),
     }
 
     return {
@@ -2950,7 +2968,12 @@ def _apply_rollback(state: WorldState, tx: Transaction, params: dict[str, Any]) 
     }
 
 
-_STRUCTURAL_TOP_KEYS = ("wealth_tax", "research", "crisis", "need_allocation", "whistleblower")
+# Audit 2026-09-20 A5: economically decisive levers joined the structural
+# tier — diverting the whole surplus pool, rewriting credit rules, or
+# toggling scarcity pricing must not pass on a bare majority.
+_STRUCTURAL_TOP_KEYS = ("wealth_tax", "research", "crisis", "need_allocation",
+                        "whistleblower", "surplus_spending", "credit",
+                        "scarcity_pricing")
 
 
 def _is_structural(proposal_params: dict[str, Any], active_params: dict[str, Any]) -> bool:
@@ -3288,7 +3311,10 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
         if token_mode:
             # Vote token: weight = basis points. Delegated citizens mirror
             # their delegate's allocation (direct votes always win).
-            ballots = expand_weighted_ballots(state, ballots, gov["vote_token_bp"])
+            # Audit 2026-09-20 A3: mirroring reads the open-time snapshot.
+            ballots = expand_weighted_ballots(
+                state, ballots, gov["vote_token_bp"],
+                delegations=proposal.get("delegations_snapshot"))
 
             def _w(v: Any) -> int:
                 return v["bp"] if isinstance(v, dict) else 10_000
@@ -3319,26 +3345,55 @@ def _settle_proposals(state: WorldState, tick: int, params: dict[str, Any], ledg
             # of the active version needs only a simple majority.
             in_trial_rollback = proposal["is_rollback"] and tick <= trial_end
             if in_trial_rollback:
-                passed = votes_for > votes_against
+                # Audit 2026-09-20 A9: asymmetric recovery is for ordinary
+                # mistakes, not for unwinding big rules. The rollback is
+                # structural when the VERSION IT REVERTS changed a structural
+                # group relative to its parent — judging the rollback's own
+                # params against the active rules is wrong (the attacked
+                # change has not activated yet during the trial, so they are
+                # equal and the check would always pass as non-structural).
+                _rb_structural = False
+                if gov.get("persuasion") and proposal.get("target_version") is not None:
+                    _docs = {rs["version"]: rs for rs in state.rulesets}
+                    _tgt = _docs.get(proposal["target_version"])
+                    if _tgt is not None:
+                        _parent = max(
+                            (v for v in _docs if v < _tgt["version"]), default=None)
+                        if _parent is not None and _is_structural(
+                                _tgt["params"], _docs[_parent]["params"]):
+                            _rb_structural = True
+                if not _rb_structural:
+                    passed = votes_for > votes_against
             elif constitutional:
                 if token_mode:
                     # 2/3 of ALL citizen token weight (uniform monthly grant)
                     # — strategic abstention cannot lower the bar.
-                    passed = votes_for * 3 >= citizens * gov["vote_token_bp"] * 2
+                    passed = votes_for * 3 >= citizens * (gov["vote_token_bp"] or 10_000) * 2
                 else:
                     passed = votes_for * 3 >= citizens * 2
             elif hardened:
                 passed = votes_for * 3 >= cast_weight * 2  # >= 2/3 of cast weight
             elif gov.get("persuasion") and _is_structural(proposal["params"], params):
-                # P2 major-change tier: structural proposals need 60% of cast
-                # weight — the bigger the change, the higher the bar.
-                passed = votes_for * 10 >= cast_weight * 6
+                # P2 major-change tier — Audit 2026-09-20 A2: the bar is 60%
+                # of ALL citizen vote weight, not cast weight. Cast-weight
+                # + 10% quorum let strategic abstention shrink the
+                # denominator until a 10% bloc passed anything. Mode-aware
+                # units: token bp per citizen in token mode, one vote per
+                # citizen in legacy binary mode (the constitutional tier
+                # above already splits the same way).
+                if token_mode:
+                    _unit = gov["vote_token_bp"] or 10_000  # legacy absolute token
+                    passed = votes_for * 10 >= citizens * _unit * 6
+                else:
+                    passed = votes_for * 10 >= citizens * 6
             else:
                 passed = votes_for > votes_against  # strict majority; tie fails
 
         if gov.get("persuasion") and proposal.get("proposer"):
             # P2 accountability loop: author trust moves with outcomes.
-            _t = state.politician_trust.get(proposal["proposer"], 100)
+            # Audit 2026-09-20 A4: unknown politicians start at 50, not 100 —
+            # a fresh actor no longer opens near-guaranteed approval.
+            _t = state.politician_trust.get(proposal["proposer"], 50)
             state.politician_trust[proposal["proposer"]] = (
                 min(100, _t + 5) if passed else max(0, _t - 10)
             )
@@ -3538,6 +3593,10 @@ def _apply_intervene(state: WorldState, tx: Transaction, params: dict[str, Any])
         "is_rollback": False,
         "target_version": None,
         "change_tx_hash": tx.content_hash(),
+        # Audit 2026-09-20 A3: delegation graph frozen at open time — the
+        # tally mirrors through THIS graph, not live state, so a last-second
+        # delegation sweep cannot flip an outcome after ballots were cast.
+        "delegations_snapshot": dict(state.delegations),
     }
 
     return {
@@ -3612,6 +3671,10 @@ def _validate_crisis_vote(state: WorldState, tx: Transaction, params: dict[str, 
     c = getattr(state, "crisis", None)
     if not c or not c.get("active"):
         return Reason.INVALID_PAYLOAD  # no crisis to vote on
+    # Audit 2026-09-20 A1: ratification is one-vote-per-citizen (the tally
+    # blindly counted; one actor could single-handedly ratify any crisis).
+    if tx.sender in c.get("voters", {}):
+        return Reason.CRISIS_VOTED
     return None
 
 

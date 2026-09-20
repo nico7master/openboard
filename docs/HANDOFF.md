@@ -792,3 +792,23 @@ Diagnostics worth keeping: smoke votes=0 was a too-short window (real governance
 ## 2026-09-20 — Testing Retrospective written (docs/TESTING_RETROSPECTIVE.md)
 
 Founder-directed synthesis of the whole testing program: the bug ledger (13 ship-stoppers and what caught them), the science verdict ledger with data paths, the honest LLM-seat assessment, the weak/mistaken tests, process mistakes that birthed the memrun discipline, what the evidence says about the design (core claim survived everything; failures were bugs/mis-scalings, never design flaws), and the 7 binding test standards going forward. READ THIS before designing any new study — it contains the verdict-expiry rule and the full-session doctrine.
+
+## 2026-09-20 — Audit fix package P-GOV: governance hardening (multi-agent audit round 1)
+
+Founder approved all five audit fix packages (P-GOV → P-PROBE → P-ECON → P-GAME → P-DESIGN), worked one by one; every finding documented in `docs/AUDIT_FIXES.md` (single source of truth — S-series = spec-drift reviewer, E-series = code-quality reviewer, both late returns now recorded).
+
+**P-GOV shipped (all with regression tests in `tests/test_audit_gov.py`, 11/11):**
+- **A1** crisis votes are one-per-citizen (`CRISIS_VOTED` reason; JSON-safe voter dict on the crisis record) — was: unlimited repeat votes, one actor could ratify any crisis alone.
+- **A2** the 60% structural tier now counts against ALL citizen weight, not cast weight (mode-aware: bp in token worlds, counts in legacy) — was: 10% bloc could pass anything via abstention-shrunk denominators. Control test proves a real 60% majority still passes.
+- **A3** delegation mirroring reads the **open-time snapshot** (`delegations_snapshot` on the proposal) — last-second delegation sweeps can no longer flip outcomes.
+- **A4** trust hardening: unknown politicians start at 50 (not 100); engine-side `PROPOSAL_LIMIT` (one open proposal per proposer); persuasion die seeded on proposal content hash (no reusable roll tables).
+- **A5** structural whitelist extended: surplus_spending, credit, scarcity_pricing now need the 60% tier (diverting the whole surplus pool was a simple-majority move).
+- **A8** bots split their monthly token across open proposals — first-proposal decoys no longer drain the electorate.
+- **A9** structural rollbacks keep the structural tier inside the trial window (judged on the REVERTED version's delta vs its parent — the rollback's own params are vacuous mid-trial).
+- **E1 (pulled forward from P-ECON)** OPTIONAL_PARAMS now includes the six stage-5 keys the engine reads (research, shocks, demographics, wage_debt_repay, birth_stake_from_pool, wage_mint_mode) + a parity-guard test — PROPOSE of a complete ruleset (the politician seat's standard move) no longer dies INVALID_RULESET in stage-5 worlds.
+
+**Collateral the suite caught (all fixed):** the A3 replace had also hit the LEGACY `expand_ballots` (NameError `deleg`) — repaired to live state; the A4 trust default invalidated two P2-era test pins (100→50) — updated to the hardened behavior; the split-vote UX test filed two proposals from one citizen — second now files from another citizen (A4 working as designed). LLM politician digest teaches the new rules (one-open cap, 50 start, all-citizen tier).
+
+**Verification:** scoped files 43/43 → full suite (first run) 550/551 with the split-test conflict as the only failure → fixed → final full suite running at commit time. Freeze remains lifted ONLY for tracker-listed fixes.
+
+**Next:** P-PROBE (B1/B2/B4/B6/A7 memrun probes) → P-ECON → P-GAME → P-DESIGN; P-GOV2 (vote-buying enforcement S2, mixed ballots E12) queued after.

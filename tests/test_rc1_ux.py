@@ -202,10 +202,18 @@ def test_split_vote_budget_accounting():
             ruleset_version=g.state.ruleset_version))
 
     propose(base)
-    propose(base2)
+    # Audit A4 (one open proposal per proposer): the second proposal now
+    # comes from another citizen — this test targets split-vote budget
+    # accounting, not multi-filing.
+    other = next(c for c in sorted(g.state.balances.keys()) if c != who)
+    g.bots.pop(other, None)
+    g.pending.append(Transaction(
+        tick=g.state.tick + 1, sender=other, action="PROPOSE",
+        payload={"params": base2, "activation_tick": g.state.tick + 10},
+        ruleset_version=g.state.ruleset_version))
     g.tick()
     pids = [pid for pid, pr in sorted(g.state.proposals.items())
-            if pr.get("proposer") == who]
+            if pr.get("proposer") in (who, other)]
     assert len(pids) == 2
 
     # fresh month: affordance offers the full token on both proposals

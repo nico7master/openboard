@@ -176,10 +176,18 @@ def crisis_phase(
 
 
 def tally_crisis_vote(state: WorldState, who: str, in_favor: bool) -> None:
-    """Record one citizen's crisis vote (called by the engine on apply)."""
+    """Record one citizen's crisis vote (called by the engine on apply).
+
+    Audit 2026-09-20 A1: ratification is one-vote-per-citizen. The voter
+    set lives on the crisis record; the engine validates repeat senders
+    (CRISIS_VOTED) — this tally only counts first votes."""
     c = getattr(state, "crisis", None)
     if not c or not c.get("active"):
         return
+    voters = c.setdefault("voters", {})  # dict, not set: state snapshots are JSON
+    if who in voters:
+        return
+    voters[who] = bool(in_favor)
     if in_favor:
         c["votes_for"] = c.get("votes_for", 0) + 1
     else:

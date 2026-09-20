@@ -49,7 +49,7 @@ def politician_digest(state: WorldState, who: str, tick: int) -> str:
     budget = state.vote_budget.get(who) or {}
     cycle = tick // gov.get("vote_cycle_ticks", 30)
     my_bp = budget.get("bp", 0) if budget.get("cycle") == cycle else gov.get("vote_token_bp", 0)
-    trust = state.politician_trust.get(who, 100)
+    trust = state.politician_trust.get(who, 50)  # audit A4: fresh start
     # author outcomes: count my resolved proposals
     mine_passed = sum(1 for pr in state.proposals.values()
                       if pr.get("proposer") == who and pr["status"] == "passed")
@@ -68,9 +68,12 @@ def politician_digest(state: WorldState, who: str, tick: int) -> str:
         f"At most ONE new proposal per month — failed proposals cost trust.\n"
         f"VOTE RULES: spend your {my_bp} bp across open proposals you did not "
         f"file (e.g. all on one, or split); a proposal needs quorum to even count.\n"
-        f"REMEMBER: structural changes (tax/research/crisis/need/vote rules) need "
-        f"a 60% supermajority — small, well-argued changes pass more easily. Your "
-        f"trust decides how easily undecided voters follow you."
+        f"REMEMBER: structural changes (tax/research/crisis/need/vote/surplus/ "
+        f"credit/pricing rules) need a 60% supermajority of the ENTIRE "
+        f"electorate, not just of those who vote. Small, well-argued changes "
+        f"pass more easily. You may have at most ONE open proposal at a time. "
+        f"Trust starts at 50: proposals that pass earn +5, failed ones cost -10, "
+        f"and higher trust makes undecided voters follow you."
     )
 
 

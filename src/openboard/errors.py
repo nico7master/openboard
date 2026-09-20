@@ -67,6 +67,10 @@ class Reason(str, Enum):
     INVALID_INTERVENTION = "INVALID_INTERVENTION"
     INTERVENTION_TYPE_UNKNOWN = "INTERVENTION_TYPE_UNKNOWN"
     VOTE_BUDGET_EXCEEDED = "VOTE_BUDGET_EXCEEDED"
+    # Audit 2026-09-20 A1: crisis ratification must be one-vote-per-citizen
+    CRISIS_VOTED = "CRISIS_VOTED"
+    # Audit 2026-09-20 A4: engine-side rate limit (one open proposal per proposer)
+    PROPOSAL_LIMIT = "PROPOSAL_LIMIT"
 
 
 REJECTION_TEXT = {
