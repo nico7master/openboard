@@ -769,3 +769,14 @@ results byte-identical to container runs.
 - New end-to-end split test: 2 votes in one month, budget 10000→6000→0, affordance tracks the remainder, overspend dies VOTE_BUDGET_EXCEEDED with the book untouched. Full suite: **540/540**.
 
 **Next**: trader/journalist seats off the politician template; RC1 week-3 science re-run under the new defaults (scarcity pricing ON now); then week-4 freeze/soak/ship.
+
+## 2026-09-20 — P2 battery re-run under the current engine: all verdicts re-verified, two upgraded (commit this one)
+
+**RC1 week-3 science.** The ORIGINAL p2 battery (6 arms × 3 seeds × 650t × 1,000 citizens) re-run unchanged against today's engine via `scripts/p2_rerun.py` (output-redirect wrapper; historical `sweeps/p2/` untouched), analyzed with `scripts/p2_rerun_analyze.py`. Data + verdicts: `sweeps/p2_rerun/FINDINGS.md`; STUDY_PLAN has the summary table.
+
+- **Skills safe** ✅ re-verified — old effects were scarcity-regime artifacts (now Gini +65…+86, machines ±50 noise, unmet 0 both arms)
+- **Confiscation upgraded** ⬆️ — still passes, still fires ~449k times / ~335M units, but the production penalty is GONE (≈88k events both arms); Gini 2,100 → 103, zero deaths. Harmless equalizer now.
+- **Crisis mode** ➖ — insurance with no current claim: unmet 0 in BOTH arms; the ~13% production redirect cost remains. Keep the lever for live shocks.
+- **Universal shift (all 18):** unmet 65–886 → 0; production +13.4k…+22.6k; machines −0.9k…−2.7k (wear rule); deaths 0; money conserved everywhere.
+
+**Next:** RC1 week-4 — code freeze → overnight soak → full verification → player guide → RC1 tag. (Split-vote UI shipped earlier today; Citizen Seat panel exists.)

@@ -1,0 +1,2466 @@
+{
+  "arm": "vote_bad",
+  "crisis_state": {},
+  "final": {
+    "crisis_ticks": 0,
+    "deaths_total": 0,
+    "gini": 103,
+    "inventory": {
+      "books": 65,
+      "bread": 1299,
+      "bricks": 23100,
+      "canned_food": 3840,
+      "cheese": 4368,
+      "childcare": 172406,
+      "clothing": 2388,
+      "coal": 2354987,
+      "education": 81234,
+      "eggs": 13959,
+      "electricity": 1876110,
+      "electronics": 2439,
+      "fabric": 5509,
+      "fish": 760,
+      "flour": 3075,
+      "fruit": 1207,
+      "furniture": 1615,
+      "glass": 3035,
+      "grain": 548379,
+      "hand_tools": 16116,
+      "healthcare": 93762,
+      "heating_fuel": 2200,
+      "household_goods": 27,
+      "housing": 18,
+      "iron_ore": 17780,
+      "lumber": 1953,
+      "machines": 4037,
+      "maintenance": 20,
+      "meals": 56,
+      "meat": 8280,
+      "medicine": 45,
+      "milk": 5899,
+      "sand": 21553,
+      "steel": 1976,
+      "stone": 20550,
+      "timber": 1575,
+      "transport": 500,
+      "vegetables": 1785,
+      "water": 100262
+    },
+    "money_detail": null,
+    "money_ok": true,
+    "pool_units": 2004395204,
+    "pop": 975,
+    "produced_total": 88059,
+    "tax_events": 448793,
+    "tax_units_total": 335047903,
+    "unmet": 0
+  },
+  "proposals": {
+    "p1": {
+      "activation_tick": 15,
+      "status": "passed",
+      "votes": 715
+    },
+    "p10": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p100": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p101": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p102": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p103": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p104": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p105": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p106": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p107": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p108": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p109": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p11": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p110": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p111": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p112": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p113": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p114": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p115": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p116": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p117": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p118": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p119": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p12": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p120": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p121": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p122": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p123": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p124": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p125": {
+      "activation_tick": 405,
+      "status": "failed",
+      "votes": 29
+    },
+    "p126": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p127": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p128": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p129": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p13": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p130": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p131": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p132": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p133": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p134": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p135": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p136": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p137": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p138": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p139": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p14": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p140": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p141": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p142": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p143": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p144": {
+      "activation_tick": 455,
+      "status": "failed",
+      "votes": 29
+    },
+    "p145": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p146": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p147": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p148": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p149": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p15": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p150": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p151": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p152": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p153": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p154": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p155": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p156": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p157": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p158": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p159": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p16": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p160": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p161": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p162": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p163": {
+      "activation_tick": 505,
+      "status": "failed",
+      "votes": 29
+    },
+    "p164": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p165": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p166": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p167": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p168": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p169": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p17": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p170": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p171": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p172": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p173": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p174": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p175": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p176": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p177": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p178": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p179": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p18": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p180": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p181": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p182": {
+      "activation_tick": 555,
+      "status": "failed",
+      "votes": 29
+    },
+    "p183": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p184": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p185": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p186": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p187": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p188": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p189": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p19": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p190": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p191": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p192": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p193": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p194": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p195": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p196": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p197": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p198": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p199": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p2": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p20": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p200": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p201": {
+      "activation_tick": 605,
+      "status": "failed",
+      "votes": 29
+    },
+    "p202": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p203": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p204": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p205": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p206": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p207": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p208": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p209": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p21": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p210": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p211": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p212": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p213": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p214": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p215": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p216": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p217": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p218": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p219": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p22": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p220": {
+      "activation_tick": 655,
+      "status": "open",
+      "votes": 0
+    },
+    "p23": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p24": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p25": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p26": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p27": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p28": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p29": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p3": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p30": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p31": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p32": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p33": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p34": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p35": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p36": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p37": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p38": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p39": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p4": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p40": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p41": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p42": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p43": {
+      "activation_tick": 105,
+      "status": "failed",
+      "votes": 29
+    },
+    "p44": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p45": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p46": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p47": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p48": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p49": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p5": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p50": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p51": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p52": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p53": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p54": {
+      "activation_tick": 155,
+      "status": "failed",
+      "votes": 29
+    },
+    "p55": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p56": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p57": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p58": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p59": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p6": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p60": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p61": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p62": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p63": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p64": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p65": {
+      "activation_tick": 205,
+      "status": "failed",
+      "votes": 29
+    },
+    "p66": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p67": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p68": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p69": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p7": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p70": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p71": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p72": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p73": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p74": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p75": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p76": {
+      "activation_tick": 255,
+      "status": "failed",
+      "votes": 29
+    },
+    "p77": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p78": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p79": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p8": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p80": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p81": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p82": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p83": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p84": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p85": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p86": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p87": {
+      "activation_tick": 305,
+      "status": "failed",
+      "votes": 29
+    },
+    "p88": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p89": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p9": {
+      "activation_tick": 55,
+      "status": "failed",
+      "votes": 29
+    },
+    "p90": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p91": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p92": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p93": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p94": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p95": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p96": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p97": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p98": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    },
+    "p99": {
+      "activation_tick": 355,
+      "status": "failed",
+      "votes": 29
+    }
+  },
+  "seed": 7,
+  "series": [
+    [
+      5,
+      975,
+      4243,
+      510,
+      2080222195,
+      185,
+      0,
+      120
+    ],
+    [
+      10,
+      975,
+      4025,
+      0,
+      2076466355,
+      728,
+      0,
+      267
+    ],
+    [
+      15,
+      975,
+      3587,
+      975,
+      2075965822,
+      1325,
+      0,
+      279
+    ],
+    [
+      20,
+      975,
+      3190,
+      0,
+      2074251840,
+      1992,
+      0,
+      836
+    ],
+    [
+      25,
+      975,
+      3118,
+      0,
+      2072942264,
+      2788,
+      0,
+      858
+    ],
+    [
+      30,
+      975,
+      2897,
+      0,
+      2069967193,
+      3370,
+      0,
+      1394
+    ],
+    [
+      35,
+      975,
+      2803,
+      0,
+      2068623115,
+      4127,
+      0,
+      1459
+    ],
+    [
+      40,
+      975,
+      2767,
+      0,
+      2066153973,
+      4700,
+      0,
+      1985
+    ],
+    [
+      45,
+      975,
+      2684,
+      0,
+      2064803271,
+      5418,
+      0,
+      2015
+    ],
+    [
+      50,
+      975,
+      2634,
+      0,
+      2062458214,
+      5970,
+      0,
+      2540
+    ],
+    [
+      55,
+      975,
+      2617,
+      1,
+      2061317316,
+      6797,
+      0,
+      2573
+    ],
+    [
+      60,
+      975,
+      2404,
+      0,
+      2058029447,
+      7375,
+      0,
+      3094
+    ],
+    [
+      65,
+      975,
+      2396,
+      0,
+      2057537985,
+      8212,
+      0,
+      3144
+    ],
+    [
+      70,
+      975,
+      2320,
+      0,
+      2055986545,
+      8842,
+      0,
+      3660
+    ],
+    [
+      75,
+      975,
+      2208,
+      0,
+      2055534145,
+      9639,
+      0,
+      3687
+    ],
+    [
+      80,
+      975,
+      2127,
+      0,
+      2053931138,
+      10288,
+      0,
+      4201
+    ],
+    [
+      85,
+      975,
+      2076,
+      0,
+      2053563275,
+      11123,
+      0,
+      4243
+    ],
+    [
+      90,
+      975,
+      1897,
+      0,
+      2050898862,
+      11704,
+      0,
+      4762
+    ],
+    [
+      95,
+      975,
+      1815,
+      0,
+      2051147303,
+      12468,
+      0,
+      4796
+    ],
+    [
+      100,
+      975,
+      1767,
+      0,
+      2049855308,
+      13073,
+      0,
+      5307
+    ],
+    [
+      105,
+      975,
+      1703,
+      0,
+      2049890637,
+      13896,
+      0,
+      5348
+    ],
+    [
+      110,
+      975,
+      1653,
+      0,
+      2048599262,
+      14472,
+      0,
+      5849
+    ],
+    [
+      115,
+      975,
+      1584,
+      0,
+      2048611156,
+      15270,
+      0,
+      5881
+    ],
+    [
+      120,
+      975,
+      1482,
+      0,
+      2046561835,
+      15905,
+      0,
+      6392
+    ],
+    [
+      125,
+      975,
+      1437,
+      0,
+      2046993840,
+      16759,
+      0,
+      6429
+    ],
+    [
+      130,
+      975,
+      1409,
+      0,
+      2045838282,
+      17360,
+      0,
+      6909
+    ],
+    [
+      135,
+      975,
+      1342,
+      0,
+      2045986319,
+      18170,
+      0,
+      6930
+    ],
+    [
+      140,
+      975,
+      1297,
+      0,
+      2044636917,
+      18778,
+      0,
+      7297
+    ],
+    [
+      145,
+      975,
+      1258,
+      0,
+      2044747360,
+      19558,
+      0,
+      7333
+    ],
+    [
+      150,
+      975,
+      1173,
+      0,
+      2042583286,
+      20119,
+      0,
+      7612
+    ],
+    [
+      155,
+      975,
+      1083,
+      0,
+      2043014282,
+      20850,
+      0,
+      7664
+    ],
+    [
+      160,
+      975,
+      1070,
+      0,
+      2041945048,
+      21443,
+      0,
+      7946
+    ],
+    [
+      165,
+      975,
+      1065,
+      0,
+      2042077512,
+      22317,
+      0,
+      7970
+    ],
+    [
+      170,
+      975,
+      1036,
+      0,
+      2041002176,
+      22929,
+      0,
+      8249
+    ],
+    [
+      175,
+      975,
+      1011,
+      0,
+      2040714260,
+      23739,
+      0,
+      8289
+    ],
+    [
+      180,
+      975,
+      887,
+      0,
+      2038604938,
+      24307,
+      0,
+      8561
+    ],
+    [
+      185,
+      975,
+      815,
+      0,
+      2039236646,
+      25168,
+      0,
+      8600
+    ],
+    [
+      190,
+      975,
+      806,
+      0,
+      2037785825,
+      25724,
+      0,
+      8882
+    ],
+    [
+      195,
+      975,
+      806,
+      0,
+      2037655047,
+      26488,
+      0,
+      8936
+    ],
+    [
+      200,
+      975,
+      704,
+      0,
+      2036744761,
+      27094,
+      0,
+      9202
+    ],
+    [
+      205,
+      975,
+      781,
+      0,
+      2036065269,
+      27920,
+      0,
+      9242
+    ],
+    [
+      210,
+      975,
+      662,
+      0,
+      2033101057,
+      28527,
+      0,
+      9519
+    ],
+    [
+      215,
+      975,
+      448,
+      0,
+      2034704451,
+      29324,
+      0,
+      9549
+    ],
+    [
+      220,
+      975,
+      437,
+      0,
+      2033797979,
+      29893,
+      0,
+      9829
+    ],
+    [
+      225,
+      975,
+      434,
+      0,
+      2033699786,
+      30671,
+      0,
+      9858
+    ],
+    [
+      230,
+      975,
+      408,
+      0,
+      2033001672,
+      31262,
+      0,
+      10135
+    ],
+    [
+      235,
+      975,
+      400,
+      0,
+      2033299794,
+      32129,
+      0,
+      10186
+    ],
+    [
+      240,
+      975,
+      352,
+      0,
+      2031303876,
+      32721,
+      0,
+      10463
+    ],
+    [
+      245,
+      975,
+      307,
+      0,
+      2032050351,
+      33518,
+      0,
+      10499
+    ],
+    [
+      250,
+      975,
+      306,
+      0,
+      2030995625,
+      34099,
+      0,
+      10770
+    ],
+    [
+      255,
+      975,
+      269,
+      0,
+      2031364565,
+      34884,
+      0,
+      10814
+    ],
+    [
+      260,
+      975,
+      284,
+      0,
+      2030276671,
+      35444,
+      0,
+      11095
+    ],
+    [
+      265,
+      975,
+      257,
+      0,
+      2030602004,
+      36228,
+      0,
+      11129
+    ],
+    [
+      270,
+      975,
+      214,
+      0,
+      2028688504,
+      36828,
+      0,
+      11402
+    ],
+    [
+      275,
+      975,
+      198,
+      0,
+      2029504370,
+      37670,
+      0,
+      11441
+    ],
+    [
+      280,
+      975,
+      188,
+      0,
+      2028463384,
+      38308,
+      0,
+      11714
+    ],
+    [
+      285,
+      975,
+      164,
+      0,
+      2028774865,
+      39042,
+      0,
+      11745
+    ],
+    [
+      290,
+      975,
+      166,
+      0,
+      2027778189,
+      39596,
+      0,
+      12024
+    ],
+    [
+      295,
+      975,
+      160,
+      0,
+      2028118418,
+      40384,
+      0,
+      12070
+    ],
+    [
+      300,
+      975,
+      152,
+      0,
+      2026376127,
+      40932,
+      0,
+      12335
+    ],
+    [
+      305,
+      975,
+      195,
+      0,
+      2027016823,
+      41679,
+      0,
+      12388
+    ],
+    [
+      310,
+      975,
+      130,
+      0,
+      2026400640,
+      42281,
+      0,
+      12667
+    ],
+    [
+      315,
+      975,
+      153,
+      0,
+      2026824795,
+      43075,
+      0,
+      12700
+    ],
+    [
+      320,
+      975,
+      175,
+      0,
+      2025901170,
+      43678,
+      0,
+      12971
+    ],
+    [
+      325,
+      975,
+      163,
+      0,
+      2026188404,
+      44454,
+      0,
+      13013
+    ],
+    [
+      330,
+      975,
+      170,
+      0,
+      2024489967,
+      45038,
+      0,
+      13289
+    ],
+    [
+      335,
+      975,
+      497,
+      0,
+      2023607316,
+      45765,
+      0,
+      13337
+    ],
+    [
+      340,
+      975,
+      146,
+      0,
+      2024543285,
+      46345,
+      0,
+      13611
+    ],
+    [
+      345,
+      975,
+      165,
+      0,
+      2024995280,
+      47055,
+      0,
+      13639
+    ],
+    [
+      350,
+      975,
+      176,
+      0,
+      2024044153,
+      47632,
+      0,
+      13914
+    ],
+    [
+      355,
+      975,
+      206,
+      0,
+      2024490396,
+      48465,
+      0,
+      13946
+    ],
+    [
+      360,
+      975,
+      246,
+      0,
+      2019547510,
+      49054,
+      0,
+      14218
+    ],
+    [
+      365,
+      975,
+      193,
+      0,
+      2022991171,
+      49837,
+      0,
+      14251
+    ],
+    [
+      370,
+      975,
+      154,
+      0,
+      2022180503,
+      50462,
+      0,
+      14518
+    ],
+    [
+      375,
+      975,
+      143,
+      0,
+      2022691356,
+      51156,
+      0,
+      14565
+    ],
+    [
+      380,
+      975,
+      179,
+      0,
+      2021909801,
+      51709,
+      0,
+      14844
+    ],
+    [
+      385,
+      975,
+      208,
+      0,
+      2022372092,
+      52474,
+      0,
+      14859
+    ],
+    [
+      390,
+      975,
+      218,
+      0,
+      2020714285,
+      53043,
+      0,
+      15132
+    ],
+    [
+      395,
+      975,
+      189,
+      0,
+      2021682776,
+      53867,
+      0,
+      15171
+    ],
+    [
+      400,
+      975,
+      202,
+      0,
+      2020805658,
+      54423,
+      0,
+      15444
+    ],
+    [
+      405,
+      975,
+      167,
+      0,
+      2021123544,
+      55163,
+      0,
+      15480
+    ],
+    [
+      410,
+      975,
+      154,
+      0,
+      2020184470,
+      55782,
+      0,
+      15755
+    ],
+    [
+      415,
+      975,
+      232,
+      0,
+      2020063923,
+      56517,
+      0,
+      15781
+    ],
+    [
+      420,
+      975,
+      139,
+      0,
+      2018283951,
+      57096,
+      0,
+      16049
+    ],
+    [
+      425,
+      975,
+      112,
+      0,
+      2019453236,
+      57927,
+      0,
+      16070
+    ],
+    [
+      430,
+      975,
+      139,
+      0,
+      2018462106,
+      58522,
+      0,
+      16349
+    ],
+    [
+      435,
+      975,
+      154,
+      0,
+      2018876620,
+      59292,
+      0,
+      16397
+    ],
+    [
+      440,
+      975,
+      146,
+      0,
+      2018055170,
+      59859,
+      0,
+      16668
+    ],
+    [
+      445,
+      975,
+      153,
+      0,
+      2018450680,
+      60586,
+      0,
+      16692
+    ],
+    [
+      450,
+      975,
+      123,
+      0,
+      2016580833,
+      61212,
+      0,
+      16969
+    ],
+    [
+      455,
+      975,
+      102,
+      0,
+      2017609261,
+      61941,
+      0,
+      17014
+    ],
+    [
+      460,
+      975,
+      219,
+      0,
+      2016245097,
+      62517,
+      0,
+      17285
+    ],
+    [
+      465,
+      975,
+      154,
+      0,
+      2017005090,
+      63318,
+      0,
+      17319
+    ],
+    [
+      470,
+      975,
+      161,
+      0,
+      2016126690,
+      63880,
+      0,
+      17589
+    ],
+    [
+      475,
+      975,
+      117,
+      0,
+      2016423722,
+      64664,
+      0,
+      17622
+    ],
+    [
+      480,
+      975,
+      122,
+      0,
+      2014659548,
+      65184,
+      0,
+      17899
+    ],
+    [
+      485,
+      975,
+      210,
+      0,
+      2015115794,
+      66032,
+      0,
+      17952
+    ],
+    [
+      490,
+      975,
+      102,
+      0,
+      2014719555,
+      66644,
+      0,
+      18222
+    ],
+    [
+      495,
+      975,
+      114,
+      0,
+      2015117404,
+      67329,
+      0,
+      18259
+    ],
+    [
+      500,
+      975,
+      116,
+      0,
+      2014123098,
+      67930,
+      0,
+      18528
+    ],
+    [
+      505,
+      975,
+      138,
+      0,
+      2014517854,
+      68715,
+      0,
+      18549
+    ],
+    [
+      510,
+      975,
+      162,
+      0,
+      2012737929,
+      69289,
+      0,
+      18757
+    ],
+    [
+      515,
+      975,
+      123,
+      0,
+      2013767691,
+      70045,
+      0,
+      18802
+    ],
+    [
+      520,
+      975,
+      130,
+      0,
+      2012777061,
+      70652,
+      0,
+      18864
+    ],
+    [
+      525,
+      975,
+      129,
+      0,
+      2013167066,
+      71412,
+      0,
+      18888
+    ],
+    [
+      530,
+      975,
+      168,
+      0,
+      2012077310,
+      72013,
+      0,
+      18961
+    ],
+    [
+      535,
+      975,
+      164,
+      0,
+      2012686796,
+      72803,
+      0,
+      18993
+    ],
+    [
+      540,
+      975,
+      157,
+      0,
+      2010901412,
+      73318,
+      0,
+      19053
+    ],
+    [
+      545,
+      975,
+      129,
+      0,
+      2011777942,
+      74080,
+      0,
+      19096
+    ],
+    [
+      550,
+      975,
+      146,
+      0,
+      2010729030,
+      74660,
+      0,
+      19162
+    ],
+    [
+      555,
+      975,
+      104,
+      0,
+      2011207404,
+      75490,
+      0,
+      19192
+    ],
+    [
+      560,
+      975,
+      102,
+      0,
+      2010273135,
+      76036,
+      0,
+      19259
+    ],
+    [
+      565,
+      975,
+      130,
+      0,
+      2010697259,
+      76765,
+      0,
+      19314
+    ],
+    [
+      570,
+      975,
+      106,
+      0,
+      2008960124,
+      77344,
+      0,
+      19374
+    ],
+    [
+      575,
+      975,
+      194,
+      0,
+      2009403593,
+      78188,
+      0,
+      19396
+    ],
+    [
+      580,
+      975,
+      153,
+      0,
+      2008596226,
+      78781,
+      0,
+      19458
+    ],
+    [
+      585,
+      975,
+      121,
+      0,
+      2009177874,
+      79505,
+      0,
+      19498
+    ],
+    [
+      590,
+      975,
+      112,
+      0,
+      2008193911,
+      80149,
+      0,
+      19563
+    ],
+    [
+      595,
+      975,
+      119,
+      0,
+      2008523299,
+      80873,
+      0,
+      19601
+    ],
+    [
+      600,
+      975,
+      98,
+      0,
+      2006986511,
+      81450,
+      0,
+      19664
+    ],
+    [
+      605,
+      975,
+      91,
+      0,
+      2007926017,
+      82145,
+      0,
+      19686
+    ],
+    [
+      610,
+      975,
+      120,
+      0,
+      2007061160,
+      82741,
+      0,
+      19747
+    ],
+    [
+      615,
+      975,
+      149,
+      0,
+      2007441729,
+      83559,
+      0,
+      19793
+    ],
+    [
+      620,
+      975,
+      170,
+      0,
+      2006435438,
+      84154,
+      0,
+      19845
+    ],
+    [
+      625,
+      975,
+      529,
+      0,
+      2004277498,
+      84911,
+      0,
+      19899
+    ],
+    [
+      630,
+      975,
+      201,
+      0,
+      2004365335,
+      85494,
+      0,
+      19955
+    ],
+    [
+      635,
+      975,
+      129,
+      0,
+      2005890258,
+      86259,
+      0,
+      20002
+    ],
+    [
+      640,
+      975,
+      108,
+      0,
+      2005061325,
+      86830,
+      0,
+      20063
+    ],
+    [
+      645,
+      975,
+      99,
+      0,
+      2005402898,
+      87506,
+      0,
+      20095
+    ],
+    [
+      650,
+      975,
+      103,
+      0,
+      2004395204,
+      88059,
+      0,
+      20153
+    ]
+  ],
+  "smoke": false,
+  "ticks": 650,
+  "wall_s": 207.3
+}

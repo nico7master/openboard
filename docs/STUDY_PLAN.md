@@ -187,3 +187,15 @@ full-suite + hardcore-gate results to be appended below on completion.
 | 123 | 0 | 9 | PASS |
 
 Scarcity pricing ON did not reintroduce famine: the essential-pass floor clamp held at city scale for all 3 seeds (identical breadth profile to the pre-change gate — the premium steers the auction layer only). Full suite: 494/495 on first run; the single failure was the stale default-assuming scarcity test (updated to test the OFF contract explicitly + a new default-ON assertion; 9/9 on re-run). Final full-suite confirmation launched after gate ladder.
+
+## 2026-09-20 — P2 battery re-run under the current engine (RC1 week-3 science)
+
+**Setup:** the ORIGINAL p2 battery (6 arms × 3 seeds × 650 ticks × 1,000 citizens) re-run unchanged against today's engine via a thin output-redirect wrapper (`scripts/p2_rerun.py`), analyzed with `scripts/p2_rerun_analyze.py`; historical `sweeps/p2/` untouched. Full data + verdicts: `sweeps/p2_rerun/FINDINGS.md`.
+
+| Verdict from 09-12 | Status today | Note |
+|---|---|---|
+| Skills safe to ship | ✅ re-verified | effects were scarcity-regime artifacts; now neutral-to-mildly-positive (Gini +65…+86, machines ±50 noise) |
+| Majority confiscation: self-harming but not fatal | ⬆️ **upgraded: harmless equalizer** | referendum still passes, fires ~449k times, but production penalty GONE (≈88k events both arms); Gini 2,100 → 103, zero deaths |
+| Crisis override protects food supply | ➖ **insurance with no current claim** | unmet = 0 in BOTH arms; the ~13% production cost remains — keep the lever (live shocks won't be this benign) |
+
+**Universal shift (all 18 runs):** unmet 65–886 → **0**; production +13.4k…+22.6k; machines −0.9k…−2.7k (wear rule); deaths 0; money conserved everywhere. The 09-12 arm differentials were artifacts of the old scarcity regime. Battery retired until the next engine-changing milestone. Full suite at re-run start: 540/540.
