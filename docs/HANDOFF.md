@@ -1,5 +1,13 @@
 # Handoff: OpenBoard Economy Shipping Month Progress
 
+## Session 2026-09-21 — P-GOV2 complete (audit FINAL package)
+
+- S2: "votes cannot be bought" now enforced — votable `vote_buying` rule: transfer<->delegation pairing -> public VOTE_BUYING flag + bought delegation revoked + payer fined into the Society Pool; pay-then-delegate rejected inside the window; absent param = legacy replay-identical. Detector mirrors the proven attached-cache pattern (rebuilt from applied history; never id-keyed).
+- S3: the source's third allocation mode "or democratic decision" shipped — need_allocation mode `democratic` orders the scarce-goods queue by community trust (delegations received), ties by need then name.
+- Game world ships enforcement ON (fine 2000cr / window 30t, scaled with upc); Civic Board feed shows VOTE_BUYING.
+- Verification: 8/8 new pins (tests/test_audit_gov2.py); adjacent batteries 55/55; full suite verdict recorded in the commit message.
+- With this, the 2026-09-20 audit is FULLY worked: P-GOV, P-PROBE, P-ECON, P-GAME, P-DESIGN, P-GOV2 all done. Remaining founder DECIDE items: B8 (input advances as grants), D10 (social pressure, post-RC1).
+
 ## Session 2026-09-21 — P-DESIGN complete (audit package 5/5) — 589/589
 
 - Shipped D1-D9 + C14: mission banner + fairness win screen, reign scoreboard, plain-language proposals (explain_proposal differ), attack pacing styles + oversight meter, Your Seat header tab, Mercury story hook, advisor observe/suggest dial, quest reward + confirm-dismiss. D3 flip (founder-approved): governance ships ON. S1: research fund ships ON with the founder-verified p4fix config (250bp share, 1B-unit reserve floor). S4/S6/S7 doc fixes.

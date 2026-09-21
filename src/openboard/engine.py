@@ -64,7 +64,29 @@ def _validate_transfer(state: WorldState, tx: Transaction, params: dict[str, Any
     return None
 
 
-def _apply_transfer(state: WorldState, tx: Transaction) -> dict[str, Any]:
+def _transfer_pair_cache(state: WorldState) -> dict[tuple[str, str], int]:
+    """S2 (P-GOV2): sorted citizen pair -> tick of their most recent TRANSFER.
+    Attached to the state object itself (never id-keyed: CPython reuses ids
+    of collected states — the _state_cache lesson). Rebuilt lazily from the
+    applied history, so save/load and replays stay byte-identical; updated
+    in-place by _apply_transfer for same-tick pay-then-delegate catches."""
+    cache = getattr(state, "_votebuy_cache", None)
+    if cache is None:
+        cache = [0, {}]
+        object.__setattr__(state, "_votebuy_cache", cache)
+    if len(state.applied) > cache[0]:
+        edges = cache[1]
+        for e in state.applied[cache[0]:]:
+            if e.get("action") == "TRANSFER":
+                a, b = e.get("sender"), e.get("to")
+                if isinstance(a, str) and isinstance(b, str):
+                    key = (a, b) if a <= b else (b, a)
+                    edges[key] = int(e.get("tick", 0))
+        cache[0] = len(state.applied)
+    return cache[1]
+
+
+def _apply_transfer(state: WorldState, tx: Transaction, params: dict[str, Any]) -> dict[str, Any]:
     amount = tx.payload["amount"]
     to = tx.payload["to"]
     state.balances[tx.sender] -= amount
@@ -73,13 +95,50 @@ def _apply_transfer(state: WorldState, tx: Transaction) -> dict[str, Any]:
         state.coops[to]["treasury"] = state.coops[to].get("treasury", 0) + amount
     else:
         state.balances[to] += amount
-    return {
+    entry = {
         "tick": tx.tick,
         "sender": tx.sender,
         "action": "TRANSFER",
         "to": to,
         "amount": amount,
     }
+    # --- S2 (P-GOV2): vote-buying enforcement. The source is absolute:
+    # "votes cannot be bought". A transfer paired with an ACTIVE delegation
+    # (either direction) is published, the bought delegation is revoked,
+    # and the payer is fined into the Society Pool (conservation exact).
+    vb = params.get("vote_buying") or {}
+    if isinstance(vb, dict) and vb.get("enabled") and isinstance(to, str):
+        edges = _transfer_pair_cache(state)
+        key = (tx.sender, to) if tx.sender <= to else (to, tx.sender)
+        edges[key] = tx.tick
+        d = state.delegations
+        bought = None
+        if d.get(to) == tx.sender:
+            bought = to          # payer bought their own delegate's trust
+        elif d.get(tx.sender) == to:
+            bought = tx.sender   # payer bought the trust they delegate
+        if bought is not None:
+            other = to if bought == to else tx.sender
+            d.pop(bought, None)  # the bought delegation dies
+            fine = max(0, int(vb.get("fine", 0)))
+            paid = min(fine, state.balances[tx.sender])
+            if paid > 0:
+                state.balances[tx.sender] -= paid
+                state.surplus_pool += paid
+            already = any(f.get("kind") == "VOTE_BUYING"
+                          and f.get("target") == tx.sender
+                          and f.get("other") == other for f in state.flags)
+            if not already:
+                state.flags.append({
+                    "tick": tx.tick,
+                    "kind": "VOTE_BUYING",
+                    "target": tx.sender,
+                    "other": other,
+                    "amount": amount,
+                    "fine": paid,
+                })
+            entry["vote_buying"] = {"revoked": bought, "fine": paid}
+    return entry
 
 
 # ---------------------------------------------------------------- CREDIT
@@ -311,6 +370,16 @@ def _validate_delegate_credit(state: WorldState, tx: Transaction, params: dict[s
         return Reason.UNKNOWN_CITIZEN
     if to == tx.sender:
         return Reason.RULE_VIOLATION  # no self-delegation
+    # S2 (P-GOV2): money changed hands between this pair recently -> the
+    # delegation is purchasable, so refuse it while the window is open.
+    vb = params.get("vote_buying") or {}
+    if isinstance(vb, dict) and vb.get("enabled") and isinstance(to, str):
+        window = int(vb.get("window_ticks", 30))
+        edges = _transfer_pair_cache(state)
+        key = (tx.sender, to) if tx.sender <= to else (to, tx.sender)
+        last = edges.get(key)
+        if last is not None and 0 <= tx.tick - last <= window:
+            return Reason.RULE_VIOLATION  # recent transfer = bought trust
     return None
 
 
@@ -1914,6 +1983,11 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
         if _crisis_fair.crisis_active(state):
             na_on, mode = True, "priority"
         if na_on:
+            def _streak(b: dict[str, Any]) -> int:
+                unmet = state.unmet_needs.get(b["bidder"], {})
+                if good in _kcal_foods:
+                    return int(unmet.get("food", 0))
+                return int(unmet.get(good, 0))
             if mode == "lottery":
                 # Deterministic integer LCG over (tick, good): equal need,
                 # equal chance, identical bytes on replay.
@@ -1924,13 +1998,20 @@ def _clear_markets(state: WorldState, tick: int, params: dict[str, Any], ledger:
                     j = seed % (i + 1)
                     order[i], order[j] = order[j], order[i]
                 return [buyers[i] for i in order]
+            if mode == "democratic":
+                # S3 (P-GOV2): the source's third mode — "or democratic
+                # decision". The community's standing decision is its
+                # delegation graph: trust = delegations received (revocable,
+                # monthly). Ties fall back to need, then name (deterministic).
+                trust: dict[str, int] = {}
+                for _delegator, _to in state.delegations.items():
+                    if _to is not None:
+                        trust[_to] = trust.get(_to, 0) + 1
+                return sorted(buyers,
+                              key=lambda b: (-trust.get(b["bidder"], 0),
+                                             -_streak(b), str(b["bidder"])))
             # priority mode: longest-unmet citizen served first.
             # kcal foods report their streak under the group key "food".
-            def _streak(b: dict[str, Any]) -> int:
-                unmet = state.unmet_needs.get(b["bidder"], {})
-                if good in _kcal_foods:
-                    return int(unmet.get("food", 0))
-                return int(unmet.get(good, 0))
             return sorted(buyers, key=lambda b: (-_streak(b), str(b["bidder"])))
         if not fair:
             return buyers
@@ -3912,7 +3993,7 @@ def apply_tick(
         "INTERVENE": lambda t: _apply_intervene(state, t, params),
         "CRISIS_VOTE": lambda t: _apply_crisis_vote(state, t),
         "LOAN": lambda t: _apply_loan(state, t, params),
-        "TRANSFER": lambda t: _apply_transfer(state, t),
+        "TRANSFER": lambda t: _apply_transfer(state, t, params),
         "JOIN_COOP": lambda t: _apply_join_coop(state, t),
         "LEAVE_COOP": lambda t: _apply_leave_coop(state, t),
         "LIST_GOOD": lambda t: _apply_list_good(state, t),

@@ -57,7 +57,7 @@ Replay-safety note: A2/A9 change settle behavior only for persuasion worlds (ser
 | B11 | post-crisis markup snap-back | ✅ **FIXED** (P-ECON 09-20): opt-in `scarcity_pricing.post_crisis_clamp_ticks` caps post-crisis markup growth at the decay rate for N ticks (game world: 10); absent key = legacy = replay-safe; active-crisis zeroing unchanged | — |
 | E7 | swallowed exceptions hide invariant violations (_research_effect_bp except:return 0; bots.py:398; sim.py:471) | ☐ | narrow excepts, flag unexpected errors ledger-visibly |
 | E9 | quota trap: goods missing from essential_need_quota default to unboughtable | ☐ | genesis cross-check needs ⊆ quota |
-| S3 | need_allocation lacks the source's third mode: "democratic decision" | ☐ | add votable mode or document omission |
+| S3 | need_allocation lacks the source's third mode: "democratic decision" | ✅ | mode democratic added (P-GOV2): community trust (delegations received) orders the scarce-goods queue, ties by need streak then name; deterministic and replayable |
 
 ## P-GAME — trust fixes
 
@@ -103,7 +103,7 @@ Replay-safety note: A2/A9 change settle behavior only for persuasion worlds (ser
 
 | # | Finding | Status | Notes |
 |---|---|---|---|
-| S2 | "Votes cannot be bought" documented with ZERO enforcement — unlimited TRANSFER + free DELEGATE make purchasable delegations mechanically possible and undetected | ☐ | flag transfer→delegation pairing or votable transfer-limit default |
+| S2 | "Votes cannot be bought" documented with ZERO enforcement — unlimited TRANSFER + free DELEGATE make purchasable delegations mechanically possible and undetected | ✅ | votable vote_buying rule (P-GOV2): transfer<->delegation pairing emits a public VOTE_BUYING flag, revokes the bought delegation, fines the payer into the Society Pool; pay-then-delegate inside the window is rejected outright; game world ships it ON (fine 2000cr, window 30t) |
 | E12 | mixed-mode ballots: one dict ballot activates token_mode for the whole proposal incl. legacy strings counted at 10,000 | ☐ | normalize or reject mixed ballots |
 
 ## Docs-only follow-ups
@@ -144,3 +144,14 @@ D1-D9, C14, S1/S4/S6/S7 (rows above; D10 stays founder DECIDE post-RC1). 7 regre
 | Research buckets missing from game-layer money accounting | CONFIRMED — C6 invariant correctly screamed (attack API, dashboard pie, 2 test-side conservation laws) | money_total/pie/tests count innovation_pool + research_funding (B9 foreign-bucket precedent) |
 | Unlock variants dropped labor_hours/energy | CONFIRMED — latent engine crash on variant recipes, masked for weeks because no shipped world ran research | variants carry labor_hours + energy (full recipes) |
 | Reserve floor 500x too small | CONFIRMED — my 2M-unit floor drained the dividend reserve; hardcore gate starved (worst_essential 1670) | founder-verified p4fix config verbatim: 250bp / 1B-unit floor |
+
+
+## P-GOV2 shipped (2026-09-21) — the audit's final package
+
+S2 + S3 close the governance findings. Enforcement design notes:
+
+- **S2 detector** mirrors the engine's proven attached-cache pattern (the `_state_cache` lesson: never id-keyed, rebuilt lazily from applied history -> save/load and replays byte-identical). Absent `vote_buying` param = zero behavior change (pinned by test).
+- **The mirror case is caught too**: delegate-then-get-paid flags on a later tick (pair cache scans history, not just the current tick).
+- **Conservation exact**: the fine MOVES credits payer->pool; pinned by test.
+- **S3 democratic** = community trust (delegations received, revocable monthly) orders the scarce-goods queue — the delegation graph IS the community's standing decision. Deterministic; ties by need then name.
+- 8 regression pins in tests/test_audit_gov2.py; adjacent batteries 55/55.

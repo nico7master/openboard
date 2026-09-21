@@ -41,6 +41,9 @@ OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution
     # the politician seat) must validate. Parity test guards this list.
     "research", "shocks", "demographics", "wage_debt_repay",
     "birth_stake_from_pool", "wage_mint_mode",
+    # Audit 2026-09-20 S2 (P-GOV2): "votes cannot be bought" finally has
+    # teeth — transfer<->delegation pairing is flagged, revoked, fined.
+    "vote_buying",
     # Audit 2026-09-20 B3: opt-in v2 state hash (demand/wear tamper evidence).
     "hash_v2")
 
@@ -372,7 +375,9 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             return Reason.INVALID_RULESET
         if not isinstance(na["enabled"], bool):
             return Reason.INVALID_RULESET
-        if na["mode"] not in ("priority", "lottery"):
+        if na["mode"] not in ("priority", "lottery", "democratic"):
+            # S3 (P-GOV2): the source's third mode arrives — "or democratic
+            # decision" (spec 2026-09-15 §C) = community trust orders the queue
             return Reason.INVALID_RULESET
 
     if "crisis" in params:
@@ -458,6 +463,20 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
             return Reason.INVALID_RULESET
         mdb = sfc.get("max_discount_bp", 5_000)
         if isinstance(mdb, bool) or not isinstance(mdb, int) or not (0 < mdb <= 10_000):
+            return Reason.INVALID_RULESET
+
+    # vote_buying (audit S2, P-GOV2): enforcement for the source's absolute
+    # "votes cannot be bought" (core principle). enabled + lookback window
+    # (ticks) + optional fine (credits, into the Society Pool).
+    if "vote_buying" in params:
+        vb = params["vote_buying"]
+        if not isinstance(vb, dict) or not isinstance(vb.get("enabled"), bool):
+            return Reason.INVALID_RULESET
+        w = vb.get("window_ticks", 30)
+        if isinstance(w, bool) or not isinstance(w, int) or w <= 0:
+            return Reason.INVALID_RULESET
+        f = vb.get("fine", 0)
+        if isinstance(f, bool) or not isinstance(f, int) or f < 0:
             return Reason.INVALID_RULESET
 
     # inequality_seed (paper trail, audit S7): implements D16 — the

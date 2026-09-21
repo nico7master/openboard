@@ -978,6 +978,10 @@ class Run:
             params["whistleblower"] = {"enabled": True, "reward_credits": 500, "max_per_tick": 10}
             params["audits"] = {"enabled": True, "every_ticks": 100}
             params["need_allocation"] = {"enabled": True, "mode": "priority"}
+            # S2 (P-GOV2): the source's absolute rule ships enforced —
+            # transfer<->delegation pairing is flagged, revoked, fined.
+            params["vote_buying"] = {"enabled": True, "window_ticks": 30,
+                                     "fine": 2_000}
         # D18: money-denominated rule constants above were tuned in LEGACY
         # credits. Fixed-supply worlds run in base units (upc per credit) —
         # scale them once here, AFTER all assignments, so institutional
@@ -997,6 +1001,8 @@ class Run:
             params["capital_rent"]["per_machine_used"] *= upc
             params["capital_rent"]["per_tool_used"] *= upc
             params["wealth_tax"]["threshold"] *= upc
+            if (params.get("vote_buying") or {}).get("enabled"):
+                params["vote_buying"]["fine"] *= upc
             params["capital_backstop"]["input_advance"]["max_per_coop"] *= upc
             params["coop_distribution"]["buffer"] *= upc
         # ---- Audit 2026-09-20 hardening (B7/B3/B11/A7) ----
@@ -2023,7 +2029,8 @@ def api_llm_status():
 def api_civic():
     """Civic Board: open proposals, recent civic events, politician trust."""
     CIVIC_ACTIONS = {"PROPOSAL_SETTLED", "OVERSIGHT_FLAG", "WHISTLEBLOWER_PAID",
-                     "AUDIT_REPORT", "CRISIS_DECLARED", "CRISIS_ENDED"}
+                     "AUDIT_REPORT", "CRISIS_DECLARED", "CRISIS_ENDED",
+                     "VOTE_BUYING"}
     with RUN.lock:
         s = RUN.state
         params = s.active_ruleset_params()
