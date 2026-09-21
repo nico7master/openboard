@@ -15,7 +15,7 @@ OpenBoard implements **Open Board Market Socialism**: a transparent, append-only
 | 🎯 **An adversary** | Break the System mode: hoard, corner markets, free-ride, wage-mint, dump land — the engine scores your damage and the oversight system hunts you |
 | 🤖 **An AI seat** | Mercury-2.5 plays politician and adversary live through the same public action API humans use — reasoning streamed, decisions recorded as ledger inputs |
 
-## Status — RC1 freeze gate green (2026-09-20)
+## Status — RC1 tag-ready: freeze gate + full audit + final-engine soak 3/3 PASS (2026-09-21)
 
 | Milestone | Evidence |
 |---|---|
