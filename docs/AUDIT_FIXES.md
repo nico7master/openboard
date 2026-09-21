@@ -224,3 +224,31 @@ dogfood scenario with EXACT budget math, save/reset persistence, LLM refusal);
 full suite **621/621**; live end-to-end: claim → 75+ ticks with twin silent
 (bp_left exactly 10,000) → human vote lands → bp 6,000, ledger shows only the
 human vote.
+
+
+## Guide dogfood, part 2 (2026-09-22): G-D2 — promised powers without buttons
+
+**Found by:** continuing the PLAYER_GUIDE walkthrough after G-D1. The guide promises
+two more citizen powers (found a coop, delegate your vote) plus whistleblowing and
+crisis voting — the engine fully supported all four, but the seat surfaced **none**
+of them. Sibling bug: the seat offered JOIN_COOP to citizens who were *already*
+coop members (the engine rejects that with ALREADY_IN_COOP) and never offered
+LEAVE_COOP, though labor mobility is shipped engine behavior.
+
+**Fix — the seat now mirrors the engine's validators:**
+- **JOIN_COOP** only for genuinely coopless citizens (with room in the coop);
+  **LEAVE_COOP** for members ("labor is not owned by the coop")
+- **FOUND_COOP** for coopless citizens with enough free co-founders; the recipe
+  targets the biggest current unmet need; payload passes the engine validator
+  end-to-end (pinned: the affordance's payload is ACCEPTED by the engine)
+- **DELEGATE** in token or delegation worlds — top-trusted citizen, or a
+  deterministic fallback in fresh worlds (no trust record yet, day-1 working);
+  revocation affordance once delegated (pinned: delegate + revoke both accepted)
+- **REPORT** only for engine-detected, still-unpaid flags (first-report-wins,
+  target-not-self) — no button when there is nothing to report (pinned)
+- **CRISIS_VOTE** (ratify/reject) during unratified crises, one per citizen
+  (A1 mirror) — no button when no crisis is open (pinned)
+
+**Verification:** 5 pins in `tests/test_seat_affordances.py` (payloads submitted
+through the real queue path and ACCEPTED by the engine, not just rendered);
+affected batteries 57/57; full suite **626/626**.

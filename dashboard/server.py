@@ -2247,14 +2247,124 @@ def api_seat():
                     "why": f"closes tick {pr['closes_tick']}",
                     "summary": json.dumps(pr.get("params") or {}, sort_keys=True)[:100],
                 })
-        for cid, c in sorted(s.coops.items()):
-            if who not in c.get("members", ()):
+        # G-D2 (guide dogfood 2026-09-22): the guide promises founding,
+        # delegating, whistleblowing, and crisis voting — the engine supports
+        # all four, but the seat surfaced none of them (and offered JOIN_COOP
+        # to citizens who are already members, which the engine rejects).
+        # Affordances must mirror the engine's validators.
+        from openboard.engine import _REPORT_FLAG_KINDS
+        coop_members = {m for c in s.coops.values() for m in (c.get("members", ()))}
+        in_any_coop = who in coop_members
+        if not in_any_coop:
+            for cid, c in sorted(s.coops.items()):
+                if len(c.get("members", [])) < int(params.get("max_coop_members", 12)):
+                    actions.append({
+                        "type": "JOIN_COOP",
+                        "payload": {"coop_id": cid},
+                        "why": f"join {c.get('name', cid)} ({len(c.get('members', []))} members)",
+                    })
+                    break
+        else:
+            for cid, c in sorted(s.coops.items()):
+                if who in c.get("members", ()): 
+                    actions.append({
+                        "type": "LEAVE_COOP",
+                        "payload": {"coop_id": cid},
+                        "why": f"leave {c.get('name', cid)} — labor is not owned by the coop",
+                    })
+                    break
+        # Found a workshop (guide #3): coopless citizens with enough free
+        # co-founders; the recipe targets the biggest current unmet need and
+        # society equips the new workshop (bootstrap endowment).
+        if not in_any_coop:
+            free_others = [c2 for c2 in sorted(s.balances.keys())
+                           if c2 != who and c2 not in coop_members]
+            need_min = int(params.get("min_coop_members", 2))
+            if len(free_others) >= need_min - 1:
+                want_good = sorted(((cnt, g) for g, cnt in (unmet or {}).items()), reverse=True)
+                recipe = None
+                for _cnt, g in want_good:
+                    cands = sorted(r["recipe_id"] for r in s.recipes.values()
+                                   if g in (r.get("outputs") or {}))
+                    if cands:
+                        recipe = cands[0]
+                        break
+                if recipe is None:
+                    recipe = sorted(s.recipes)[0]
+                members = [who] + free_others[:need_min - 1]
                 actions.append({
-                    "type": "JOIN_COOP",
-                    "payload": {"coop_id": cid},
-                    "why": f"join {c.get('name', cid)} ({len(c.get('members', []))} members)",
+                    "type": "FOUND_COOP",
+                    "label": f"Found a workshop: {recipe}",
+                    "payload": {"coop_id": f"{who}_{recipe}_{s.tick}",
+                                "name": f"{who}'s {recipe} workshop",
+                                "members": members, "recipe_id": recipe},
+                    "why": "founding members: " + ", ".join(members) + " — society equips the workshop",
                 })
-                break
+        # Delegate (guide #5): core to the vote token — trust your vote.
+        if token_mode or bool((params.get("delegation") or {}).get("enabled")):
+            cur = s.delegations.get(who)
+            if cur:
+                actions.append({
+                    "type": "DELEGATE",
+                    "label": f"Revoke my delegation to {cur}",
+                    "payload": {"to": None},
+                    "why": "your vote becomes yours again",
+                })
+            else:
+                trusted = sorted(((t, n) for n, t in s.politician_trust.items() if n != who),
+                                 key=lambda kv: (-kv[0], kv[1]))
+                if trusted:
+                    top_t, top = trusted[0]
+                    actions.append({
+                        "type": "DELEGATE",
+                        "label": f"Delegate my vote to {top}",
+                        "payload": {"to": top},
+                        "why": f"most trusted citizen (trust {top_t}) — votes open proposals with your weight",
+                    })
+                else:
+                    # fresh world: no trust record yet — offer a deterministic
+                    # citizen so the guide's delegate promise works from day 1
+                    others = [n for n in sorted(s.balances.keys()) if n != who]
+                    if others:
+                        actions.append({
+                            "type": "DELEGATE",
+                            "label": f"Delegate my vote to {others[0]}",
+                            "payload": {"to": others[0]},
+                            "why": "no trust record yet — any citizen can be your voice (revocable anytime)",
+                        })
+        # Whistleblow (guide #6): only engine-detected, still-unpaid flags.
+        wb = params.get("whistleblower") or {}
+        if wb.get("enabled"):
+            paid_pairs = {(e.get("kind"), e.get("target")) for e in s.applied
+                          if isinstance(e, dict) and e.get("action") == "WHISTLEBLOWER_PAID"}
+            unpaid = sorted({(f.get("kind"), f.get("target")) for f in s.flags
+                             if f.get("kind") in _REPORT_FLAG_KINDS
+                             and f.get("target") != who
+                             and (f.get("kind"), f.get("target")) not in paid_pairs})
+            reward = int(wb.get("reward_credits", 100))
+            for kind, target in unpaid[:3]:
+                actions.append({
+                    "type": "REPORT",
+                    "label": f"Blow the whistle: {kind} by {target} (+{reward} cr)",
+                    "payload": {"kind": kind, "target": target},
+                    "why": "engine-detected violation — first report wins the bounty",
+                })
+        # Crisis ratification: one vote per citizen while a declared crisis
+        # awaits the community's decision (A1 hardening mirrors here).
+        _cr = getattr(s, "crisis", None) or {}
+        if _cr.get("active") and not _cr.get("ratified") and who not in (_cr.get("voters") or {}):
+            actions.append({
+                "type": "CRISIS_VOTE",
+                "label": "Ratify the crisis (emergency powers)",
+                "payload": {"in_favor": True},
+                "why": f"declared tick {_cr.get('declared_tick')}, ratify by {_cr.get('ratify_by')}",
+            })
+            actions.append({
+                "type": "CRISIS_VOTE",
+                "label": "Reject the crisis",
+                "payload": {"in_favor": False},
+                "why": "no emergency powers",
+            })
 
         # A1 financial depth: credit union affordances (only when enabled)
         loan_info = None

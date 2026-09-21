@@ -958,3 +958,15 @@ live end-to-end: claim → two election windows with the twin silent (bp exactly
 
 **State:** docs updated (AUDIT_FIXES G-D1 section, guide claim wording). RC1 tag-ready;
 freeze held — this was a correctness fix to the game's front door, not feature drift.
+
+
+## 2026-09-22 (later) — G-D2: the seat now shows every promised power
+
+Same dogfood pass, second finding: the guide's found-a-coop / delegate /
+whistleblow / crisis-vote promises had no seat affordances, and JOIN_COOP was
+offered to existing members (engine-rejected). The seat builder now mirrors the
+engine validators: JOIN (coopless, room) / LEAVE (members) / FOUND (recipe aimed
+at biggest unmet need, payload engine-ACCEPTED end-to-end) / DELEGATE (top-trusted
+or deterministic day-1 fallback; revoke) / REPORT (only unpaid engine-detected
+flags) / CRISIS_VOTE (unratified crises, once). Pins in test_seat_affordances.py;
+batteries 57/57; full suite **626/626**. RC1 tag-ready.
