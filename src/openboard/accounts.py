@@ -72,6 +72,13 @@ class Accounts:
         with self._lock:
             return citizen in self._citizen_of.values()
 
+    def bound_citizens(self) -> set[str]:
+        """Citizens currently bound to any account. The dashboard uses this
+        to re-apply seat claims after a world reset (accounts outlive
+        worlds; a claimed seat stays human-driven)."""
+        with self._lock:
+            return set(self._citizen_of.values())
+
     def logout(self, token: str) -> None:
         with self._lock:
             self._tokens.pop(token, None)

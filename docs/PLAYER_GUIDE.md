@@ -16,7 +16,7 @@ You start where the drama is: **the top 1% own half of all money, the Society Po
 
 ## Play as a citizen (Your Seat)
 
-1. **Claim a citizen** and open **Your Seat** (header tab).
+1. **Claim a citizen** (register an account bound to them) and open **Your Seat** (header tab). The citizen's bot twin steps aside — the seat, its balance, and its full monthly token are yours alone.
 2. **Work** produces; **dividends** from the Society Pool arrive monthly.
 3. **Found a coop** with friends — workers own the surplus.
 4. **Spend your monthly vote token** (10,000 bp): split it across proposals with the token gauge. Your bp is your say — you can put half on a tax change, a quarter on a rent rule, and keep the rest.

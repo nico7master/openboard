@@ -932,3 +932,29 @@ Society Pool empty; win: Gini under a third of the start, zero unmet needs, ledg
 with the Reign scoreboard live and the first-session welcome overlay on top as designed.
 Evidence: `sweeps/ui_unequal_mission.png`. Smoke autosave artifact removed after the check.
 
+
+
+## 2026-09-22 — Guide dogfood: the claim-haunting fix (G-D1)
+
+**Trigger:** founder-era doctrine — *pytest proves the engine; rendered-browser walks and
+real walkthroughs prove the game.* I dogfooded `docs/PLAYER_GUIDE.md` step by step on a
+live server.
+
+**Found:** the guide's first citizen step was impossible as shipped. Register rejected bot
+citizens (every citizen in a fresh world is one), and even where a twin was popped, the
+claimed citizen's politician brain kept voting with the SAME monthly token — live ledger
+proof: 21 even-split 476bp twin votes drained the 10,000bp budget before the human's
+4,000bp vote applied (bp_left 0, vote silently dead).
+
+**Fixed (C11 precedent):** `Run.claimed` — the bot loop skips claimed seats; register
+binds any citizen and claims the seat (SEAT_CLAIMED feed event); claims persist across
+save/restore (new `claimed` key) and world resets (`Accounts.bound_citizens()`); the LLM
+attach refuses claimed seats.
+
+**Verified:** 4 new pins (`tests/test_claim_seat.py`, incl. the exact dogfood scenario
+with EXACT budget math); affected batteries 55/55 then full suite **621/621** (memrun);
+live end-to-end: claim → two election windows with the twin silent (bp exactly 10,000)
+→ human vote lands → bp exactly 6,000, ledger shows only the human vote.
+
+**State:** docs updated (AUDIT_FIXES G-D1 section, guide claim wording). RC1 tag-ready;
+freeze held — this was a correctness fix to the game's front door, not feature drift.

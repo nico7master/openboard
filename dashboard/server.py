@@ -453,6 +453,13 @@ class Run:
         self.metrics = SimMetrics()
 
         self.bots: dict[str, dict[str, Any]] = {}  # name -> {fn, coop}
+        # player-guide dogfood (2026-09-21): claimed seats are no longer
+        # bot-driven — the citizen's politician twin kept voting with the
+        # SAME monthly token and drained it before the human's queued votes
+        # applied (ledger proof: 21x476bp even-split twin votes vs a dead
+        # 4000bp human vote). C11 precedent: the LLM attach already pops
+        # its twin. Claims are dashboard-layer and replay-safe.
+        self.claimed: set[str] = set()
         self.pending: list[Transaction] = []
         self.batches: dict[int, list[dict[str, Any]]] = {}  # tick -> tx dicts
         self.injections: list[dict[str, Any]] = []  # recorded state edits
@@ -650,6 +657,8 @@ class Run:
             params = self.state.active_ruleset_params()
             batch: list[Transaction] = []
             for name in sorted(self.bots.keys()):
+                if name in self.claimed:
+                    continue  # a claimed seat belongs to its human
                 bot = self.bots[name]
                 rng = random.Random(f"{self.seed}:{t}:{name}")
                 batch.extend(bot["fn"](name, self.state, params, t, rng))
@@ -702,6 +711,7 @@ class Run:
             "bots": {name: {"coop": b["coop"], "kind": "specialist" if b["fn"] in SPECIALISTS.values() else "archetype",
                            "arch": b.get("arch")}
                      for name, b in self.bots.items()},
+            "claimed": sorted(self.claimed),
             # audit C7: queued human actions are ledger inputs — they must
             # survive autosave/restore like everything else
             "pending": [t.to_dict() for t in self.pending],
@@ -761,8 +771,11 @@ class Run:
 
             # restore bots (fn resolved from kind; specialists lose their
             # exact closure — default to the matching baseline specialist)
+            run.claimed = set(data.get("claimed", []))
             run.bots = {}
             for name, meta in data.get("bots", {}).items():
+                if name in run.claimed:
+                    continue  # claimed seats stay human-driven across saves
                 coop = meta.get("coop")
                 arch = meta.get("arch")
                 if arch and arch in SPECIALISTS:
@@ -1986,7 +1999,11 @@ def api_llm_start():
         return jsonify({"ok": True, "already": True, **_llm_public()})
     decide_every = max(1, int(data.get("decide_every", 3)))
     with RUN.lock:
-        who = sorted(RUN.state.balances.keys())[0]  # deterministic seat citizen
+        # deterministic seat citizen — never a human-claimed seat
+        candidates = [n for n in sorted(RUN.state.balances.keys()) if n not in RUN.claimed]
+        if not candidates:
+            return jsonify({"ok": False, "error": "every citizen is claimed by a human"}), 400
+        who = candidates[0]
         twin = RUN.bots.get(who)
         _LLM_TWIN.clear()
         _LLM_TWIN.update({"game": RUN, "who": who,
@@ -2094,6 +2111,11 @@ def api_reset():
         RUN.autoplay["running"] = False
     _LLM["running"] = False  # daemon self-exits (its world is gone)
     RUN = Run(seed=seed, governance=governance, scenario=scenario)
+    # claims outlive worlds: accounts are dashboard-layer, so any citizen
+    # bound to an account keeps its seat human-driven after a reset too
+    for _citizen in app.accounts.bound_citizens():
+        RUN.claimed.add(_citizen)
+        RUN.bots.pop(_citizen, None)
     top_share = 0
     if scenario == "unequal":
         top = sorted(RUN.state.balances.values(), reverse=True)
@@ -2347,9 +2369,25 @@ def api_account_register():
     with RUN.lock:
         if citizen not in RUN.state.balances:
             return jsonify({"ok": False, "error": "unknown citizen"}), 400
-        if citizen in RUN.bots:
-            return jsonify({"ok": False, "error": "citizen is a bot"}), 400
     token = app.accounts.register(name, password, citizen)
+    if token is not None:
+        # Guide-dogfood finding (2026-09-21): a bound citizen's bot twin kept
+        # its politician brain and out-voted the human for the SAME monthly
+        # token — the twin's even-split votes drained the 10,000bp budget
+        # before the human's queued votes applied (proven in the ledger:
+        # 21x476bp bot votes vs my dead 4000bp vote). Same problem the LLM
+        # attach solved for Mercury (C11: twin popped at attach, restored at
+        # stop). A claimed seat belongs to the human: the twin steps aside
+        # for the life of the world. Save-safe: to_save serializes only
+        # RUN.bots, so the displacement round-trips; the engine never sees
+        # bots, so replay determinism is untouched.
+        with RUN.lock:
+            twin = RUN.bots.pop(citizen, None)
+            RUN.claimed.add(citizen)
+            if twin is not None:
+                RUN.feed.append({"tick": RUN.state.tick, "action": "SEAT_CLAIMED",
+                                 "citizen": citizen,
+                                 "detail": f"{citizen} takes their seat — the bot twin steps aside"})
     if token is None:
         return jsonify({"ok": False, "error": "account exists, citizen taken, or weak password"}), 400
     return jsonify({"ok": True, "token": token, "citizen": citizen})

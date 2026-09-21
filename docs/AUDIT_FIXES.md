@@ -192,3 +192,35 @@ exact path docs/PLAYER_GUIDE.md's quick start leads with.
 browser walks prove the game. Every UI milestone from here on gets a click-through
 of all tabs before ship.
 
+
+
+## Post-audit guide dogfood (2026-09-22): the claim-haunting bug
+
+**Found by:** dogfooding `docs/PLAYER_GUIDE.md` step-by-step against a live server —
+the full 617-test suite, the soak, and two visual passes all missed it.
+
+**G-D1 (gameplay blocker): claimed citizens were haunted by their bot twins.**
+The guide promises *"Claim a citizen ... spend your monthly vote token"*, but a
+claimed citizen's politician twin kept its brain and voted with the **same**
+monthly token: in the live proof, the twin's 21 even-split 476bp votes (the A8
+pattern) drained the full 10,000bp budget before the human's queued 4,000bp
+vote applied — the human's vote died silently with `bp_left = 0`. Worse, the
+register handler **rejected bot citizens outright** (`citizen is a bot`), and
+in a fresh world every citizen is a bot — the guide's first step could never
+complete. (`CLAIM` was never a supported engine action; nothing implemented it.)
+
+**Fix (C11 precedent — the LLM attach already pops its twin):**
+- `Run.claimed` set: claimed seats are skipped by the bot loop — the human has
+  the seat exclusively (dashboard-layer; the engine never sees bots, so replay
+  determinism is untouched)
+- register binds any citizen (bot rejection removed) and claims the seat; a
+  `SEAT_CLAIMED` event lands in the feed
+- claims persist through save/restore (new `claimed` save key) **and** world
+  resets (accounts outlive worlds; `Accounts.bound_citizens()` re-applies)
+- the LLM attach never takes a claimed seat (refuses when all are claimed)
+
+**Verification:** 4 pins in `tests/test_claim_seat.py` (claim+suspend, the exact
+dogfood scenario with EXACT budget math, save/reset persistence, LLM refusal);
+full suite **621/621**; live end-to-end: claim → 75+ ticks with twin silent
+(bp_left exactly 10,000) → human vote lands → bp 6,000, ledger shows only the
+human vote.
