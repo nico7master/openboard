@@ -871,3 +871,15 @@ v1 results archived in `sweeps/rc1_soak_v1_pre_audit/`; new verdicts in `sweeps/
 - Final-engine soak: 3/3 PASS (see above). All six audit packages + B8 regression-pinned.
 - Memory canon updated: meter-bug-class lesson (canonical money_total, delegate-don't-hand-sum) + B8 shipped design.
 - **RC1 is tag-ready.** Tag is the founder's call (repo convention: v0.4/v0.5 exist; suggested: `rc1` or `v1.0-rc1`).
+
+## 2026-09-21 (evening) — Live Mercury session on the FINAL engine: seat verified, republic stricter by design
+
+A recorded 60-tick live session (55 calls, 258k tokens, $0.00, 5 malformed replies survived, invariant OK, wall 161.6s; artifact `sweeps/llm_seat/politician_20260921_164231.json`) plus a byte-identical zero-call replay (determinism holds on the final engine).
+
+**Finding: the seat is fully alive under the audited rules — and the republic is legitimately harder.**
+- Transaction level: ZERO rejections. The seat's complete-ruleset proposals validate (E1 parity guard holds on stage-5 params incl. research/shocks/demographics) and every PROPOSE/VOTE was accepted — no silent silencing, no INVALID_RULESET regression.
+- Proposal outcomes: 21 filings in-world, 21 failed. Most are BOT spam failing quorum (the documented attention-scarcity pattern: 253 filed / 0 passed in the P2 rerun). The seat's own wealth_tax proposal is STRUCTURAL — the A2 hardening now requires 60% of ALL citizens (179), correctly unpassable in a 60-tick session.
+- Trust 50 -> 40: the failed-proposal accountability loop (founder decision) working as designed.
+- The pre-audit 4/4 pass rate was measured under the OLD, exploitable cast-weight denominators. Post-audit pass rates are the approved tradeoff: spam-proof, capture-resistant.
+
+**Watch item for gameplay (post-RC1 tuning, not a defect):** if NOTHING ever passes even in long sessions, the republic feels dead. Candidate tune: bots coalesce votes on a few proposals per cycle instead of spreading across all (raise effective support for sensible filings), or lower the structural tier slightly. Tuning is a votable parameter change — do it with the politics battery, not ad hoc.
