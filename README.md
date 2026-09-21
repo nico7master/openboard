@@ -78,6 +78,7 @@ Key results, banked with data in `sweeps/*/FINDINGS.md`:
 
 ## Documentation
 
+- [docs/PLAYER_GUIDE.md](docs/PLAYER_GUIDE.md) — how to play: citizen seat, the vote token, Mercury, Break-the-System
 - `docs/source/open-board-market-socialism.md` — the authoritative source model
 - `docs/TESTING_RETROSPECTIVE.md` — what the testing program found, the bug ledger, and the binding test standards
 - `docs/STUDY_PLAN.md` — the study ledger: every question asked and its verdict
