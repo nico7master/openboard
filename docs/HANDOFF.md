@@ -864,3 +864,10 @@ The v1 soak predates all six audit packages + B8 (verdicts have expiry dates), s
 | 123 | 0 | 14 | 0 | same profile | 815s |
 
 v1 results archived in `sweeps/rc1_soak_v1_pre_audit/`; new verdicts in `sweeps/rc1_soak/`. Player guide shipped at `docs/PLAYER_GUIDE.md` (linked from README follow-up). Full suite 613/613 (commit 9549372 state). **RC1 is tag-ready** — tag awaits the founder's word.
+
+## 2026-09-21 (later) — Pre-tag verification gate: GREEN
+
+- Engine diff since the suite-green commit (9549372): EMPTY (docs/scripts only) — and confirmed anyway by a fresh full suite at HEAD: **613/613** (10:46).
+- Final-engine soak: 3/3 PASS (see above). All six audit packages + B8 regression-pinned.
+- Memory canon updated: meter-bug-class lesson (canonical money_total, delegate-don't-hand-sum) + B8 shipped design.
+- **RC1 is tag-ready.** Tag is the founder's call (repo convention: v0.4/v0.5 exist; suggested: `rc1` or `v1.0-rc1`).
