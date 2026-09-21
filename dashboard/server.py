@@ -1121,7 +1121,11 @@ class Run:
 # ------------------------------------------------------------------ app
 
 app = Flask(__name__, static_folder=str(Path(__file__).parent / "static"), static_url_path="/static")
-RUN = Run()
+# audit D3 completed (2026-09-21 visual pass): the BOOT world ships
+# democracy ON too — the reset endpoint and UI reset already did, but the
+# default boot world (the exact path docs/PLAYER_GUIDE.md quick start
+# leads with) silently booted legacy: no token, unreachable 50% quorum.
+RUN = Run(governance=True)
 # async policy-experiment jobs: job_id -> {status, result, error}
 POLICY_JOBS: dict[str, dict[str, Any]] = {}
 POLICY_JOBS_LOCK = threading.Lock()

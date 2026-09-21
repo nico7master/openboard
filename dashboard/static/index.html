@@ -310,6 +310,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
   <div class="muted" style="font-size:12px; text-align:center; padding:8px">
     Every change is a real ledger rule change — the world keeps its history, you keep iterating.
   </div>
+</div>  <!-- FIX (2026-09-21 visual pass): the Lab container was never closed, nesting Chronicle/Break/Civic/Seat inside the hidden Lab view -- their tabs activated and polled data but could never paint -->
 <!-- THE CHRONICLE -->
 <div x-show="view === 'chronicle'" style="max-width: 760px; margin: 0 auto; padding: 0 12px">
   <div class="panel">

@@ -901,3 +901,15 @@ The suite had only ever run in the working tree. Definitive check: `git clone` t
 Browser-rendered the live dashboard and verified with vision: all six tabs render (World/Lab/Chronicle/Break It/Civic Board/Your Seat), the Reign scoreboard shows (day 1, Gini 99.22, ledger ✓), quest banner, tick controls, and charts all clean — the P-DESIGN UI is player-ready, not just test-green. Evidence: `sweeps/ui_smoke_dashboard.png`.
 
 **Release verification stack — exhaustive and complete.** RC1 tag-ready; tag is the founder's call.
+
+### 2026-09-21 — Pre-tag visual verification pass (two catches, both fixed + pinned)
+
+- Founder-ordered rendered-browser pass before the RC1 tag caught what 613 tests could not:
+  **V1** the Lab view's unclosed `<div>` nested Chronicle/Break/Civic/Seat inside the hidden
+  container — five of six tabs could never paint (one-line fix + `tests/test_ui_markup.py`);
+  **V2** the bare boot world still shipped governance OFF (D3 half-done; `governance=True`
+  boot + `tests/test_boot_defaults.py`).
+- Full six-tab walk verified live: every view paints with real data; evidence screenshots in
+  `sweeps/ui_civic_fixed.png` (fixed) vs `sweeps/ui_smoke_civic.png` (broken).
+- Doctrine updated in AUDIT_FIXES: pytest proves the engine; rendered-browser walks prove the game.
+

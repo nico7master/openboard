@@ -155,3 +155,40 @@ S2 + S3 close the governance findings. Enforcement design notes:
 - **Conservation exact**: the fine MOVES credits payer->pool; pinned by test.
 - **S3 democratic** = community trust (delegations received, revocable monthly) orders the scarce-goods queue — the delegation graph IS the community's standing decision. Deterministic; ties by need then name.
 - 8 regression pins in tests/test_audit_gov2.py; adjacent batteries 55/55.
+
+---
+
+## Visual Verification Pass — 2026-09-21 (pre-tag, founder-ordered)
+
+The rendered-browser pass (boots, real clicks, screenshots) caught two defects every
+one of the 613 tests missed — both now fixed and pinned:
+
+### V1 — The dashboard's five non-default tabs could never paint (BLOCKER, fixed)
+
+An unclosed `<div>` in the Lab (policy) view container made the browser nest the
+Chronicle, Break It, Civic Board, and Your Seat containers *inside* it. Clicking their
+tabs switched the app state and polled their APIs — but nothing could ever render,
+because their parent stayed `display:none`. The World and The Lab looked perfect,
+which is exactly why API tests, screenshots of the default view, and 613 pins passed.
+
+- Fix: close the Lab container (one line). Verified by a scripted six-tab walk:
+  every container paints with live data; Civic Board screenshot saved
+  (`sweeps/ui_civic_fixed.png` vs the broken `sweeps/ui_smoke_civic.png`).
+- Pin: `tests/test_ui_markup.py` — parses the markup, asserts every view container
+  balances before the next opens and all six views exist. The bug class is dead.
+
+### V2 — The boot world shipped governance OFF (D3 was only half-done, fixed)
+
+D3 flipped the reset endpoint and the UI default, but the bare boot world
+(`RUN = Run()`) still booted legacy: no vote token, unreachable 50% quorum — the
+exact path docs/PLAYER_GUIDE.md's quick start leads with.
+
+- Fix: `RUN = Run(governance=True)` + `tests/test_boot_defaults.py` (boot world must
+  ship token ON and a reachable ~10% quorum; reset default must match).
+- Boot-time autosave restore is correct behavior (it preserves a live reign) — the
+  stale file that masked this during verification was a smoke-test artifact.
+
+**Lesson (added to the retrospective doctrine):** pytest proves the engine; rendered-
+browser walks prove the game. Every UI milestone from here on gets a click-through
+of all tabs before ship.
+
