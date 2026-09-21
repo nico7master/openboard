@@ -1,5 +1,12 @@
 # Handoff: OpenBoard Economy Shipping Month Progress
 
+## Session 2026-09-21 — P-DESIGN complete (audit package 5/5) — 589/589
+
+- Shipped D1-D9 + C14: mission banner + fairness win screen, reign scoreboard, plain-language proposals (explain_proposal differ), attack pacing styles + oversight meter, Your Seat header tab, Mercury story hook, advisor observe/suggest dial, quest reward + confirm-dismiss. D3 flip (founder-approved): governance ships ON. S1: research fund ships ON with the founder-verified p4fix config (250bp share, 1B-unit reserve floor). S4/S6/S7 doc fixes.
+- Blast radius caught by the suite (the S1 bug-class, live): research buckets missing from money accounting (fixed via B9 precedent everywhere), unlock variants dropped labor_hours/energy (latent crash, fixed), my 2M reserve floor starved the hardcore gate (replaced with the verified 1B config). Details in AUDIT_FIXES.md P-DESIGN section.
+- Verification: full suite 589/589 (10:09), 7 new pins (tests/test_audit_design.py), hardcore gate green at 2000 ticks on the shipped research config. Commit b8432b0 + this docs commit.
+- Audit remaining: P-GOV2 (S2 vote-buying enforcement, S3 need-allocation third mode), founder DECIDE B8 + D10.
+
 ## Session 2026-09-21 — P-GAME complete (audit package 4/5)
 
 - **Fixed the whole C-series game layer**: C1 post-round farming refused (leaderboard records exactly once), C2 per-player attack games (16-game LRU cap), C3 playbook pinned per round, C4 unmet damage = delta over round-start baseline, C5 flag damage capped + real-harm reweight, C6 real money-invariant check with captured baseline, C7 pending actions survive save/restore, C8 autosave failures logged + surfaced via /api/state, C9 atomic leaderboard under lock, C10 account-bound citizens require their X-Auth-Token on /api/action (UI claim/login row; un-bound citizens stay open locally), C11 LLM stop restores the bot twin, C12/C13/C15 UI polish, C16/E8 duplicate gini_bp key removed.

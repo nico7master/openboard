@@ -87,16 +87,16 @@ Replay-safety note: A2/A9 change settle behavior only for persuasion worlds (ser
 
 | # | Finding | Status | Notes |
 |---|---|---|---|
-| D1 | game never states its premise (50/1 start, fairness goal, win screen) | ☐ | mission banner + win screen |
-| D2 | Break-the-System is a spectator sport | ☐ | per-cycle attack choices + oversight meter |
-| D3 | governance OFF by default | ☐ | flip default for new worlds (founder-approved) |
-| D4 | Citizen Seat undiscoverable | ☐ | header tab + tour step |
-| D5 | proposals displayed as raw JSON | ☐ | plain-language rendering |
-| D6 | no reign score | ☐ | reign scoreboard at round end |
-| D7 | advisor can auto-play | ☐ | advisor depth dial |
-| D8 | Mercury buried | ☐ | Civic Board story hook |
-| D9 | quest trivially skippable | ☐ | completion rewards |
-| S1 | Innovation Fund fully implemented but NEVER enabled in dashboard defaults — shipped worlds never run it | ☐ | enable research in server defaults |
+| D1 | game never states its premise (50/1 start, fairness goal, win screen) | ✅ | mission banner + fairness win screen (Gini < start/3, zero deficits, ledger exact); scenario+fairness in /api/state |
+| D2 | Break-the-System is a spectator sport | ✅ | pacing style steady/bold (validated; playbook stays pinned per C3) + live oversight meter (flags/8 bar) |
+| D3 | governance OFF by default | ✅ | founder-approved flip: /api/reset + UI resetConfig default governance ON |
+| D4 | Citizen Seat undiscoverable | ✅ | Your Seat header tab |
+| D5 | proposals displayed as raw JSON | ✅ | explain_proposal() differ (percent for bp, ON/OFF verbs, rule-named sentences) on Civic Board + Citizen Seat; raw JSON kept for power users |
+| D6 | no reign score | ✅ | /api/state reign{} + scoreboard bar: days, laws passed/failed, crises, Gini start→now, deficits, ledger OK |
+| D7 | advisor can auto-play | ✅ | advisor dial: observe (fix buttons hidden) / suggest; persisted |
+| D8 | Mercury buried | ✅ | Civic Board story hook: trust book names its AI politician + points to attach |
+| D9 | quest trivially skippable | ✅ | skip shortcut removed; dismiss confirms; completion toast + ob_quest_done badge |
+| S1 | Innovation Fund fully implemented but NEVER enabled in dashboard defaults — shipped worlds never run it | ✅ | ships ON with the founder-verified p4fix config (250bp share, 1B-unit reserve floor); blast radius fixed below |
 | D10 | no social pressure signal | 🚫 DECIDE | post-RC1 (touches simulation behavior) |
 
 ## P-GOV2 — governance follow-ups (from late reviewers)
@@ -110,9 +110,9 @@ Replay-safety note: A2/A9 change settle behavior only for persuasion worlds (ser
 
 | # | Finding | Status | Notes |
 |---|---|---|---|
-| S4 | Land: private landholding drifts from verbatim "owned collectively" — keep Georgist mechanics, state leasehold framing in constitution-facing docs | ☐ | README/constitution doc |
-| S6 | stale comment conflict: rules.py "instant path" vs engine "flows through proposals" | ☐ | reconcile |
-| S7 | inequality_seed: only production param with no paper trail | ☐ | document or remove |
+| S4 | Land leasehold framing | ✅ | README citizen row states collective ownership (Georgist leasehold) |
+| S6 | stale comment conflict | ✅ | comment rewritten: RULE_CHANGE flows through the proposal/tally path |
+| S7 | inequality_seed paper trail | ✅ | validation site documents D16 (top 1% own 50%, pool starts empty) |
 | S5 | externality corrections (pollution/addiction/bubbles) missing | ⏳ | future milestone |
 | S8 | universal services = refund model, not true provision | ⏳ | roadmap (documented) |
 
@@ -131,3 +131,16 @@ Transparency/ledger, cost pricing, auction markets, surplus recycling, coops, wh
 ## P-GAME - Status: COMPLETE (2026-09-21)
 
 12/12 audit pins in `tests/test_audit_game.py` (C1-C11, C16); two legacy attack tests updated to the per-player contract; engine + dashboard + UI patches; full suite green. Remaining from the C-series: C14 quest polish (P-DESIGN), full multiplayer auth (post-RC1), ruff CI (cleanup).
+
+
+## P-DESIGN shipped (2026-09-21, commit b8432b0) — 589/589
+
+D1-D9, C14, S1/S4/S6/S7 (rows above; D10 stays founder DECIDE post-RC1). 7 regression pins in tests/test_audit_design.py.
+
+### Blast radius of enabling research (the S1 bug-class, live — the suite caught all three)
+
+| New finding | Verdict | Fix |
+|---|---|---|
+| Research buckets missing from game-layer money accounting | CONFIRMED — C6 invariant correctly screamed (attack API, dashboard pie, 2 test-side conservation laws) | money_total/pie/tests count innovation_pool + research_funding (B9 foreign-bucket precedent) |
+| Unlock variants dropped labor_hours/energy | CONFIRMED — latent engine crash on variant recipes, masked for weeks because no shipped world ran research | variants carry labor_hours + energy (full recipes) |
+| Reserve floor 500x too small | CONFIRMED — my 2M-unit floor drained the dividend reserve; hardcore gate starved (worst_essential 1670) | founder-verified p4fix config verbatim: 250bp / 1B-unit floor |
