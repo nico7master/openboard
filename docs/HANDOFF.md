@@ -924,3 +924,11 @@ previous fresh-clone verdict predated the UI fix:
   zero local state (no autosave, no saves/).
 - Temp clone and smoke server cleaned up after the run.
 
+### 2026-09-21 — Visual pass 3: the unequal scenario's mission banner verified (D1)
+
+Rendered-browser check of the flagship game mode (scenario=unequal, seed 42, Gini start 60.31):
+the mission banner renders — the game states its own premise (top 1% own half of all money,
+Society Pool empty; win: Gini under a third of the start, zero unmet needs, ledger intact) —
+with the Reign scoreboard live and the first-session welcome overlay on top as designed.
+Evidence: `sweeps/ui_unequal_mission.png`. Smoke autosave artifact removed after the check.
+
