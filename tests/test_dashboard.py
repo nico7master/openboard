@@ -38,7 +38,9 @@ class TestRunLifecycle:
             r.tick()
         treasuries = sum(c.get("treasury", 0) for c in r.state.coops.values())
         total = (sum(r.state.balances.values()) + r.state.surplus_pool
-                 + r.state.capital_fund + treasuries)
+                 + r.state.capital_fund + treasuries
+                 + int(getattr(r.state, "innovation_pool", 0))
+                 + sum(int(v) for v in getattr(r.state, "research_funding", {}).values()))
         if mc.get("enabled"):
             assert total == int(mc.get("total", 2_100_000_000))
         else:

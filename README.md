@@ -10,7 +10,7 @@ OpenBoard implements **Open Board Market Socialism**: a transparent, append-only
 
 | You play as | You can do |
 |---|---|
-| 🧑‍🌾 **A citizen** | Work a coop, earn wages, buy your basket, receive dividends, found coops, hold land, pay/receive Georgist land-value tax |
+| 🧑‍🌾 **A citizen** | Work a coop, earn wages, buy your basket, receive dividends, found coops, hold land under society's collective ownership (Georgist leasehold), pay/receive the land-value tax |
 | 🗳️ **A voter** | One splitable, delegable, revocable vote token per month; vote on any proposal; run for trust; report violations for whistleblower rewards |
 | 🎯 **An adversary** | Break the System mode: hoard, corner markets, free-ride, wage-mint, dump land — the engine scores your damage and the oversight system hunts you |
 | 🤖 **An AI seat** | Mercury-2.5 plays politician and adversary live through the same public action API humans use — reasoning streamed, decisions recorded as ledger inputs |

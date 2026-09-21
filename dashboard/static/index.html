@@ -117,12 +117,12 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
     <button :class="view === 'chronicle' ? 'tab active' : 'tab'" @click="setView('chronicle')">📜 Chronicle</button>
     <button :class="view === 'break' ? 'tab active' : 'tab'" @click="setView('break')">⚔️ Break It</button>
     <button :class="view === 'civic' ? 'tab active' : 'tab'" @click="setView('civic')">🗳️ Civic Board</button>
+    <button :class="view === 'seat' ? 'tab active' : 'tab'" @click="setView('seat')">🏠 Your Seat</button>
   </div>
   <div x-show="questStep < 4" class="panel" style="display:flex; gap:10px; align-items:center; padding:7px 12px; margin:0 12px 6px; font-size:12.5px">
     <span>🗺️ <strong>First-session quest</strong> (step <span x-text="questStep + 1"></span>/4):</span>
     <strong x-text="questLabels[questStep] ?? 'complete'"></strong>
-    <button class="tab" style="margin-left:auto" @click="questStep = 3; try { localStorage.setItem('ob_quest', '3') } catch (e) {}">skip to last step</button>
-    <button class="tab" @click="questStep = 4; try { localStorage.setItem('ob_quest', '4') } catch (e) {}">dismiss</button>
+    <button class="tab" style="margin-left:auto" @click="questDismiss()">dismiss</button>
   </div>
   <div class="controls">
     <button class="primary" @click="tick()" :disabled="busy">▶ Tick</button>
@@ -147,10 +147,44 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 
 <!-- THE WORLD (home) -->
 <div x-show="view === 'world'" style="max-width: 980px; margin: 0 auto; padding: 0 12px">
+  <!-- audit D1: the game states its own premise -->
+  <div class="panel" x-show="scenario === 'unequal' && !(fairness?.achieved)"
+       style="border-left:6px solid #d29922; margin-bottom:14px">
+    <strong>⚖️ The mission</strong>
+    <div class="muted" style="font-size:13px; margin-top:4px">
+      You inherited an unjust economy: the top 1% own half of all money and the
+      Society Pool started <strong>empty</strong>. Use the tools of the republic —
+      the wealth tax, dividends, the credit union, research — to rebuild equality
+      <em>without starving anyone</em>. Win: Gini under a third of the start,
+      zero unmet needs, ledger intact.
+    </div>
+  </div>
+  <!-- audit D6: the reign scoreboard — governing has a score -->
+  <div class="panel" x-show="reign" style="display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; margin-bottom:14px; align-items:center">
+    <strong>👑 Reign</strong>
+    <span>day <strong x-text="reign?.ticks"></strong></span>
+    <span>laws <strong x-text="reign?.laws_passed"></strong> passed · <strong x-text="reign?.laws_failed"></strong> failed</span>
+    <span>crises <strong x-text="reign?.crisis_declared"></strong></span>
+    <span>Gini <strong x-text="(reign?.gini_start/100)?.toFixed(2)"></strong> → <strong x-text="(reign?.gini_now/100)?.toFixed(2)"></strong></span>
+    <span>open deficits <strong :style="reign?.open_deficits ? 'color:var(--red)' : 'color:var(--green,#3fb950)'" x-text="reign?.open_deficits"></strong></span>
+    <span :style="reign?.invariant_ok ? 'color:var(--green,#3fb950)' : 'color:var(--red)'"
+          x-text="reign?.invariant_ok ? 'ledger ✓' : 'LEDGER BROKEN'"></span>
+  </div>
   <!-- verdict banner -->
   <div class="panel" :style="'text-align:center; padding:18px; border-left:6px solid ' + (verdict.color)" style="margin-bottom:14px">
     <div style="font-size:34px" x-text="verdict.word"></div>
     <div class="muted" style="font-size:13px" x-text="verdict.sentence"></div>
+  </div>
+  <!-- audit D1: the fairness win screen -->
+  <div class="panel" x-show="fairness?.achieved"
+       style="border-left:6px solid var(--green,#3fb950); margin-bottom:14px; text-align:center">
+    <div style="font-size:26px">🏆 A more equal economy — built, not given</div>
+    <div class="muted" style="font-size:13px; margin-top:4px">
+      Gini fell from <strong x-text="(fairness?.gini_start/100)?.toFixed(2)"></strong>
+      to <strong x-text="(fairness?.gini_now/100)?.toFixed(2)"></strong>,
+      nobody is left behind (zero open deficits), and the ledger is exact.
+      The republic works. Keep ruling — or start a new world and defend it again.
+    </div>
   </div>
   <!-- hero charts -->
   <div class="panel" style="margin-bottom:14px">
@@ -187,7 +221,14 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
 <!-- ADVISOR -->
 <div class="panel" x-show="view === 'world'" style="width:100%; max-width: 980px; margin: 0 auto 14px"
      x-init="loadAdvice()" x-effect="if (view === 'world' && state.tick % 5 === 0) loadAdvice()">
-  <h3>🧭 What's wrong — and what you can do <span class="muted">— the system explains itself</span></h3>
+  <h3>🧭 What's wrong — and what you can do
+    <select x-model="advisorMode" @change="try { localStorage.setItem('ob_advisor', advisorMode) } catch (e) {}"
+            title="observe: silent (no fix buttons) · suggest: report + fixes"
+            style="margin-left:8px; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:4px 6px; color:var(--fg); font-size:12px">
+      <option value="observe">observe only</option>
+      <option value="suggest">suggest fixes</option>
+    </select>
+  </h3>
   <div x-show="!advice.length" class="muted" style="padding:6px 8px; font-size:13px">Nothing needs your attention right now.</div>
   <template x-for="(a, i) in advice" :key="i + a.problem">
     <div style="border-left:4px solid var(--red); padding:8px 12px; margin-bottom:8px">
@@ -308,10 +349,26 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
       </select>
       <input x-model="atk.player" placeholder="your name" maxlength="24"
              style="background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 8px; color:var(--fg)">
+      <select x-model="atk.style" title="pacing: patient keeps the canonical draw, bold rerolls the jitter"
+              style="background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 8px; color:var(--fg)">
+        <option value="patient">steady — play it safe</option>
+        <option value="bold">bold — reroll the dice</option>
+      </select>
       <button class="primary" @click="attackStart()" :disabled="atk.busy">New round</button>
       <button class="primary" @click="attackAct(10)" :disabled="atk.busy || atk.over || !atk.score">Attack ×10</button>
       <button class="primary" @click="attackAct(1)" :disabled="atk.busy || atk.over || !atk.score">Attack ×1</button>
     </div>
+    <!-- audit D2: the oversight meter — you can SEE the system closing in -->
+    <template x-if="atk.score">
+      <div style="margin:6px 0 2px">
+        <div style="display:flex; justify-content:space-between; font-size:11.5px" class="muted">
+          <span>👁️ oversight closing in</span><span x-text="atk.score.flags + ' / 8 flags'"></span>
+        </div>
+        <div style="height:8px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden">
+          <div :style="'height:100%; width:' + Math.min(100, (atk.score.flags / 8) * 100) + '%; background:' + (atk.score.flags >= 6 ? 'var(--red)' : '#d29922')"></div>
+        </div>
+      </div>
+    </template>
     <template x-if="atk.score">
       <div style="display:flex; gap:18px; flex-wrap:wrap; font-size:13px; margin:8px 0">
         <span>tick <strong x-text="atk.score.tick"></strong></span>
@@ -422,7 +479,7 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
             <td x-text="p.ballots"></td>
             <td x-text="p.quorum_needed ?? '—'"></td>
             <td x-text="'t' + p.closes_tick"></td>
-            <td class="muted" style="font-size:11px; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" x-text="p.params"></td>
+            <td style="font-size:12px; max-width:300px" x-text="p.explain || '—'"></td>
           </tr>
         </template>
         <tr x-show="!civic.proposals.length"><td colspan="7" class="muted" style="text-align:center; padding:10px">No proposals yet.</td></tr>
@@ -448,6 +505,14 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
       </tbody>
     </table>
     <p class="muted" style="font-size:12px" x-show="!Object.keys(civic.trust).length">Trust book is empty — it fills as the AI politician wins and loses votes.</p>
+    <!-- audit D8: the AI politician is a story, not a hidden feature -->
+    <div x-show="Object.keys(civic.trust).length"
+         style="border-left:3px solid var(--accent); padding:8px 12px; margin-top:10px; font-size:13px">
+      <strong>🤖 Mercury serves here.</strong> The seat named
+      <span x-text="Object.keys(civic.trust).join(', ')"></span> files proposals, spends its monthly
+      vote token, and rises or falls in this trust book with every vote won or lost.
+      Attach it from the World tab to watch its reasoning live — every decision is recorded in the ledger.
+    </div>
   </div>
 </div>
 
@@ -515,7 +580,8 @@ textarea.json { width: 100%; min-height: 80px; font-family: var(--mono); font-si
           </template>
           <span x-show="!p.needs_my_vote" class="muted" style="margin-left:auto">already voted ✓</span>
         </div>
-        <div class="muted" style="font-size:11.5px; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" x-text="JSON.stringify(p.params)"></div>
+        <div style="font-size:12.5px; margin-top:4px" x-text="p.explain || '—'"></div>
+        <div class="muted" style="font-size:10.5px; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" x-text="JSON.stringify(p.params)" title="full ruleset (for power users)"></div>
       </div>
     </template>
     <div class="muted" style="font-size:13px; padding:6px 0" x-show="!(seat.open_proposals ?? []).length">No open proposals right now.</div>
@@ -584,14 +650,14 @@ function dashboard() {
     policyKnobs: [], policyResult: null, policyBusy: false,
     adoptable: false, adoptBusy: false, policyError: '',
     busy: false, toast: '', resetModal: false, chartError: '', chartDebug: '',
-    resetConfig: { seed: 42, governance: false },
+    resetConfig: { seed: 42, governance: true },   // audit D3: democracy ships ON
     newBot: { name: '', archetype: 'honest_worker', coop: 'farmers' },
     action: { sender: '', type: 'WORK', payload: {}, json: '{}' },
     seat: {}, seatWho: '', seatHist: { t: [], v: [] },
     voteBp: null,  // monthly-token bp to spend per vote (split voting)
     // Break the System v2
     atk: { playbook: 'hoarder', player: '', ticks: 0, score: null, verdict: null,
-           over: false, board: [], busy: false },
+           over: false, board: [], busy: false, style: 'patient' },
     // audit C10: accounts bind a login to one citizen; a bound seat may
     // only be acted for with its own token (the engine rejects the rest)
     auth: { name: '', pass: '', token: localStorage.getItem('ob_token') || '',
@@ -603,6 +669,10 @@ function dashboard() {
            last_decision_tick: -1, error: '', busy: false, accounting: {} },
     // Onboarding quest: 0 watch → 1 enact → 2 observe → 3 adopt → 4 done
     questStep: parseInt(localStorage.getItem('ob_quest') ?? '0', 10) || 0,
+    // audit D1/D6: mission data polls with the world state
+    scenario: 'equal', fairness: null, reign: null,
+    // audit D7: how autonomous the advisor is (observe / suggest / act)
+    advisorMode: localStorage.getItem('ob_advisor') || 'suggest',
     pollTimer: null,
 
     get jsonHint() {
@@ -701,7 +771,16 @@ function dashboard() {
       if (this.questStep >= 4) return;
       this.questStep++;
       try { localStorage.setItem('ob_quest', String(this.questStep)); } catch (e) {}
-      if (this.questStep === 4) this.showToast('🏅 First-session quest complete — the world is yours now.');
+      if (this.questStep === 4) {
+        this.showToast('🏅 Quest complete — watch, rule, read. Your republic awaits.');
+        try { localStorage.setItem('ob_quest_done', '1'); } catch (e) {}
+      }
+    },
+
+    questDismiss() {
+      if (this.questStep < 4 && !confirm('Dismiss the tutorial quest?')) return;
+      this.questStep = 4;
+      try { localStorage.setItem('ob_quest', '4'); } catch (e) {}
     },
 
     initHeroCharts() {
@@ -983,6 +1062,9 @@ function dashboard() {
         this.state = s;
         this.timeline = s.timeline ?? {};
         this.autoplay = s.autoplay ?? this.autoplay;
+        this.scenario = s.scenario ?? 'equal';          // audit D1
+        this.fairness = s.fairness ?? null;             // audit D1 win screen
+        this.reign = s.reign ?? null;                   // audit D6 scoreboard
         if (this.view === 'world') {
           await this.loadStory();
           this.initHeroCharts();
@@ -1434,7 +1516,7 @@ function dashboard() {
         for (let i = 0; i < n; i++) {
           const d = await this.api('/api/attack/act', {
             method: 'POST',
-            body: { player: this.atk.player || 'anon' },
+            body: { player: this.atk.player || 'anon', style: this.atk.style },
           });
           if (!d.ok) { this.showToast('Arena: ' + (d.error || 'refused')); break; }  // audit C1/C12
           this.atk.score = d.score;

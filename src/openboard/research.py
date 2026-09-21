@@ -348,11 +348,17 @@ def unlock_variant(recipe: dict[str, Any], tier: int) -> dict[str, Any]:
     """Improved recipe variant: inputs scaled down by the unlock pct,
     CAPPED at 20% per tier (spec). Deterministic integer floor, min 1."""
     pct = min(UNLOCK_PCT_CAP, max(1, int(tier * 5)))  # 5%/tier, cap 20%
+    # audit P-DESIGN followup: variants are FULL recipes — every producer
+    # reads labor_hours/energy strictly, and a variant without them crashes
+    # production the moment research ships enabled (was masked for weeks
+    # because no shipped world ran research — the exact S1 finding).
     variant = {
         "inputs": {
             g: max(1, q * (10_000 - pct * 100) // 10_000)
             for g, q in recipe.get("inputs", {}).items()
         },
         "outputs": dict(recipe.get("outputs", {})),
+        "labor_hours": int(recipe.get("labor_hours", 0)),
+        "energy": int(recipe.get("energy", 0)),
     }
     return variant

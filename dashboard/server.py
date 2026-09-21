@@ -571,7 +571,9 @@ class Run:
         s = self.state
         treasuries = sum(c.get("treasury", 0) for c in s.coops.values())
         money = (sum(s.balances.values()) + s.surplus_pool + treasuries + s.capital_fund
-                 + getattr(s, "innovation_pool", 0) + getattr(s, "foreign_balance", 0))
+                 + getattr(s, "innovation_pool", 0)
+                + sum(int(v) for v in getattr(s, "research_funding", {}).values())
+                + getattr(s, "foreign_balance", 0))
         self.timeline["tick"].append(s.tick)
         wealth = (list(s.balances.values()) + [s.surplus_pool]
                   + [c.get("treasury", 0) for c in s.coops.values()])
@@ -873,6 +875,18 @@ class Run:
         # pay society the replacement cost into the surplus pool, which
         # recycles it to citizens (dividends/services).
         params["capital_rent"] = {"per_machine_used": 1_500, "per_tool_used": 60}
+        # audit S1: the Innovation Fund was fully implemented but never
+        # enabled in shipped worlds — it ships ON now, honoring the
+        # research-funding-fix contract (2026-09-13): the share taps only
+        # surplus ABOVE a reserve floor, so the dividend reserve can never
+        # be drained (a naked stock tap once killed a 2.07B pool by t=180).
+        # Config = the founder-verified p4fix arm (sweeps/p4fix): share 250bp
+        # tapping only surplus ABOVE a 10M-cr (1B-unit) protected dividend
+        # reserve — that exact configuration passed 2000-tick survival gates
+        # on 3 seeds at 966 citizens. My first guess (2M floor) starved the
+        # hardcore gate: the floor exists precisely to prevent that.
+        params["research"] = {"enabled": True, "research_share_bp": 250,
+                              "reserve_floor": 10_000_000}
         # True-cost accounting: baselines stamp from realized purchase
         # costs (VWAP), not book values (hard core A1).
         params["cost_accounting"] = {"method": "vwap"}
@@ -977,6 +991,9 @@ class Run:
             params["surplus_spending"]["min_pool_buffer"] *= upc
             params["surplus_spending"]["max_dividend_per_tick"] *= upc
             params["surplus_spending"]["max_dividend_per_citizen_tick"] *= upc
+            # S1: the research reserve floor is money too
+            if (params.get("research") or {}).get("enabled"):
+                params["research"]["reserve_floor"] *= upc
             params["capital_rent"]["per_machine_used"] *= upc
             params["capital_rent"]["per_tool_used"] *= upc
             params["wealth_tax"]["threshold"] *= upc
@@ -1140,6 +1157,37 @@ def api_flows():
 def api_state():
     view = RUN.view()
     view["autosave_warning"] = AUTOSAVE_WARN[-1] if AUTOSAVE_WARN else None
+    # audit D6: a reign scoreboard — what has this world accomplished?
+    with RUN.lock:
+        st = RUN.state
+        gini_series = RUN.timeline.get("gini") or []
+        unmet_pairs = sum(1 for streaks in st.unmet_needs.values()
+                          for t in streaks.values() if int(t or 0) > 0)
+        laws_passed = sum(1 for pr in st.proposals.values() if pr.get("status") == "passed")
+        laws_failed = sum(1 for pr in st.proposals.values() if pr.get("status") == "rejected")
+        crises = sum(1 for e in RUN.feed if e.get("action") == "CRISIS_DECLARED")
+        view["reign"] = {
+            "ticks": st.tick,
+            "citizens": len(st.balances),
+            "gini_start": gini_series[0] if gini_series else None,
+            "gini_now": gini_series[-1] if gini_series else None,
+            "laws_passed": laws_passed,
+            "laws_failed": laws_failed,
+            "crisis_declared": crises,
+            "open_deficits": unmet_pairs,
+            "invariant_ok": invariants_ok(st) is None,
+        }
+        # audit D1: the fairness goal, made visible. In the unequal world the
+        # mission is to rebuild equality without starving anyone: Gini under
+        # a third of the start AND zero open deficits AND a sound ledger.
+        scenario = getattr(RUN, "scenario", "equal")
+        g0, g1 = (gini_series[0], gini_series[-1]) if len(gini_series) >= 2 else (None, None)
+        fair = (scenario == "unequal" and g0 and g1 is not None
+                and g1 <= max(0, g0) // 3 and unmet_pairs == 0
+                and invariants_ok(st) is None)
+        view["scenario"] = scenario
+        view["fairness"] = {"gini_start": g0, "gini_now": g1,
+                            "open_deficits": unmet_pairs, "achieved": bool(fair)}
     return jsonify(view)
 
 
@@ -1153,11 +1201,16 @@ def api_analytics():
         citizens_money = sum(s.balances.values())
         treasuries = {cid: c.get("treasury", 0) for cid, c in sorted(s.coops.items())}
         treasury_money = sum(treasuries.values())
+        rf_total = sum(int(v) for v in getattr(s, "research_funding", {}).values())
         money_pie = {
             "citizens": citizens_money,
             "coop_treasuries": treasury_money,
             "surplus_pool": s.surplus_pool,
-                    "capital_fund": s.capital_fund,
+            "capital_fund": s.capital_fund,
+            # S1 shipped: research buckets are pooled money — uncounted,
+            # the pie stops summing to the supply the moment funding fires
+            "innovation_pool": int(getattr(s, "innovation_pool", 0)),
+            "research_funding": rf_total,
         }
         # category pies from run totals
         def _by_cat(kind: str) -> dict[str, int]:
@@ -1255,6 +1308,7 @@ def api_analytics():
             "money_total": (citizens_money + treasury_money
                             + s.surplus_pool + s.capital_fund
                             + getattr(s, "innovation_pool", 0)
+                            + rf_total
                             + getattr(s, "foreign_balance", 0)),
             "money_minted": s.money_minted,
             "money_retired": s.money_retired,
@@ -1715,6 +1769,84 @@ def api_autoplay():
 
 
 # ---------------- Civic Board + live LLM politician (2026-09-19 UX) --------
+
+# audit D5: proposals were displayed as raw JSON — voting on
+# JSON.stringify(params) is meaningless for humans. One shared differ
+# turns a ruleset delta into plain sentences.
+_PARAM_LABELS = {
+    "wealth_tax": "the wealth tax",
+    "research": "the research fund",
+    "crisis": "crisis powers",
+    "need_allocation": "need allocation",
+    "governance": "governance rules",
+    "surplus_spending": "surplus spending",
+    "capital_rent": "capital rents",
+    "credit": "the credit union",
+    "whistleblower": "whistleblower rewards",
+    "audits": "public audits",
+    "scarcity_pricing": "scarcity pricing",
+    "needs": "citizen needs quotas",
+    "kcal_needs": "the food budget",
+    "needs_cycle": "needs consumption cycles",
+    "max_work_hours_cumulative": "the work-hours cap",
+    "labor_pool_cap": "the labor pool cap",
+}
+_KNOWN_TOP = set(_PARAM_LABELS)
+
+
+def _human_delta(key: str, old: Any, new: Any) -> str | None:
+    label = _PARAM_LABELS.get(key, key.replace("_", " "))
+    if old == new:
+        return None
+    if not isinstance(old, dict) or not isinstance(new, dict):
+        if old is None and new is not None:
+            return f"Introduces {label}."
+        if new is None and old is not None:
+            return f"Removes {label}."
+        return f"Changes {label}."
+    parts: list[str] = []
+    for k in sorted(set(old) | set(new)):
+        o, n = old.get(k), new.get(k)
+        if o == n:
+            continue
+        if k.endswith("_bp") and isinstance(n, int) and (o is None or isinstance(o, int)):
+            nice = f"{n / 100:g}%"
+            verb = "Sets" if o in (None, 0) else "Changes"
+            parts.append(f"{verb} {k.replace('_',' ')} {('from ' + f'{o / 100:g}%') if o is not None else ''} to {nice}".replace("  ", " "))
+        elif k == "enabled":
+            if n and not o:
+                parts.append(f"Turns ON {label}")
+            elif o and not n:
+                parts.append(f"Turns OFF {label}")
+        elif isinstance(n, bool) or isinstance(o, bool):
+            parts.append(f"Sets {k.replace('_',' ')} to {'on' if n else 'off'} (was {'on' if o else 'off'})")
+        else:
+            parts.append(f"Sets {k.replace('_',' ')} from {o!r} to {n!r}")
+    if not parts:
+        return None
+    if parts[0].startswith(("Turns", "Introduces", "Removes")):
+        return parts[0].rstrip(";") + ("; " + "; ".join(parts[1:]) if len(parts) > 1 else ".")
+    # name the rule: "the wealth tax: sets rate from 8% to 12%." — a voter
+    # must know WHAT is being changed, not just the numbers
+    first = parts[0][0].lower() + parts[0][1:]
+    rest = ("; " + "; ".join(parts[1:])) if len(parts) > 1 else ""
+    return f"{label.capitalize()}: {first}{rest}."
+
+
+def explain_proposal(old_params: dict[str, Any], new_params: dict[str, Any]) -> str:
+    """Plain-language summary of what a proposal changes (audit D5)."""
+    if not isinstance(old_params, dict) or not isinstance(new_params, dict):
+        return "Changes the rules."
+    lines = []
+    for k in sorted(set(old_params) | set(new_params)):
+        if k in ("hash_v2",):  # plumbing, not policy
+            continue
+        sent = _human_delta(k, old_params.get(k), new_params.get(k))
+        if sent:
+            lines.append(sent)
+    if not lines:
+        return "No rule changes (copy of the current rules)."
+    return " ".join(lines[:6])
 # Watch-me-think contract: the daemon NEVER holds RUN.lock during a Mercury
 # call (2-3s would stall every API request) — it snapshots the digest under
 # the lock, calls the model OUTSIDE it, then queues actions through the same
@@ -1916,6 +2048,8 @@ def api_civic():
                 "ballots": len(pr.get("ballots", {})),
                 "quorum_needed": quorum_needed if pr["status"] == "open" else None,
                 "params": json.dumps(pr.get("params") or {}, sort_keys=True)[:220],
+                # audit D5: plain-language summary of the ruleset delta
+                "explain": explain_proposal(params, pr.get("params") or {}),
             })
         events = [e for e in RUN.feed if e.get("action") in CIVIC_ACTIONS][-60:]
         trust = dict(sorted(s.politician_trust.items()))
@@ -1935,7 +2069,9 @@ def api_civic():
 def api_reset():
     global RUN
     data = request.get_json(force=True, silent=True) or {}
-    governance = bool(data.get("governance", False))
+    # audit D3 (founder-approved flip): the flagship democracy ships ON —
+    # legacy binary worlds remain available via the toggle
+    governance = bool(data.get("governance", True))
     seed = int(data.get("seed", 42))
     scenario = str(data.get("scenario", "equal"))
     if scenario not in ("equal", "unequal"):
@@ -2015,6 +2151,8 @@ def api_seat():
                 "ballots": len(pr.get("ballots", {})),
                 "my_vote": (pr.get("ballots") or {}).get(who),
                 "needs_my_vote": who not in (pr.get("ballots") or {}),
+                # audit D5: plain-language summary (raw JSON stays for power users)
+                "explain": explain_proposal(params, pr.get("params") or {}),
             })
 
         # what can I do right now
@@ -2265,13 +2403,20 @@ def api_attack_act():
     if rnd.get("over"):  # audit C1: no post-round leaderboard farming
         return jsonify({"ok": False, "error": "round over; start a new round",
                         "over": True, "verdict": rnd.get("last_verdict")}), 400
+    style = str(data.get("style") or "patient").lower()
+    if style not in ("patient", "bold"):
+        return jsonify({"ok": False, "error": "style must be patient or bold"}), 400
     with game.lock:
         s = game.state
         t = s.tick + 1
         # audit C3: the round's PINED playbook acts; the request body can
         # no longer switch strategies mid-round to farm best components.
+        # audit D2: pacing is the player's live choice — patient keeps the
+        # canonical draw, bold rerolls the jitter (riskier, sometimes luckier).
+        # The playbook itself stays pinned either way.
+        rng_seed = t if style == "patient" else t + 1_000_000
         atxs = attack_tick(s, sorted(s.balances.keys())[0], t,
-                           rnd["playbook"], random.Random(t))
+                           rnd["playbook"], random.Random(rng_seed))
         for atx in atxs:
             game.queue_action(atx.sender, atx.action, atx.payload)
         game.tick()  # attacker acts AND the world (bots, democracy, oversight) responds in one advance

@@ -144,7 +144,11 @@ DEFAULT_RULESET_PARAMS: dict[str, Any] = {
     },
     "surplus_reserve_cap": 5_000,
     "governance": {
-        "enabled": False,  # bootstrap: RULE_CHANGE is the instant path (D10)
+        # audit S6: RULE_CHANGE does NOT bypass democracy — the engine flows
+        # it through the standard proposal/tally path (constitution_phase
+        # gates when it activates). "bootstrap" here only means the gov
+        # rules themselves start disabled in legacy/default worlds.
+        "enabled": False,
         "vote_window_ticks": 3,  # votes accepted for window_ticks after propose
         "quorum_bp": 5_000,  # 50% of citizens must cast
         "trial_period_ticks": 10,  # rollback is easy inside this window
@@ -456,6 +460,10 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
         if isinstance(mdb, bool) or not isinstance(mdb, int) or not (0 < mdb <= 10_000):
             return Reason.INVALID_RULESET
 
+    # inequality_seed (paper trail, audit S7): implements D16 — the
+    # real-world unequal start used by the game's "unequal" scenario:
+    # the top 1% own 50% of ALL money, the Society Pool starts empty
+    # (state.py genesis). Validation only; genesis applies the split.
     isc = params.get("inequality_seed")
     if isc is not None:
         if not isinstance(isc, dict) or not isinstance(isc.get("enabled"), bool):

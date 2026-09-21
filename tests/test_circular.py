@@ -281,7 +281,10 @@ class TestDashboardCircular:
         # exists at genesis (citizen stakes + Society Pool) and no minting
         # ever follows — total must equal the cap exactly, forever.
         # Legacy (uncapped) worlds keep the phase-1 law: initial + minted - retired.
+        # research buckets hold pooled money (S1 shipped; B9 precedent)
         total = (sum(s.balances.values()) + s.surplus_pool + s.capital_fund
+                 + int(getattr(s, "innovation_pool", 0))
+                 + sum(int(v) for v in getattr(s, "research_funding", {}).values())
                  + sum(c.get("treasury", 0) for c in s.coops.values()))
         mc = s.active_ruleset_params().get("money_cap") or {}
         if mc.get("enabled"):

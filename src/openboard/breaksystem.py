@@ -76,8 +76,14 @@ def capture_baseline(state: WorldState) -> int:
 def money_total(state: WorldState) -> int:
     # Audit 2026-09-20 B9: the foreign bucket is part of the fixed supply
     # (its negative IS our trade surplus). Zero in non-trade worlds = exact.
+    # P-DESIGN followup (S1 shipped): the research buckets hold POOLED
+    # money (surplus -> innovation_pool -> per-field funding; nothing
+    # minted — p4 probe's conservation contract). Uncounted, every tick
+    # of funding looks like money vanishing and trips the C6 check.
     return (sum(state.balances.values()) + state.surplus_pool + state.capital_fund
             + state.foreign_balance
+            + int(getattr(state, "innovation_pool", 0))
+            + sum(int(v) for v in getattr(state, "research_funding", {}).values())
             + sum(c.get("treasury", 0) for c in state.coops.values()))
 
 
