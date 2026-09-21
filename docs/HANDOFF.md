@@ -889,3 +889,9 @@ A recorded 60-tick live session (55 calls, 258k tokens, $0.00, 5 malformed repli
 The suite had only ever run in the working tree. Definitive check: `git clone` to a pristine dir (no egg-info, no saves, no local state — verified none tracked) and run the full battery there: **613/613 (638s)**. Anyone can clone and verify RC1 from scratch. Temp clone removed.
 
 **Release verification is now exhaustive:** working-tree suite 613/613 · fresh-clone suite 613/613 · final-engine soak 3/3 PASS · live Mercury session verified + replayed byte-identical · tracker clean (only approved post-RC1 rows). **RC1 is tag-ready; the tag is the founder's call** (suggested: `v1.0-rc1`).
+
+## 2026-09-21 (close) — Boot smoke: the player guide's first instruction verified
+
+`python dashboard/server.py` boots clean; `GET /` serves the dashboard (200, correct title) and `GET /api/state` answers with live state on :8421; clean shutdown after. The player guide's quick start is verified end to end, not assumed.
+
+**Release verification stack (complete):** suite 613/613 (working tree) · suite 613/613 (fresh clone) · soak 3/3 PASS (final engine) · live Mercury verified + byte-identical replay · boot smoke PASS · tracker clean. **RC1 tag-ready — the tag is the founder's call.**
