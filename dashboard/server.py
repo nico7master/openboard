@@ -942,7 +942,10 @@ class Run:
         # instead of ~19 singles (87% of ledger volume at 975 pop).
         # Clearing-equivalent; absent key = inert (legacy replay-safe).
         params["basket_buys"] = {"enabled": True}
-        params["capital_backstop"] = {"interval_ticks": 10, "input_advance": {"max_per_coop": 500}, "founding_equipment": True}
+        # B8 founder design (2026-09-21): the rescue faucet decays 5%/rescue
+        # month and recovers 5%/clean-work month — serial dependence dries up,
+        # honest producers keep the full safety net. bp-based, scale-invariant.
+        params["capital_backstop"] = {"interval_ticks": 10, "input_advance": {"max_per_coop": 500, "decay_bp_per_month": 500, "recover_bp_per_month": 500}, "founding_equipment": True}
         # Patronage: co-op surplus above an operating buffer flows back to
         # worker-members. The buffer (1,600) also reserves rent capacity:
         # capital rent is charged from the treasury at use time, so a drained

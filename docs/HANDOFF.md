@@ -835,3 +835,18 @@ Founder approved all five audit fix packages (P-GOV → P-PROBE → P-ECON → P
 **Verification:** scoped files 43/43 → full suite (first run) 550/551 with the split-test conflict as the only failure → fixed → final full suite running at commit time. Freeze remains lifted ONLY for tracker-listed fixes.
 
 **Next:** P-PROBE (B1/B2/B4/B6/A7 memrun probes) → P-ECON → P-GAME → P-DESIGN; P-GOV2 (vote-buying enforcement S2, mixed ballots E12) queued after.
+
+
+## 2026-09-21 — B8 decided and shipped: advance-entitlement decay/recovery (founder design)
+
+Founder redesigned B8 on the spot (better than the proposed lifetime cap): "reduce the grant every month. So that he will need to look for work soon again. Not lifetime but just simple reduction. Let's say 5% a month. And for every month he worked normally the grant recovers again 5% up to Max."
+
+**Shipped exactly that:**
+- `capital_backstop.input_advance` gains votable `decay_bp_per_month` / `recover_bp_per_month` (game world: 500/500; validator bounds 0..10_000; absent keys = pure legacy identity, pinned).
+- Entitlement is per-coop bookkeeping: each RESCUE month decays once (monthly, not per event — interval 10 rescues 3x/month but decays 1x); each CLEAN month (produced during it, not rescued during it) recovers, capped at 10_000bp; lazy month accounting settles every fully-elapsed month for EVERY coop (healthy coops recover without needing grants).
+- Entitlement floor starves serial dependents (0bp after 20 rescue-months -> no grant, pool untouched); honest producers keep the full safety net forever.
+- Clone preserves the three bookkeeping fields (wage-debt bug class); grant conservation exact; event carries `entitlement_bp`.
+
+**Verification:** 16/16 pins (`tests/test_audit_b8.py`) — first 3 failures were test bugs (validator returns None on success; missing treasury resets), all fixed, engine untouched by them. Adjacent batteries 59/59. Full suite + soak re-run queued for the RC1 tag gate.
+
+**Also approved this session:** D10 (social pressure) post-RC1 with the flags->trust design sketched; player guide next; RC1 soak re-run on the final engine, then tag.

@@ -3141,6 +3141,41 @@ def _is_constitutional(proposal_params: dict[str, Any], active_params: dict[str,
 
 
 
+_ADVANCE_MONTH_TICKS = 30  # the engine's month (matches governance vote_cycle_ticks)
+_ADVANCE_MAX_BP = 10_000
+
+
+def _advance_monthly_accounting(coop: dict[str, Any], tick: int,
+                                recover_bp: int) -> None:
+    """B8 (founder design, 2026-09-21): rescue generosity is not forever.
+
+    Each RESCUE month decays the coop's advance entitlement (applied at
+    grant time); each CLEAN month — the coop produced and needed no
+    rescue — recovers `recover_bp`, up to full. A serial dependent dries
+    up asymptotically ("look for work soon") while honest producers keep
+    the full safety net.
+
+    Lazy + idempotent: `advance_acct_month` stores the last FULLY-
+    accounted month; each phase run settles every fully-elapsed month,
+    so any interval_ticks works. Absent coop fields = full entitlement
+    (legacy identity). Deterministic: integer month math from tick.
+    """
+    now_month = tick // _ADVANCE_MONTH_TICKS
+    acct = coop.get("advance_acct_month", -1)
+    if now_month <= acct:
+        return  # no fully-elapsed month since last accounting
+    ent = coop.get("advance_entitlement_bp", _ADVANCE_MAX_BP)
+    rescue_m = coop.get("advance_last_rescue_month", -1)
+    lpt = coop.get("last_produce_tick")
+    if recover_bp > 0 and lpt is not None:
+        for m in range(acct + 1, now_month):
+            # a clean month: worked during it AND not rescued during it
+            if rescue_m != m and m * _ADVANCE_MONTH_TICKS <= lpt < (m + 1) * _ADVANCE_MONTH_TICKS:
+                ent = min(_ADVANCE_MAX_BP, ent + recover_bp)
+    coop["advance_entitlement_bp"] = ent
+    coop["advance_acct_month"] = now_month - 1
+
+
 def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -> list[dict[str, Any]]:
     """Emergency input advance (Stage 4 insolvency fix).
 
@@ -3164,6 +3199,11 @@ def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -
     max_per = ia.get("max_per_coop", 0)
     if max_per <= 0:
         return []
+    # B8 founder design: entitlement decay per rescue month, recovery per
+    # clean-work month. Both absent/0 = pure legacy (no coop fields written).
+    decay_bp = int(ia.get("decay_bp_per_month", 0) or 0)
+    recover_bp = int(ia.get("recover_bp_per_month", 0) or 0)
+    bookkeeping = decay_bp > 0 or recover_bp > 0
 
     # shared PRODUCE-history cache with the capital backstop
     cache = _state_cache(state)
@@ -3190,6 +3230,10 @@ def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -
 
     for coop_id in sorted(state.coops.keys(), key=_advance_rank):
         coop = state.coops[coop_id]
+        if bookkeeping:
+            # B8: settle elapsed months for EVERY coop — a coop that worked
+            # cleanly recovers its entitlement even in ticks it needs no grant
+            _advance_monthly_accounting(coop, tick, recover_bp)
         rids = sorted(recipe_map.get(coop_id, ()))
         if not rids:
             # First-run advance: an unproven coop with a DECLARED trade
@@ -3258,18 +3302,33 @@ def _input_advance_phase(state: WorldState, tick: int, params: dict[str, Any]) -
         want = target_runs * best
         if treasury >= want:
             continue
-        shortfall = min(max(want - treasury, 1), max_per)
+        cap = max_per
+        if bookkeeping:
+            cap = max_per * coop.get("advance_entitlement_bp", _ADVANCE_MAX_BP) // _ADVANCE_MAX_BP
+        shortfall = min(max(want - treasury, 1), cap)
         if shortfall <= 0 or state.surplus_pool < shortfall:
             continue
         state.surplus_pool -= shortfall
         coop["treasury"] = treasury + shortfall
-        events.append({
+        if bookkeeping:
+            # the rescue spoils this MONTH: the entitlement decays once
+            # per rescue month (founder B8: "reduce the grant every month";
+            # with interval 10 a dependent is rescued 3x/month — the decay
+            # is monthly, not per event). Same-month repeats don't stack.
+            m = tick // _ADVANCE_MONTH_TICKS
+            if coop.get("advance_last_rescue_month", -1) != m:
+                coop["advance_entitlement_bp"] = max(0, coop.get("advance_entitlement_bp", _ADVANCE_MAX_BP) - decay_bp)
+            coop["advance_last_rescue_month"] = m
+        event = {
             "tick": tick,
             "action": "INPUT_ADVANCE",
             "coop_id": coop_id,
             "amount": shortfall,
             "run_cost": best,
-        })
+        }
+        if bookkeeping:
+            event["entitlement_bp"] = coop["advance_entitlement_bp"]
+        events.append(event)
     return events
 
 

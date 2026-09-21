@@ -361,6 +361,15 @@ def _clone_coop(c: dict[str, Any]) -> dict[str, Any]:
         out["recipe_intent"] = c["recipe_intent"]
     if "last_produce_tick" in c:
         out["last_produce_tick"] = c["last_produce_tick"]
+    # B8 founder design: advance-entitlement bookkeeping (decay/recovery) —
+    # a clone that drops these would silently reset the entitlement to full
+    # (the wage-debt bug class).
+    if "advance_entitlement_bp" in c:
+        out["advance_entitlement_bp"] = c["advance_entitlement_bp"]
+    if "advance_acct_month" in c:
+        out["advance_acct_month"] = c["advance_acct_month"]
+    if "advance_last_rescue_month" in c:
+        out["advance_last_rescue_month"] = c["advance_last_rescue_month"]
     return out
 
 

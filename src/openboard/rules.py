@@ -35,6 +35,8 @@ VALID_TRIAGE = ("market", "essential", "emergency")
 # purpose: rules are hash-covered state — old histories replayed under the
 # new engine must resolve identical rulesets. Absent key = feature disabled;
 # present key = strictly validated below.
+_ADVANCE_MAX_BP = 10_000  # B8: entitlement basis-point ceiling
+
 OPTIONAL_PARAMS = ("needs", "kcal_needs", "surplus_spending", "coop_distribution", "capital_rent", "cost_accounting", "capital_refresh", "wealth_tax", "labor_pool_cap", "max_work_hours_cumulative", "extended_catalog", "capital_backstop", "needs_cycle", "fair_clearing", "producer_input_priority", "credit", "delegation", "money_cap", "inequality_seed", "sub_floor_clearance", "scarcity_pricing", "perishability", "skills", "demand_memory", "bid_escrow", "durable_capital", "honest_wages", "live_cost_baselines", "supply_buffer_runs", "demand_smoothing", "offer_smoothing", "land_market", "foreign_sector", "regional_markets", "whistleblower", "audits", "need_allocation", "crisis", "basket_buys",
     # Audit 2026-09-20 E1: stage-5 params the engine actually reads.
     # A PROPOSE of the complete active ruleset (the standard move of
@@ -570,12 +572,21 @@ def validate_params(params: Any, known_goods: set[str] | None = None) -> Reason 
         if isinstance(iv, bool) or not isinstance(iv, int) or iv <= 0 or iv > 1_000:
             return Reason.INVALID_RULESET
         ia = cb.get("input_advance")
-        if ia is not None and (not isinstance(ia, dict) or set(ia.keys()) != {"max_per_coop"}):
+        # B8 founder design: optional entitlement decay/recovery knobs.
+        # Legacy shape {max_per_coop} still validates unchanged.
+        if ia is not None and (not isinstance(ia, dict) or
+                               not set(ia.keys()) <= {"max_per_coop", "decay_bp_per_month", "recover_bp_per_month"}
+                               or "max_per_coop" not in ia):
             return Reason.INVALID_RULESET
         if ia is not None:
             mx = ia["max_per_coop"]
             if isinstance(mx, bool) or not isinstance(mx, int) or mx < 0:
                 return Reason.INVALID_RULESET
+            for k in ("decay_bp_per_month", "recover_bp_per_month"):
+                if k in ia:
+                    v = ia[k]
+                    if isinstance(v, bool) or not isinstance(v, int) or v < 0 or v > _ADVANCE_MAX_BP:
+                        return Reason.INVALID_RULESET
         fe = cb.get("founding_equipment")
         if fe is not None and not isinstance(fe, bool):
             return Reason.INVALID_RULESET
