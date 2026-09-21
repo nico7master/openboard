@@ -913,3 +913,14 @@ Browser-rendered the live dashboard and verified with vision: all six tabs rende
   `sweeps/ui_civic_fixed.png` (fixed) vs `sweeps/ui_smoke_civic.png` (broken).
 - Doctrine updated in AUDIT_FIXES: pytest proves the engine; rendered-browser walks prove the game.
 
+### 2026-09-21 — Fresh-clone gate round 2 on the UI-fix tree (PASS)
+
+After the visual-pass fixes (d3731f7), the self-containment proof was re-run because the
+previous fresh-clone verdict predated the UI fix:
+
+- Pristine clone at d3731f7: **617/617** (10:54, memrun-held) — repo works from scratch
+  with the render-integrity fix and boot-defaults fix included.
+- Pristine-clone boot: UI 200, `token_mode: True`, quorum 18/179 — the D3 fix holds with
+  zero local state (no autosave, no saves/).
+- Temp clone and smoke server cleaned up after the run.
+
