@@ -46,14 +46,13 @@ def drive(run, seed, t0, t1):
 
 
 def money_delta(run):
+    # 2026-09-21: the hand-sum went stale when the supply grew buckets
+    # (foreign B9, research funding S1) — every funding tick looked like
+    # money vanishing (inv_bad=247/250 on the v2 soak start). One canonical
+    # total lives in breaksystem.money_total; all meters must use it.
+    from openboard.breaksystem import money_total
     s = run.state
-    total = (
-        sum(s.balances.values())
-        + s.surplus_pool
-        + s.capital_fund
-        + getattr(s, "innovation_pool", 0)
-        + sum(c.get("treasury", 0) for c in s.coops.values())
-    )
+    total = money_total(s)
     if not hasattr(run, "_money0"):
         run._money0 = total - s.money_minted + s.money_retired
     expected = run._money0 + s.money_minted - s.money_retired
