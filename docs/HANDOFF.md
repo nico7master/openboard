@@ -883,3 +883,9 @@ A recorded 60-tick live session (55 calls, 258k tokens, $0.00, 5 malformed repli
 - The pre-audit 4/4 pass rate was measured under the OLD, exploitable cast-weight denominators. Post-audit pass rates are the approved tradeoff: spam-proof, capture-resistant.
 
 **Watch item for gameplay (post-RC1 tuning, not a defect):** if NOTHING ever passes even in long sessions, the republic feels dead. Candidate tune: bots coalesce votes on a few proposals per cycle instead of spreading across all (raise effective support for sensible filings), or lower the structural tier slightly. Tuning is a votable parameter change — do it with the politics battery, not ad hoc.
+
+## 2026-09-21 (final) — Fresh-clone gate: PASS — the repo is self-contained
+
+The suite had only ever run in the working tree. Definitive check: `git clone` to a pristine dir (no egg-info, no saves, no local state — verified none tracked) and run the full battery there: **613/613 (638s)**. Anyone can clone and verify RC1 from scratch. Temp clone removed.
+
+**Release verification is now exhaustive:** working-tree suite 613/613 · fresh-clone suite 613/613 · final-engine soak 3/3 PASS · live Mercury session verified + replayed byte-identical · tracker clean (only approved post-RC1 rows). **RC1 is tag-ready; the tag is the founder's call** (suggested: `v1.0-rc1`).
