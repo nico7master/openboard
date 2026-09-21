@@ -895,3 +895,9 @@ The suite had only ever run in the working tree. Definitive check: `git clone` t
 `python dashboard/server.py` boots clean; `GET /` serves the dashboard (200, correct title) and `GET /api/state` answers with live state on :8421; clean shutdown after. The player guide's quick start is verified end to end, not assumed.
 
 **Release verification stack (complete):** suite 613/613 (working tree) · suite 613/613 (fresh clone) · soak 3/3 PASS (final engine) · live Mercury verified + byte-identical replay · boot smoke PASS · tracker clean. **RC1 tag-ready — the tag is the founder's call.**
+
+## 2026-09-21 (visual close) — UI visual verification: PASS
+
+Browser-rendered the live dashboard and verified with vision: all six tabs render (World/Lab/Chronicle/Break It/Civic Board/Your Seat), the Reign scoreboard shows (day 1, Gini 99.22, ledger ✓), quest banner, tick controls, and charts all clean — the P-DESIGN UI is player-ready, not just test-green. Evidence: `sweeps/ui_smoke_dashboard.png`.
+
+**Release verification stack — exhaustive and complete.** RC1 tag-ready; tag is the founder's call.
