@@ -1,5 +1,7 @@
 # Open Board Economy
 
+**Status: `v1.0-rc1` — first release candidate (2026-09-22).** Verified: 626/626 tests (working tree + fresh clone), RC1 soak 3/3 (money exact across 6,000 seed-ticks, zero deaths), live AI-seat session + byte-identical replay, every player-guide affordance engine-verified.
+
 **A deterministic economic engine that proves an entire political economy runs — then lets you play it, break it, and watch it survive.**
 
 OpenBoard implements **Open Board Market Socialism**: a transparent, append-only ledger economy of worker cooperatives, calorie-true needs, auction markets, surplus dividends, and a real voting republic. Every claim about stability is proven by bot-driven simulation *before* humans or AI actors ever touch it.

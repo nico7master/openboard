@@ -970,3 +970,20 @@ at biggest unmet need, payload engine-ACCEPTED end-to-end) / DELEGATE (top-trust
 or deterministic day-1 fallback; revoke) / REPORT (only unpaid engine-detected
 flags) / CRISIS_VOTE (unratified crises, once). Pins in test_seat_affordances.py;
 batteries 57/57; full suite **626/626**. RC1 tag-ready.
+
+
+## 2026-09-22 — RELEASE: v1.0-rc1
+
+Founder word given ("tag it"). Tagged at the G-D2 tree plus this stamp.
+
+**Final verification stack at release:** 626/626 tests (working tree AND pristine
+fresh clone) | RC1 soak 3/3 PASS on the final engine (975 citizens, 3 seeds x
+2,000 ticks: money exact, worst streak 14/50, zero deaths) | live Mercury session
+on the final engine + byte-identical zero-call replay | rendered-browser passes
+(six-tab walk, mission banner, before/after evidence) | boot defaults: democracy
+ON | guide dogfood G-D1 + G-D2 fixed and pinned | audit tracker: only approved
+post-RC1 rows remain (A6, D10, full multiplayer auth, S5/S8).
+
+**Post-RC1 queue (documented, none blocking):** D10 social pressure (flags->trust
+design sketched), full multiplayer auth, trader/journalist seats, republic-pacing
+tune if long sessions prove too strict.
