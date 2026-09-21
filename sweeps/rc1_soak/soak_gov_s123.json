@@ -1,0 +1,36 @@
+{
+ "seed": 123,
+ "ticks": 2000,
+ "pop_start": 975,
+ "pop_end": 975,
+ "deaths": 0,
+ "inv_bad": 0,
+ "worst_ess_streak": 14,
+ "worst_detail": {
+  "tick": 47,
+  "citizens": 13,
+  "goods": {
+   "water": 13,
+   "electricity": 13
+  }
+ },
+ "governance": {
+  "proposals_total": 840,
+  "proposals_passed": 0,
+  "proposals_rejected": 0,
+  "proposals_failed": 819,
+  "votes_cast": 1187550,
+  "audits": 970,
+  "whistle_flags": 125495,
+  "reports": 0
+ },
+ "economy": {
+  "produced_total": 6207245,
+  "gini": 325,
+  "pool_units": 591010818,
+  "money_ok": true
+ },
+ "final_ess_streak": 0,
+ "wall_s": 815.1,
+ "rss_mb": 616
+}

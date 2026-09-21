@@ -850,3 +850,17 @@ Founder redesigned B8 on the spot (better than the proposed lifetime cap): "redu
 **Verification:** 16/16 pins (`tests/test_audit_b8.py`) — first 3 failures were test bugs (validator returns None on success; missing treasury resets), all fixed, engine untouched by them. Adjacent batteries 59/59. Full suite + soak re-run queued for the RC1 tag gate.
 
 **Also approved this session:** D10 (social pressure) post-RC1 with the flags->trust design sketched; player guide next; RC1 soak re-run on the final engine, then tag.
+
+## 2026-09-21 — RC1 soak re-run on the FINAL engine: 3/3 PASS (freeze gate green)
+
+The v1 soak predates all six audit packages + B8 (verdicts have expiry dates), so it was re-run on the shipped engine. Found and fixed a REAL METER BUG first: `stage6_scale_gate.money_delta` was a stale hand-sum predating the foreign (B9) and research-funding (S1) buckets — every funding tick looked like money vanishing (inv_bad=247/250 at soak start). The meter now delegates to the canonical `breaksystem.money_total`; a 60-tick probe confirmed inv_bad=0 with the fixed meter (engine was exact all along).
+
+**Final-engine soak (3 seeds x 2,000 ticks x 975 citizens, all founder defaults + audit hardening + B8 ON):**
+
+| Seed | inv_bad | worst streak (bound 50) | deaths | republic evidence | wall |
+|---|---|---|---|---|---|
+| 42 | 0 | 14 | 0 | 840 proposals, 1,187,550 votes, 970 audits | 798s |
+| 7 | 0 | 14 | 0 | same profile | 797s |
+| 123 | 0 | 14 | 0 | same profile | 815s |
+
+v1 results archived in `sweeps/rc1_soak_v1_pre_audit/`; new verdicts in `sweeps/rc1_soak/`. Player guide shipped at `docs/PLAYER_GUIDE.md` (linked from README follow-up). Full suite 613/613 (commit 9549372 state). **RC1 is tag-ready** — tag awaits the founder's word.
