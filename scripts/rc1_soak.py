@@ -100,6 +100,10 @@ def main():
                 {
                     "proposal_id": pid,
                     "opened_tick": p.get("opened_tick"),
+                    "trimmed_goods": sorted(
+                        g for g, q in (p.get("params") or {}).get("essential_need_quota", {}).items()
+                        if q != (s.rulesets[0]["params"].get("essential_need_quota", {}) or {}).get(g)
+                    ) if (p.get("params") or {}).get("essential_need_quota") else [],
                     "diff_keys": sorted(
                         k for k in set(p.get("params") or {}) | set(s.rulesets[0]["params"])
                         if (p.get("params") or {}).get(k) != s.rulesets[0]["params"].get(k)
