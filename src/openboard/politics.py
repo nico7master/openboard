@@ -160,10 +160,65 @@ def _libertarian_proposal(who, tick, state, params) -> Transaction | None:
     return build_proposal(who, tick, state, params, mutate)
 
 
+def _systemic_trim_good(state: WorldState, params: dict[str, Any]) -> str | None:
+    """Ordinary-business trigger (post-RC1 pacing fix, 2026-09-22): the good
+    with the MOST CITIZENS in unmet-streak among goods whose quota still
+    allows a bounded trim (quota >= 2). Reads the engine's own unmet-needs
+    book — a SYSTEMIC delivery failure, not one citizen's pantry. None when
+    no trimmable good is under-delivered. Deterministic: count desc,
+    quota desc, name asc.
+
+    Evidence probe (2026-09-22, seed-42 dashboard world, 700 ticks): the
+    previous personal-pantry trigger NEVER filed — buy-ahead keeps citizen
+    inventories near 2x quota, and the sorted-first deficit goods (bread,
+    eggs, fish, ...) sit at quota 1 where the floor-1 guard blocks every
+    trim — so all 224 bot filings were structural (154 surplus_spending,
+    70 wealth_tax) and momentum coalescing had nothing ordinary to
+    coalesce around. Systemic streaks, by contrast, concentrated exactly
+    where slack exists: transport (quota 2, ~119 citizens streaking for
+    600+ ticks), household_goods, heating_fuel.
+    """
+    quota = params.get("essential_need_quota", {})
+    counts: dict[str, int] = {}
+    for who_key in sorted(state.unmet_needs or {}):
+        streaks = state.unmet_needs.get(who_key) or {}
+        for good_key in sorted(streaks):
+            if int(streaks.get(good_key) or 0) >= 1 and quota.get(good_key, 0) >= 2:
+                counts[good_key] = counts.get(good_key, 0) + 1
+    if not counts:
+        return None
+    return sorted(counts, key=lambda g: (-counts[g], -quota.get(g, 0), g))[0]
+
+
 def _pragmatist_proposal(who, tick, state, params) -> Transaction | None:
     deficits = perceive_deficits(who, state, params)
     if not deficits:
         return None
+    # Post-RC1 pacing tune (2026-09-22): also file an ORDINARY proposal so
+    # the strict-majority path is reachable at all — every other archetype
+    # mutates structural keys only, and the founder-approved 60%-of-all tier
+    # correctly keeps those beyond bot reach. Trim the SYSTEMICALLY
+    # under-delivered good's quota by one bounded step (floor 1): align the
+    # need book with what the economy actually delivers — small, popular,
+    # non-structural. Target comes from the engine's unmet-streak book
+    # (_systemic_trim_good): the previous personal-pantry read never fired
+    # (probe evidence in the helper's docstring).
+    if tick % (2 * ELECTION_WINDOW) == ELECTION_WINDOW:  # alternate windows
+        good = _systemic_trim_good(state, params)
+        if good is not None:
+
+            def mutate_quota(base, _good=good):
+                quota = dict(base.get("essential_need_quota", {}))
+                cur = quota.get(_good, 0)
+                if cur <= 1:
+                    return None
+                quota[_good] = cur - 1
+                base["essential_need_quota"] = quota
+                return base
+
+            tx = build_proposal(who, tick, state, params, mutate_quota)
+            if tx is not None:
+                return tx
     # More purchasing power: raise the dividend share a bounded step.
     ss = state.active_ruleset_params().get("surplus_spending", {})
     cur = ss.get("dividend_share_bp", 0)
@@ -192,6 +247,17 @@ _PROPOSERS = {
 
 def _stance(archetype: str, who: str, delta: dict[str, tuple[Any, Any]], state: WorldState) -> str | None:
     """'for' | 'against' | None (abstain) for a proposal delta."""
+    # Ordinary business (post-RC1 pacing tune): trimming an undeliverable
+    # need-quota aligns the need book with what the economy actually
+    # delivers — small, popular, non-structural. Every platform supports it
+    # (libertarians: a smaller mandated book; egalitarians: honest needs;
+    # pragmatists: their own filing).
+    if "essential_need_quota" in delta:
+        old_q, new_q = delta["essential_need_quota"]
+        old_q = old_q or {}
+        new_q = new_q or {}
+        if any(new_q.get(k, 0) < v for k, v in old_q.items()):
+            return "for"
     tax = _tax_burden(delta)
     if archetype == "egalitarian":
         if tax > 0:
@@ -217,6 +283,42 @@ def _stance(archetype: str, who: str, delta: dict[str, tuple[Any, Any]], state: 
         return None
     return None
 
+
+def _seed_proposal(open_props: list[tuple[str, dict[str, Any]]], state: WorldState, who: str) -> str | None:
+    """Cold-start: the lowest-pid ORDINARY proposal (None when there is no
+    ordinary business — structural/constitutional fields stay unvoted)."""
+    ord_props = _ordinary_open(state, open_props)
+    return ord_props[0][0] if ord_props else None
+
+
+def _ordinary_open(state: WorldState, open_props: list[tuple[str, dict[str, Any]]]) -> list[tuple[str, dict[str, Any]]]:
+    """Open proposals OUTSIDE the structural and constitutional tiers — the
+    only business bot electorates may legislate (founder-approved A2 tier:
+    structural changes stay beyond bot reach; those fail on quorum)."""
+    from .engine import _is_constitutional, _is_structural
+    active = state.active_ruleset_params()
+    return [(pid, p) for pid, p in open_props
+            if p.get("intervention") is None
+            and not _is_structural(p.get("params") or {}, active)
+            and not _is_constitutional(p.get("params") or {}, active)]
+
+
+def _momentum_leader(open_props: list[tuple[str, dict[str, Any]]], state: WorldState) -> tuple[str, int] | None:
+    """The ordinary proposal with the most for-weight committed so far.
+    Deterministic: max weight, then lowest proposal id. None when no
+    ordinary proposal has traction yet (the caller seeds)."""
+    best: tuple[str, int] | None = None
+    for pid, proposal in _ordinary_open(state, open_props):
+        w = 0
+        for ballot in proposal.get("ballots", {}).values():
+            if isinstance(ballot, dict):
+                if ballot.get("choice") == "for":
+                    w += int(ballot.get("bp", 0))
+            elif ballot == "for":
+                w += 1
+        if w > 0 and (best is None or w > best[1] or (w == best[1] and pid < best[0])):
+            best = (pid, w)
+    return best
 
 def make_politician(inner: DecisionFn, archetype: str, window: int = ELECTION_WINDOW) -> DecisionFn:
     """Economic bot + political brain. Proposes on election ticks, votes
@@ -281,15 +383,41 @@ def make_politician(inner: DecisionFn, archetype: str, window: int = ELECTION_WI
                 else:
                     choice = "for"
             if token_bp > 0:
-                # Audit 2026-09-20 A8: split the monthly token across open
-                # proposals — dumping it all on the first (possibly a decoy)
-                # let attackers drain the electorate's attention budget.
-                _per = max(1, token_bp // max(1, len(_open_props) - _idx))
-                _spend = min(token_bp, _per)
-                out.append(_tx(tick, who, "VOTE",
-                               {"proposal_id": pid, "choice": choice, "bp": _spend}, v))
-                token_bp -= _spend
+                # Audit 2026-09-20 A8: no dumping everything on the first
+                # (possibly decoy) proposal — but even-split dilution had its
+                # own failure mode (post-RC1 pacing probe, 2026-09-22): 0 of
+                # 840 proposals passed in 3x2000-tick soak seeds because 29
+                # politicians x tiny even slices could not out-weigh the
+                # strict-majority abstainers. Founder-approved tune: momentum
+                # coalescing — commit the FULL remaining token to the single
+                # stance-positive proposal with the most for-weight so far
+                # (deterministic tiebreak: lowest proposal id). Zero-traction
+                # decoys still get nothing, so the A8 rationale holds.
+                _momentum = _momentum_leader(_open_props, state)
+                if _momentum is not None:
+                    # SYMMETRIC concentration: for- AND against-voters commit
+                    # the full remaining token to the traction leader. An
+                    # against-dropping electorate would be all-for — the
+                    # majority-capture regression the tiers exist to prevent.
+                    _pid, _ = _momentum
+                    if pid == _pid:
+                        out.append(_tx(tick, who, "VOTE",
+                                       {"proposal_id": pid, "choice": choice, "bp": token_bp}, v))
+                        token_bp = 0
+                elif choice == "for" and pid == _seed_proposal(_open_props, state, who):
+                    # COLD-START SEED: no traction exists yet — the lowest-pid
+                    # ordinary proposal each voter supports gets the first
+                    # full-token commitment, so momentum can form at all.
+                    out.append(_tx(tick, who, "VOTE",
+                                   {"proposal_id": pid, "choice": choice, "bp": token_bp}, v))
+                    token_bp = 0
             elif gov.get("vote_token_bp", 0) == 0:
+                # Legacy binary mode (pre-token worlds): one vote per open
+                # proposal — unchanged by the momentum tune. RESTORED
+                # 2026-09-22: the momentum patch nested this branch under
+                # `if token_bp > 0`, making it unreachable and silencing
+                # every legacy-world vote (caught by
+                # test_election_self_correction + test_founder_directives).
                 out.append(_tx(tick, who, "VOTE", {"proposal_id": pid, "choice": choice}, v))
         return out
 

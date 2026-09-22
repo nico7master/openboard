@@ -252,3 +252,44 @@ LEAVE_COOP, though labor mobility is shipped engine behavior.
 **Verification:** 5 pins in `tests/test_seat_affordances.py` (payloads submitted
 through the real queue path and ACCEPTED by the engine, not just rendered);
 affected batteries 57/57; full suite **626/626**.
+
+## Post-RC1: Republic Pacing Tune (2026-09-22, founder-approved)
+
+**Finding (P1 of the RC1 battery re-run):** 0 of 840 proposals passed in 3x2000-tick
+soak seeds — the republic could not legislate.
+
+**Root cause chain (probes in `sweeps/post_rc1/`):**
+1. **No ordinary business existed.** 224 bot filings in a 700-tick seed-42 world:
+   154 x `surplus_spending` (structural), 70 x `wealth_tax` (structural), **0 ordinary**.
+   Momentum coalescing had nothing ordinary to coalesce around.
+2. **Why the ordinary path never fired:** the pragmatist's quota-trim trigger read
+   PERSONAL pantries (`perceive_deficits`) and picked the sorted-first deficit good.
+   Buy-ahead keeps inventories near 2x quota, and the first deficit goods (bread,
+   eggs, fish, ...) sit at quota 1 — the floor-1 guard killed every trim, and the
+   archetype silently fell through to its structural surplus_spending filing.
+3. **The systemic signal was always there:** the engine's unmet-streak book showed
+   transport (quota 2) with ~119 citizens streaking for 600+ ticks, plus
+   household_goods, heating_fuel, housing — all trimmable (quota >= 2), none
+   reachable via personal pantries.
+
+**Fix:** `_systemic_trim_good()` — the pragmatist's ordinary trim targets the good
+with the MOST CITIZENS in unmet-streak among goods with quota >= 2 (deterministic:
+count desc, quota desc, name asc). The need book aligns with what the economy
+actually delivers, through ordinary business only.
+
+**Regression caught by the full suite (the standard working as designed):** the
+momentum patch had silently nested the legacy binary-vote branch under
+`if token_bp > 0`, making it unreachable — every legacy (pre-token) world emitted
+zero votes. Caught by `test_election_self_correction` +
+`test_default_approve_passes_nonconstitutional_proposal`; fixed and documented
+in-code.
+
+**Contracts updated honestly:** A8's even-split pin became
+`test_a8_momentum_commits_full_token_to_one_proposal` (cold-start: full token to
+lowest-pid supported ordinary proposal; traction beats pid; structural guarded).
+
+**Verification:** momentum battery 5/5 (incl. `test_ordinary_proposal_can_pass_in_bot_republic`);
+confirm probe (700t, seed 42): **6 passed** (was 0), ALL ordinary (`essential_need_quota`
+only), structural=False constitutional=False, ruleset genesis -> 7 versions, one passage
+per alternating pragmatist window (t=50..550). Structural 60%-of-all and constitutional
+2/3-of-all tiers untouched — bot confetti still cannot flip a constitution.

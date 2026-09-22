@@ -1,0 +1,15 @@
+{
+  "date": "2026-09-22",
+  "finding": "Post-RC1 pacing root cause: the bot republic filed ZERO ordinary business, so momentum coalescing had nothing ordinary to coalesce around",
+  "evidence_chain": {
+    "probe_filings_700t_seed42": {"total": 224, "surplus_spending": 154, "wealth_tax": 70, "ordinary": 0},
+    "root_cause": "pragmatist trim trigger read PERSONAL pantries (perceive_deficits) and picked sorted-first deficit good; buy-ahead keeps inventories near 2x quota and bread/eggs/fish/... sit at quota 1, so the floor-1 guard killed every trim and the archetype fell through to its structural surplus_spending filing",
+    "systemic_signal": "engine unmet-streak book: transport (quota 2) ~119 citizens streaking for 600+ ticks; household_goods, heating_fuel, housing also streaking — all trimmable, none personal-pantrimmable",
+    "fix": "_systemic_trim_good(): trim target = good with MOST CITIZENS in unmet-streak among quota>=2 goods (count desc, quota desc, name asc); pragmatist files that trim",
+    "verification": {
+      "momentum_battery": "5/5 passed (incl. test_ordinary_proposal_can_pass_in_bot_republic)",
+      "confirm_probe_700t_seed42": {"statuses": {"failed": 207, "passed": 6, "open": 11}, "passed_all_ordinary": true, "diff_keys": ["essential_need_quota"], "structural": false, "constitutional": false, "ruleset_versions": "genesis + 6 activated", "cadence": "one passage per alternating pragmatist window t=50,150,250,350,450,550"}
+    }
+  },
+  "tiers_untouched": "structural 60%-of-all and constitutional 2/3-of-all gates unchanged; bot confetti still cannot flip a constitution"
+}

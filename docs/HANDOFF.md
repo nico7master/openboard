@@ -987,3 +987,15 @@ post-RC1 rows remain (A6, D10, full multiplayer auth, S5/S8).
 **Post-RC1 queue (documented, none blocking):** D10 social pressure (flags->trust
 design sketched), full multiplayer auth, trader/journalist seats, republic-pacing
 tune if long sessions prove too strict.
+
+## 2026-09-22 — Post-RC1 republic pacing tune (momentum coalescing)
+
+- RC1 tag: v1.0-rc1 cut on 5f7668a (a9ffab6), pushed and verified.
+- Founder-approved pacing tune: momentum coalescing + systemic ordinary-business trigger.
+- Root cause of the dead republic found by probes (sweeps/post_rc1/): zero ordinary
+  filings in 700t (224 structural), pragmatist personal-pantry trigger never fires.
+- Fix: _systemic_trim_good (politics.py) + cold-start seed + momentum leader.
+- Legacy-vote regression caught by full suite, fixed in politics.py (documented).
+- A8 pin evolved to momentum contract. Momentum battery 5/5; confirm probe: 6 passed,
+  all ordinary, ruleset genesis->7. Evidence: sweeps/post_rc1/momentum_verdict.json.
+- Full suite: **631/631 passed** (13:39, memrun-held) — 626 RC1 pins + 5 momentum tests.

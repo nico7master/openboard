@@ -220,10 +220,17 @@ def test_a5_structural_whitelist_expanded():
 
 # ---------------------------------------------------------------- A8
 
-def test_a8_bot_splits_token_across_open_proposals():
-    """The bot's monthly token splits across open proposals — dumping it
-    all on the first (possibly a decoy) drained the electorate."""
+def test_a8_momentum_commits_full_token_to_one_proposal():
+    """A8 evolved (founder-approved momentum tune, 2026-09-22): the bot no
+    longer SPLITS its token evenly across open proposals — even slices
+    could not out-weigh strict-majority abstainers (0 of 840 proposals
+    passed in the RC1 soak probes). The FULL remaining token goes to the
+    single stance-positive ORDINARY proposal with the most for-weight so
+    far; with zero traction, the lowest-pid ordinary proposal the voter
+    supports gets the cold-start seed. Decoys with zero traction still
+    receive nothing, and only ordinary business is reachable."""
     from openboard.politics import make_politician
+    from openboard.engine import _is_structural, _is_constitutional
     r = _Runner(_world(_params(persuasion=False)), Ledger())
     base = r.s.active_ruleset_params()
     for d, sender in ((1, "c1"), (2, "c2")):
@@ -232,11 +239,25 @@ def test_a8_bot_splits_token_across_open_proposals():
         r.run([r.tx(sender, "PROPOSE",
                     {"params": np_, "activation_tick": r.now + 10})])
     bot = make_politician(lambda *a, **k: [], "pragmatist")
+
+    # Cold start (no traction anywhere): the lowest-pid supported ordinary
+    # proposal (p1) receives the FULL token — never an even slice.
     txs = bot("c0", r.s, r.s.active_ruleset_params(), r.now, random.Random(0))
     votes = [t for t in txs if t.action == "VOTE"]
-    assert len(votes) == 2
-    assert sum(t.payload["bp"] for t in votes) == 10_000
-    assert {t.payload["bp"] for t in votes} == {5_000}
+    assert len(votes) == 1
+    assert votes[0].payload["proposal_id"] == "p1"
+    assert votes[0].payload["bp"] == 10_000
+    assert not _is_structural(r.s.proposals["p1"]["params"], base)
+    assert not _is_constitutional(r.s.proposals["p1"]["params"], base)
+
+    # Traction beats pid order: a for-weight on the HIGHER pid (p2) makes
+    # IT the momentum leader — the full token follows the traction.
+    r.s.proposals["p2"]["ballots"]["c9"] = {"choice": "for", "bp": 3_000}
+    txs = bot("c0", r.s, r.s.active_ruleset_params(), r.now, random.Random(0))
+    votes = [t for t in txs if t.action == "VOTE"]
+    assert len(votes) == 1
+    assert votes[0].payload["proposal_id"] == "p2"
+    assert votes[0].payload["bp"] == 10_000
 
 
 # ---------------------------------------------------------------- A9
