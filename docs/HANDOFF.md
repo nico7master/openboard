@@ -1023,6 +1023,7 @@ tune if long sessions prove too strict.
   | 123 | exact | 14 | 0 | 6 | yes | 119,400 | 352 |
   Passage windows t=50..950 then quiet (self-limiting: the quota book aligns with
   delivery). Structural/constitutional: zero bot passages in all seeds.
-- Full regression suite: **631/631** (12:37, memrun-held) — includes the 5 momentum
-  pins and the evolved A8 pin.
+- Full regression suite: **634/634** (12:37, memrun-held, 2026-09-23 00:31) — includes
+  the 5 momentum pins, the evolved A8 pin, and 3 new franchise pins (quorum reachable
+  at scale, governance-gated, deterministic; scaling asserted chunk-approximate).
 - Post-RC1 queue remains as documented (A6, D10, full auth, S5/S8).
