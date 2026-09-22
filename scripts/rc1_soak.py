@@ -96,6 +96,18 @@ def main():
         "governance": {
             "proposals_total": len(props),
             "proposals_passed": sum(1 for p in props.values() if p.get("status") == "passed"),
+            "passed_kinds": [
+                {
+                    "proposal_id": pid,
+                    "opened_tick": p.get("opened_tick"),
+                    "diff_keys": sorted(
+                        k for k in set(p.get("params") or {}) | set(s.rulesets[0]["params"])
+                        if (p.get("params") or {}).get(k) != s.rulesets[0]["params"].get(k)
+                    ),
+                }
+                for pid, p in sorted(props.items())
+                if p.get("status") == "passed"
+            ][:50],
             "proposals_rejected": sum(1 for p in props.values() if p.get("status") == "rejected"),
             "proposals_failed": sum(1 for p in props.values() if p.get("status") == "failed"),
             "votes_cast": act.get("VOTE", 0),

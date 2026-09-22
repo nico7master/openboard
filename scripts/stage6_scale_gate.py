@@ -22,8 +22,9 @@ sys.path.insert(0, str(ROOT / "dashboard"))
 
 from server import (  # noqa: E402
     BASELINE_BOTS, BASELINE_COOPS, CAPITAL_BOOTSTRAP, SPECIALISTS, Run,
-    ARCHETYPES,
+    ARCHETYPES, POLITICAL_ROLES,
 )
+from openboard.politics import make_politician  # noqa: E402
 
 TARGET_CITIZENS = 1000
 ESSENTIALS = ("bread", "water", "electricity", "meals")
@@ -112,13 +113,37 @@ def scale_world(run, target):
             # a 13-member coop would be rejected at the founding cap)
             chunks[-2] -= 1
             chunks[-1] += 1
+        # Post-RC1 pacing fix (2026-09-22, probe-proven): clones registered
+        # as RAW economic bots left the republic quorum-walled at scale —
+        # 975 citizens need 98 ballots (quorum_bp 10%) but only the 29 base
+        # seats ever voted, so 0 of 840 proposals could pass in the soak
+        # (at dashboard scale it worked: 29 voters >= quorum 18). Extend
+        # the franchise proportionally with the dashboard's EXACT global
+        # ratio: round-robin the 29-seat archetype pattern across ALL
+        # clones (per-role assignment diluted below quorum — probe: 79
+        # politicians, quorum 98, unreachable). Governance-gated; A2 and
+        # constitutional tiers stay beyond bot reach at any electorate size.
+        _role_of = {}  # base citizen name -> archetype
+        for _n, _a in POLITICAL_ROLES.items():
+            _role_of[_n] = _a
+        _pattern = []  # (fn, archetype-or-None) repeating the dashboard mix
+        for _n, _fn, _c in BASELINE_BOTS:
+            _a = POLITICAL_ROLES.get(_n)
+            _pattern.append((_fn, _a))
+        _clone_idx = 0
         for clone_i, take in enumerate(chunks, start=1):
             coop_id = f"{base_coop}_x{clone_i}"
             names = [f"{role}_x{clone_i}_{j}" for j in range(take)]
-            for n in names:
+            for j, n in enumerate(names):
                 run._inject({"after_tick": tick1, "op": "add_citizen",
                              "name": n, "balance": 500})
-                run.bots[n] = {"fn": fn, "coop": coop_id}
+                bot_fn = fn
+                if run.governance:
+                    _pat_fn, _pat_arch = _pattern[_clone_idx % len(_pattern)]
+                    if _pat_arch is not None:
+                        bot_fn = make_politician(fn, _pat_arch)
+                _clone_idx += 1
+                run.bots[n] = {"fn": bot_fn, "coop": coop_id}
             founding.append(
                 __import__("openboard.ledger", fromlist=["Transaction"]).Transaction(
                     tick=proc, sender=names[0], action="FOUND_COOP",

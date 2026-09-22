@@ -999,3 +999,14 @@ tune if long sessions prove too strict.
 - A8 pin evolved to momentum contract. Momentum battery 5/5; confirm probe: 6 passed,
   all ordinary, ruleset genesis->7. Evidence: sweeps/post_rc1/momentum_verdict.json.
 - Full suite: **631/631 passed** (13:39, memrun-held) — 626 RC1 pins + 5 momentum tests.
+
+## 2026-09-22 (evening) — Franchise at scale: the republic legislates at 975 citizens
+
+- Post-tune soak exposed the quorum wall: 29 voters < quorum 98 at 975 citizens
+  (clones were raw economic bots). 0/840 passed despite stability PASS.
+- Fix: scale_world extends the franchise proportionally (dashboard's exact 29-seat
+  archetype pattern, global round-robin over clones -> 398 politicians at 975).
+  Per-role assignment was tried first and probe-failed (79 < 98) — evidence kept.
+- Re-soak s42: PASS (money exact, streak 14/50, 0 deaths) + 6 ordinary passages
+  (t=50..950), 119,400 votes, gini 340. Verdict: sweeps/rc1_soak/soak_gov_s42.json.
+- Queue: soak s7 -> soak s123 -> full suite (one-world discipline) -> final commit.

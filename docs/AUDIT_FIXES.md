@@ -293,3 +293,41 @@ confirm probe (700t, seed 42): **6 passed** (was 0), ALL ordinary (`essential_ne
 only), structural=False constitutional=False, ruleset genesis -> 7 versions, one passage
 per alternating pragmatist window (t=50..550). Structural 60%-of-all and constitutional
 2/3-of-all tiers untouched — bot confetti still cannot flip a constitution.
+
+## Post-RC1: Franchise at scale (2026-09-22, probe-proven)
+
+**Finding:** the tuned republic was still dead at city scale. Post-tune soak s42
+(975 citizens): stability PASS but **0 of 840 proposals passed**. Root cause:
+`scale_world` registered clone citizens as RAW economic bots — only the 29 base
+seats had political brains, and quorum at 975 citizens = 98 ballots. 29 < 98:
+quorum was mathematically unreachable (at dashboard scale it worked: 29 voters
+>= quorum 18 — the wall only existed at scale).
+
+**Fix:** proportional franchise in `scale_world` — round-robin the dashboard's
+EXACT 29-seat archetype pattern across all clones (per-role assignment was
+probe-tested first and diluted to 79 politicians < 98; global round-robin gives
+**398 politicians at 975 citizens**, quorum reachable). Deterministic,
+governance-gated; the structural 60%-of-all and constitutional 2/3-of-all tiers
+stay beyond bot reach at any electorate size.
+
+**Re-soak s42 (franchised, 2000 ticks): ALL GATES PASS.**
+
+| Gate | Result |
+|---|---|
+| Money invariant | exact every tick (inv_bad=0) |
+| Essentials streak | worst 14 (bound 50) |
+| Deaths | 0 (pop 975 -> 975) |
+| Republic | **6 passed (was 0)** — ALL ordinary (`essential_need_quota`), t=50..950, none structural/constitutional |
+| Turnout | 119,400 votes, 970 audits |
+| Filings | 11,880 (11,577 correctly failed — churn scales with the electorate, harmless) |
+| Gini | 340 (vs 933 in the un-franchised run — consistent with 6 quota trims shifting spending; causal chain plausible, not isolated) |
+| Wall | 8112s (~2.25h; 398 politicians add ~4s/tick) |
+
+**Observed self-limiting behavior:** passages stop after t=950 — consistent with
+the need book aligning with delivery (the tune's stated purpose: legislate until
+the quota book matches what the economy delivers, then go quiet). Which good was
+trimmed in each passage is not recorded in the verdict JSON (open detail).
+
+**Pre-tune soak results archived** at `sweeps/rc1_soak_v1_pretune_v2/`.
+**Full suite re-run queued after seeds 7/123** (one-world discipline) — must pass
+before the final 3-seed verdict is recorded.

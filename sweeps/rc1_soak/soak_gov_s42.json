@@ -15,22 +15,66 @@
   }
  },
  "governance": {
-  "proposals_total": 840,
-  "proposals_passed": 0,
+  "proposals_total": 11880,
+  "proposals_passed": 6,
+  "passed_kinds": [
+   {
+    "proposal_id": "p10",
+    "opened_tick": 50,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p2972",
+    "opened_tick": 550,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p3566",
+    "opened_tick": 650,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p4160",
+    "opened_tick": 750,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p4754",
+    "opened_tick": 850,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p5348",
+    "opened_tick": 950,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   }
+  ],
   "proposals_rejected": 0,
-  "proposals_failed": 819,
-  "votes_cast": 1187550,
+  "proposals_failed": 11577,
+  "votes_cast": 119400,
   "audits": 970,
-  "whistle_flags": 125651,
+  "whistle_flags": 125662,
   "reports": 0
  },
  "economy": {
-  "produced_total": 6068299,
-  "gini": 933,
-  "pool_units": 616775573,
+  "produced_total": 5939324,
+  "gini": 340,
+  "pool_units": 592661336,
   "money_ok": true
  },
  "final_ess_streak": 0,
- "wall_s": 798.3,
- "rss_mb": 611
+ "wall_s": 8112.6,
+ "rss_mb": 748
 }
