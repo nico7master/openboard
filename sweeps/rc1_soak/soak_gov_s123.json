@@ -1,0 +1,80 @@
+{
+ "seed": 123,
+ "ticks": 2000,
+ "pop_start": 975,
+ "pop_end": 975,
+ "deaths": 0,
+ "inv_bad": 0,
+ "worst_ess_streak": 14,
+ "worst_detail": {
+  "tick": 47,
+  "citizens": 13,
+  "goods": {
+   "water": 13,
+   "electricity": 13
+  }
+ },
+ "governance": {
+  "proposals_total": 11880,
+  "proposals_passed": 6,
+  "passed_kinds": [
+   {
+    "proposal_id": "p10",
+    "opened_tick": 50,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p1190",
+    "opened_tick": 250,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p1784",
+    "opened_tick": 350,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p2378",
+    "opened_tick": 450,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p2972",
+    "opened_tick": 550,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   },
+   {
+    "proposal_id": "p596",
+    "opened_tick": 150,
+    "diff_keys": [
+     "essential_need_quota"
+    ]
+   }
+  ],
+  "proposals_rejected": 0,
+  "proposals_failed": 11577,
+  "votes_cast": 119400,
+  "audits": 970,
+  "whistle_flags": 125714,
+  "reports": 0
+ },
+ "economy": {
+  "produced_total": 5880558,
+  "gini": 352,
+  "pool_units": 593939315,
+  "money_ok": true
+ },
+ "final_ess_streak": 0,
+ "wall_s": 8875.5,
+ "rss_mb": 758
+}
