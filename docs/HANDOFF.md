@@ -1010,3 +1010,19 @@ tune if long sessions prove too strict.
 - Re-soak s42: PASS (money exact, streak 14/50, 0 deaths) + 6 ordinary passages
   (t=50..950), 119,400 votes, gini 340. Verdict: sweeps/rc1_soak/soak_gov_s42.json.
 - Queue: soak s7 -> soak s123 -> full suite (one-world discipline) -> final commit.
+
+## 2026-09-23 — Franchised republic: 3-seed verdict + suite GREEN
+
+- Post-tune soak s42 exposed the quorum wall (29 voters < 98 needed at 975).
+- Fix: proportional franchise in scale_world (bd54cd3) — 398 politicians at 975.
+- **3-seed franchised verdict (2,000 ticks each, ~975 citizens):**
+  | Seed | Money | Worst streak (bound 50) | Deaths | Passed | All ordinary | Votes | Gini |
+  |---|---|---|---|---|---|---|---|
+  | 42 | exact | 14 | 0 | 6 | yes | 119,400 | 340 |
+  | 7 | exact | 14 | 0 | 6 | yes | 119,400 | — |
+  | 123 | exact | 14 | 0 | 6 | yes | 119,400 | 352 |
+  Passage windows t=50..950 then quiet (self-limiting: the quota book aligns with
+  delivery). Structural/constitutional: zero bot passages in all seeds.
+- Full regression suite: **631/631** (12:37, memrun-held) — includes the 5 momentum
+  pins and the evolved A8 pin.
+- Post-RC1 queue remains as documented (A6, D10, full auth, S5/S8).
